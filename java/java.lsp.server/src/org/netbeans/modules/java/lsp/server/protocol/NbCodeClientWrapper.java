@@ -18,9 +18,10 @@
  */
 package org.netbeans.modules.java.lsp.server.protocol;
 
-import org.netbeans.modules.java.lsp.server.explorer.api.NodeChangedParams;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ConfigurationParams;
@@ -30,13 +31,19 @@ import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.RegistrationParams;
-import org.eclipse.lsp4j.SetTraceParams;
 import org.eclipse.lsp4j.ShowDocumentParams;
 import org.eclipse.lsp4j.ShowDocumentResult;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
+import org.netbeans.modules.java.lsp.server.input.ShowMutliStepInputParams;
+import org.netbeans.modules.java.lsp.server.input.ShowInputBoxParams;
+import org.netbeans.modules.java.lsp.server.explorer.api.NodeChangedParams;
 
 /**
  * Convenience wrapper that binds language client's remote proxy together with
@@ -47,10 +54,12 @@ import org.eclipse.lsp4j.WorkspaceFolder;
 class NbCodeClientWrapper implements NbCodeLanguageClient {
     private final NbCodeLanguageClient remote;
     private volatile NbCodeClientCapabilities  clientCaps;
+    private final ClientConfigurationManager confManager;
 
     public NbCodeClientWrapper(NbCodeLanguageClient remote) {
         this.remote = remote;
         this.clientCaps = new NbCodeClientCapabilities();
+        this.confManager = new ClientConfigurationManager(this);
     }
 
     public void setClientCaps(NbCodeClientCapabilities clientCaps) {
@@ -75,13 +84,32 @@ class NbCodeClientWrapper implements NbCodeLanguageClient {
     }
 
     @Override
+    public CompletableFuture<String> execInHtmlPage(HtmlPageParams params) {
+        return remote.execInHtmlPage(params);
+    }
+
+    @Override
     public CompletableFuture<List<QuickPickItem>> showQuickPick(ShowQuickPickParams params) {
-        return remote.showQuickPick(params);
+        // vscode from version 1.80.2 displays control characters in quickpicks. Let's strip them:
+        ShowQuickPickParams copy = new ShowQuickPickParams(
+                params.getTitle(), params.getPlaceHolder(), params.getCanPickMany(),
+                params.getItems().stream().map(
+                        i -> new QuickPickItem(
+                                i.getLabel(), Utils.html2plain(i.getDescription(), true), Utils.html2plain(i.getDetail(), true), 
+                                i.isPicked(), i.getUserData())
+                        ).collect(Collectors.toList())
+        );
+        return remote.showQuickPick(copy);
     }
 
     @Override
     public CompletableFuture<String> showInputBox(ShowInputBoxParams params) {
         return remote.showInputBox(params);
+    }
+
+    @Override
+    public CompletableFuture<Map<String, Either<List<QuickPickItem>, String>>> showMultiStepInput(ShowMutliStepInputParams params) {
+        return remote.showMultiStepInput(params);
     }
 
     @Override
@@ -175,11 +203,6 @@ class NbCodeClientWrapper implements NbCodeLanguageClient {
     }
 
     @Override
-    public void setTrace(SetTraceParams params) {
-        remote.setTrace(params);
-    }
-
-    @Override
     public CompletableFuture<Void> refreshSemanticTokens() {
         return remote.refreshSemanticTokens();
     }
@@ -191,5 +214,40 @@ class NbCodeClientWrapper implements NbCodeLanguageClient {
     
     public void notifyNodeChange(NodeChangedParams params) {
         remote.notifyNodeChange(params);
+    }
+    
+    @Override
+    public CompletableFuture<Void> configurationUpdate(UpdateConfigParams params) {
+        return remote.configurationUpdate(params);
+    }
+    
+    @Override
+    public CompletableFuture<Boolean> requestDocumentSave(SaveDocumentRequestParams documentUris) {
+        return remote.requestDocumentSave(documentUris);
+    }
+
+    @Override
+    public CompletableFuture<Void> writeOutput(OutputMessage lm) {
+        return remote.writeOutput(lm);
+    }
+
+    @Override
+    public CompletableFuture<Void> showOutput(String outputName) {
+        return remote.showOutput(outputName);
+    }
+
+    @Override
+    public CompletableFuture<Void> closeOutput(String outputName) {
+        return remote.closeOutput(outputName);
+    }
+    
+    @Override
+    public CompletableFuture<Void> resetOutput(String outputName) {
+        return remote.resetOutput(outputName);
+    }
+
+    @Override
+    public ClientConfigurationManager getClientConfigurationManager() {
+        return confManager;
     }
 }

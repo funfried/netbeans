@@ -89,7 +89,7 @@ class DominatorTree {
     private boolean computeOneLevel(boolean ignoreDirty) throws IOException {
         boolean changed = false;
         LongSet newDirtySet = new LongSet(map.size()/10);
-        List<Long> additionalIds = new ArrayList();
+        List<Long> additionalIds = new ArrayList<>();
         int additionalIndex = 0;
         // debug 
 //        long processedId = 0;
@@ -176,7 +176,7 @@ class DominatorTree {
                     Instance val = ((ObjectFieldValue)v).getInstance();
                     if (val != null) {
                         long idp = val.getInstanceId();
-                        Long idO = new Long(idp);
+                        Long idO = idp;
                         long idomO = map.get(idp);
                         if (idomO > 0) {
                             additionalIds.add(idO);
@@ -315,7 +315,7 @@ class DominatorTree {
     // debugging 
     private void printObjs(List<Long> changedIds, List<Long> oldDomIds, List<Long> newDomIds, List<Boolean> addedByDirtySet, List<Long> changedIdx) {
         if (changedIds.size()>20) return;
-        TreeMap<Integer,String> m = new TreeMap();
+        TreeMap<Integer,String> m = new TreeMap<>();
         
         for (int i=0; i<changedIds.size(); i++) {
             Long iid = changedIds.get(i);
@@ -331,8 +331,8 @@ class DominatorTree {
             text+=" NewDom: "+printInstance(newDom);
             m.put(number,text);
         }
-        for (Integer in : m.keySet()) {
-            Systems.debug(m.get(in));
+        for (String value : m.values()) {
+            Systems.debug(value);
         }
     }
     

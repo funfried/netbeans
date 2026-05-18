@@ -334,7 +334,7 @@ public class HtmlHintsProvider implements HintsProvider {
         if (ids == null) {
             return Collections.<org.netbeans.modules.html.editor.hints.HtmlRule>emptyList();
         }
-        Collections.sort(ids, HTML_RULES_COMPARATOR);
+        ids.sort(HTML_RULES_COMPARATOR);
         return ids;
     }
 
@@ -621,7 +621,7 @@ public class HtmlHintsProvider implements HintsProvider {
 
     }
 
-    private static abstract class AbstractErrorChecksForMimetypeFix implements HintFix {
+    private abstract static class AbstractErrorChecksForMimetypeFix implements HintFix {
 
         protected Document doc;
         protected String mimeType;

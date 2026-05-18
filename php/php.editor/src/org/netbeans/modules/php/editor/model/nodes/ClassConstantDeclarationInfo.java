@@ -26,6 +26,7 @@ import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.editor.api.PhpModifiers;
 import org.netbeans.modules.php.editor.api.QualifiedName;
+import org.netbeans.modules.php.editor.model.impl.VariousUtils;
 import org.netbeans.modules.php.editor.model.nodes.ASTNodeInfo.Kind;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayElement;
@@ -93,8 +94,17 @@ public class ClassConstantDeclarationInfo extends ASTNodeInfo<Identifier> {
         return value;
     }
 
+    @CheckForNull
+    public String getDeclaredType() {
+        return VariousUtils.getDeclaredType(constantDeclaration.getConstType());
+    }
+
     public PhpModifiers getAccessModifiers() {
         return PhpModifiers.fromBitMask(constantDeclaration.getModifier());
+    }
+
+    public ConstantDeclaration getConstantDeclaration() {
+        return constantDeclaration;
     }
 
     @CheckForNull
@@ -115,9 +125,11 @@ public class ClassConstantDeclarationInfo extends ASTNodeInfo<Identifier> {
         return null;
     }
 
-    @NbBundle.Messages("MoreElementsDesc={0} more")
+    @NbBundle.Messages({
+        "# {0} - undisplayed size",
+        "MoreElementsDesc={0} more"
+    })
     private static String getConstantValue(ArrayCreation expr) {
-        String debug = expr.toString();
         StringBuilder sb = new StringBuilder("["); //NOI18N
         Integer displayedElements = 0;
         List<ArrayElement> elements = expr.getElements();

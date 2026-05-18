@@ -253,7 +253,7 @@ public class GenerateDOMScannerSupport implements XMLGenerateCookie {
                         varTree = new ArrayList<VariableTree>();
                         varTree.add(var);
                         while (it.hasNext()) {
-                            TreeElementDecl next = (TreeElementDecl) it.next();
+                            TreeElementDecl next = it.next();
                             String tagName = next.getName();
                             String methodName = GenerateSupportUtils.getJavaName (METHOD_SCAN_ELEMENT + "_" + tagName);
                           
@@ -286,7 +286,7 @@ public class GenerateDOMScannerSupport implements XMLGenerateCookie {
                                 varTree,
                                 Collections.<ExpressionTree>emptyList(),
                                 sb.toString(),
-                                null );;
+                                null );
                             commentText = "Scan through org.w3c.dom.Element named " + tagName + ".";
                             comment = Comment.create(Comment.Style.JAVADOC, -2, -2, -2, commentText);
                             make.addComment(method, comment, true);
@@ -336,7 +336,7 @@ public class GenerateDOMScannerSupport implements XMLGenerateCookie {
         sb2.append ("org.w3c.dom.Element nodeElement = (org.w3c.dom.Element)node;\n"); // NOI18N
         it = dtd.getElementDeclarations().iterator();
         while (it.hasNext()) {
-            String tagName = ((TreeElementDecl)it.next()).getName();
+            String tagName = it.next().getName();
             if (elements.contains(tagName) == false) continue;
             sb2.append ("if (nodeElement.getTagName().equals (\"").append (tagName).append ("\")) {\n"); // NOI18N
             sb2.append (METHOD_SCAN_ELEMENT).append ("_").append (GenerateSupportUtils.getJavaName (tagName)).append (" (nodeElement);\n}\n"); // NOI18N

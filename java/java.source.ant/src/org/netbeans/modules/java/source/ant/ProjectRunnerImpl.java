@@ -493,7 +493,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
                 roots.add(orig);
             }
         }
-        return ClassPathSupport.createClassPath(roots.toArray(new URL[roots.size()]));
+        return ClassPathSupport.createClassPath(roots.toArray(new URL[0]));
     }
     
     @CheckForNull
@@ -545,7 +545,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
         }
         return res.isEmpty() ?
                 orig :
-                res.toArray(new URL[res.size()]);
+                res.toArray(new URL[0]);
     }
 
     private static ExecutorTask clean(Map<String, ?> properties) {
@@ -680,30 +680,8 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
     }
 
     private static void copyFile(URLConnection source, FileObject target) throws IOException {
-        InputStream ins = null;
-        OutputStream out = null;
-
-        try {
-            ins = source.getInputStream();
-            out = target.getOutputStream();
-
-            FileUtil.copy(ins, out);
-        } finally {
-            if (ins != null) {
-                try {
-                    ins.close();
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
-            }
-
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
-            }
+        try (InputStream ins = source.getInputStream(); OutputStream out = target.getOutputStream()) {
+            ins.transferTo(out);
         }
     }
 

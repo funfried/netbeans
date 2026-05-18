@@ -453,9 +453,9 @@ public class ConfigurableActionsProviderImpl implements ProjectActionMappingProv
             oldCache = this.cache;
             this.cache = newCache = r.actionMap;
             Map<String, GradleExecConfiguration> confs = new HashMap<>();
-            for (String id : newCache.keySet()) {
-                confs.put(id, newCache.get(id).cfg);
-            }
+
+            newCache.forEach((k, v) -> confs.put(k, v.cfg));
+
             if (LOG.isLoggable(Level.FINER)) {
                 LOG.log(Level.FINER, "Project {0} got configurations: {1}", new Object[] { project, confs.keySet() });
             }
@@ -463,13 +463,11 @@ public class ConfigurableActionsProviderImpl implements ProjectActionMappingProv
             this.actionIDs = r.actionIDs;
             
             if (oldCache != null) {
-                for (String id : oldCache.keySet()) {
-                    ActionData ad = oldCache.get(id);
+                for (ActionData ad : oldCache.values()) {
                     ad.detach();
                 }
             }
-            for (String id : newCache.keySet()) {
-                ActionData ad = newCache.get(id);
+            for (ActionData ad : newCache.values()) {
                 ad.attach(projectDirectory, null, fcl);
             }
             if (newCache.keySet().equals(oldConfigs)) {
@@ -595,7 +593,9 @@ public class ConfigurableActionsProviderImpl implements ProjectActionMappingProv
                 }
                 LOG.log(Level.FINER, "Loaded actions: {0}", newEntries);
                 
-                for (GradleExecConfiguration c : mapp.keySet()) {
+                for (Map.Entry<GradleExecConfiguration, Set<ActionMapping>> it : mapp.entrySet()) {
+                    GradleExecConfiguration c = it.getKey();
+
                     LOG.log(Level.FINER, "Loading config {0}", c.getId());
                     GradleExecConfiguration existing = config.get(c.getId());
                     if (existing != null) {
@@ -614,7 +614,7 @@ public class ConfigurableActionsProviderImpl implements ProjectActionMappingProv
                         LOG.log(Level.FINER, "Loaded customizations for config {1}: {0}", new Object[] { ad.customizedMappings.keySet(), existing.getId() });
                     }
                     newEntries = new HashSet<>();
-                    for (ActionMapping m : mapp.get(c)) {
+                    for (ActionMapping m : it.getValue()) {
                         ad.mappings.add(m);
                         newEntries.add(m.getName());
                     }

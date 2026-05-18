@@ -162,6 +162,7 @@ public class WhereUsedElement extends SimpleRefactoringElementImplementation imp
         return create(compiler, tree, null, inTest, inPlatform, inDependency, inImport);
     }
     
+    @SuppressWarnings({"NestedAssignment", "AssignmentToMethodParameter"})
     public static WhereUsedElement create(CompilationInfo compiler, TreePath tree, JavaWhereUsedFilters.ReadWrite access, boolean inTest, boolean inPlatform, boolean inDependency, AtomicBoolean inImport) {
         CompilationUnitTree unit = tree.getCompilationUnit();
         CharSequence content = compiler.getSnapshot().getText();
@@ -195,9 +196,7 @@ public class WhereUsedElement extends SimpleRefactoringElementImplementation imp
         if (TreeUtilities.CLASS_TREE_KINDS.contains(t.getKind())) {
             int[] pos = treeUtils.findNameSpan((ClassTree)t);
             if (pos == null) {
-                Tree tr = tree.getParentPath().getLeaf();
-                if (tr instanceof NewClassTree) {
-                    NewClassTree newClass = (NewClassTree) tr;
+                if (tree.getParentPath().getLeaf() instanceof NewClassTree newClass) {
                     start = (int) sp.getStartPosition(unit, newClass.getIdentifier());
                     end = (int) sp.getEndPosition(unit, newClass.getIdentifier());
                 } else {
@@ -207,7 +206,7 @@ public class WhereUsedElement extends SimpleRefactoringElementImplementation imp
                     start = end = (int) sp.getStartPosition(unit, t);
                 }
                 // #213723 hotfix, happens for enum values
-                if(start < 0) {
+                if(start < 0 || end < 0) {
                     TreePath parentPath = tree.getParentPath();
                     if(parentPath != null && (parentPath = parentPath.getParentPath()) != null
                             && parentPath.getLeaf().getKind() == Tree.Kind.VARIABLE) {
@@ -327,7 +326,7 @@ public class WhereUsedElement extends SimpleRefactoringElementImplementation imp
     private static String trimStart(String s) {
         for (int x = 0; x < s.length(); x++) {
             if (!Character.isWhitespace(s.charAt(x))) {
-                return s.substring(x, s.length());
+                return s.substring(x);
             }
         }
         return "";

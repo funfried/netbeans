@@ -18,14 +18,17 @@
  */
 package org.netbeans.modules.gradle;
 
+import org.netbeans.modules.gradle.api.GradleReport;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
 import org.netbeans.modules.gradle.api.NbGradleProject;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ProjectServiceProvider;
@@ -41,6 +44,11 @@ import org.openide.util.NbBundle;
  */
 @ProjectServiceProvider(service = ProjectProblemsProvider.class, projectType = NbGradleProject.GRADLE_PROJECT_TYPE)
 public class GradleProjectProblemProvider implements ProjectProblemsProvider {
+    /**
+     * Maximum number of lines presented from a report. Prevents stacktrace errors to flood everything, but Gradle has deep
+     * stacks...
+     */
+    private static final int MAX_REPORT_LINES = 100;
     
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
     private final Project project;
@@ -79,14 +87,41 @@ public class GradleProjectProblemProvider implements ProjectProblemsProvider {
     public Collection<? extends ProjectProblem> getProblems() {
         List<ProjectProblem> ret = new ArrayList<>();
         GradleProject gp = project.getLookup().lookup(NbGradleProjectImpl.class).getGradleProject();
-        if (gp.getQuality().notBetterThan(EVALUATED)) {
-            ret.add(ProjectProblem.createError(Bundle.LBL_PrimingRequired(), Bundle.TXT_PrimingRequired(), resolver));
-        }
-        for (String problem : gp.getProblems()) {
-            String[] lines = problem.split("\\n"); //NOI18N
-            ret.add(ProjectProblem.createWarning(lines[0], problem.replaceAll("\\n", "<br/>"), resolver)); //NOI18N
+        // untrusted project can't have 'real' problems: the execution could not happen
+        boolean trusted = ProjectTrust.getDefault().isTrusted(project);
+        if (!trusted || gp.getProblems().isEmpty()) {
+            if (gp.getQuality().notBetterThan(EVALUATED)) {
+                ret.add(ProjectProblem.createError(Bundle.LBL_PrimingRequired(), Bundle.TXT_PrimingRequired(), resolver));
+            }
+        } else {
+            for (GradleReport report : gp.getProblems()) {
+                String problem = formatReport(report);
+                String m;
+                String d;
+                if (report.getDetails() == null || report.getDetails().length == 0) {
+                    String[] lines = problem.split("\n"); //NOI18N
+                    m = lines[0];
+                    d = problem.replaceAll("\n", "<br/>");
+                } else {
+                    m = problem;
+                    d = String.join("\n", Arrays.asList(report.getDetails()).subList(0, Math.min(report.getDetails().length, MAX_REPORT_LINES)));
+                }
+                switch (report.getSeverity()) {
+                    case ERROR:
+                    case EXCEPTION:
+                        ret.add(ProjectProblem.createError(m, d, null)); //NOI18N
+                        break;
+                    case WARNING:
+                        ret.add(ProjectProblem.createWarning(m, d, null)); //NOI18N
+                        break;
+                }
+            }
         }
         return ret;
+    }
+    
+    private String formatReport(GradleReport r) {
+        return r.formatReportForHintOrProblem(true, project.getProjectDirectory());
     }
     
     private class GradleProjectProblemResolver implements ProjectProblemResolver {
@@ -98,7 +133,12 @@ public class GradleProjectProblemProvider implements ProjectProblemsProvider {
                 Quality q = gradleProject.getQuality();
                 Status st = q.worseThan(SIMPLE) ? Status.UNRESOLVED
                         : q.worseThan(FULL) ? Status.RESOLVED_WITH_WARNING : Status.RESOLVED;
-                return Result.create(st);
+                Set<GradleReport> problems = gradleProject.getProblems();
+                if (problems.isEmpty()) {
+                    return Result.create(st);
+                } else {
+                    return Result.create(st, formatReport(problems.iterator().next()));
+                }
             });
        }
     }

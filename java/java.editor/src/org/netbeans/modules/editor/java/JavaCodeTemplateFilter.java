@@ -19,11 +19,10 @@
 
 package org.netbeans.modules.editor.java;
 
+import com.sun.source.tree.CaseLabelTree;
 import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.text.Document;
@@ -33,6 +32,7 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
+import java.util.Set;
 import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.CompilationController;
 import org.netbeans.api.java.source.JavaSource.Phase;
@@ -73,7 +73,7 @@ public class JavaCodeTemplateFilter implements CodeTemplateFilter {
                 final AtomicBoolean cancel = new AtomicBoolean();
                 BaseProgressUtils.runOffEventDispatchThread(() -> {
                     try {
-                        ParserManager.parse(Collections.singleton(source), new UserTask() {
+                        ParserManager.parse(Set.of(source), new UserTask() {
                             @Override
                             public void run(ResultIterator resultIterator) throws Exception {
                                 if (cancel.get()) {
@@ -112,12 +112,23 @@ public class JavaCodeTemplateFilter implements CodeTemplateFilter {
                                     }
                                     treeKindCtx = tree.getKind();
                                     switch (treeKindCtx) {
-                                        case CASE:
-                                            if (so < controller.getTrees().getSourcePositions().getEndPosition(controller.getCompilationUnit(), ((CaseTree)tree).getExpression())) {
+                                        case CASE: {
+                                            if (((CaseTree)tree).getCaseKind() == CaseTree.CaseKind.RULE) {
                                                 treeKindCtx = null;
+                                            } else {
+                                                SourcePositions sp = controller.getTrees().getSourcePositions();
+                                                List<? extends CaseLabelTree> labels = ((CaseTree)tree).getLabels();
+                                                int startPos = labels.isEmpty() ? (int) sp.getEndPosition(controller.getCompilationUnit(), labels.get(labels.size() - 1))
+                                                        : (int)sp.getStartPosition(controller.getCompilationUnit(), tree);
+                                                String headerText = controller.getText().substring(startPos, so);
+                                                int idx = headerText.indexOf(':');
+                                                if (idx < 0) {
+                                                    treeKindCtx = null;
+                                                }
                                             }
                                             break;
-                                        case CLASS:
+                                        }
+                                        case CLASS: {
                                             SourcePositions sp = controller.getTrees().getSourcePositions();
                                             int startPos = (int)sp.getEndPosition(controller.getCompilationUnit(), ((ClassTree)tree).getModifiers());
                                             if (startPos <= 0) {
@@ -130,6 +141,7 @@ public class JavaCodeTemplateFilter implements CodeTemplateFilter {
                                                 stringCtx = CLASS_HEADER;
                                             }
                                             break;
+                                        }
                                         case FOR_LOOP:
                                         case ENHANCED_FOR_LOOP:
                                             if (!isRightParenthesisOfLoopPresent(controller, so)) {
@@ -192,22 +204,12 @@ public class JavaCodeTemplateFilter implements CodeTemplateFilter {
         if (treeKindCtx == null && stringCtx == null) {
             return false;
         }
-        EnumSet<Tree.Kind> treeKindContexts = EnumSet.noneOf(Tree.Kind.class);
-        HashSet stringContexts = new HashSet();
-        getTemplateContexts(template, treeKindContexts, stringContexts);
-        return treeKindContexts.isEmpty() && stringContexts.isEmpty() && treeKindCtx != Tree.Kind.STRING_LITERAL || treeKindContexts.contains(treeKindCtx) || stringContexts.contains(stringCtx);
-    }
-    
-    private void getTemplateContexts(CodeTemplate template, EnumSet<Tree.Kind> treeKindContexts, HashSet<String> stringContexts) {
         List<String> contexts = template.getContexts();
-        if (contexts != null) {
-            for(String context : contexts) {
-                try {
-                    treeKindContexts.add(Tree.Kind.valueOf(context));
-                } catch (IllegalArgumentException iae) {
-                    stringContexts.add(context);
-                }
-            }
+        if (contexts == null || contexts.isEmpty()) {
+            return treeKindCtx != Tree.Kind.STRING_LITERAL;
+        } else {
+            return (treeKindCtx != null && contexts.contains(treeKindCtx.name()))
+                || (stringCtx != null && contexts.contains(stringCtx));
         }
     }
 

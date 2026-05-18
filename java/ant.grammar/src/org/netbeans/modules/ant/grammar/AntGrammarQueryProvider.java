@@ -43,9 +43,9 @@ public final class AntGrammarQueryProvider extends GrammarQueryManager {
         if (f != null && !f.getMIMEType().equals("text/x-ant+xml")) {
             return null;
         }
-        Enumeration en = ctx.getDocumentChildren();
+        Enumeration<Node> en = ctx.getDocumentChildren();
         while (en.hasMoreElements()) {
-            Node next = (Node) en.nextElement();
+            Node next = en.nextElement();
             if (next.getNodeType() == Node.ELEMENT_NODE) {
                 Element root = (Element) next;                
                 if ("project".equals(root.getNodeName())) { // NOI18N

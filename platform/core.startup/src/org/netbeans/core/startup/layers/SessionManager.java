@@ -71,7 +71,7 @@ public final class SessionManager {
     * @param homeDir directory where netbeans has been installed, user need not have write access
     * @param extradirs 0+ extra dirs to add; cf. #27151
     * @return repository
-    * @exception PropertyVetoException if something fails
+    * @exception java.beans.PropertyVetoException if something fails
     */
     public FileSystem create(File userDir, File homeDir, File[] extradirs)
     throws java.beans.PropertyVetoException, IOException {
@@ -89,7 +89,7 @@ public final class SessionManager {
     
     /** get a layer associated with the name
      * @param name layer name (LAYER_SESSION, ...)
-     * @return layer, can be <code>null</null>
+     * @return layer, can be <code>null</code>
      */
     public FileSystem getLayer(String name) {
         return layers.get(name);
@@ -126,7 +126,7 @@ public final class SessionManager {
         java.beans.PropertyChangeEvent event = new java.beans.PropertyChangeEvent(this, name, null, null);
         for (int i = 0; i < list.size(); i++) {
             try {
-                ((PropertyChangeListener) list.get(i)).propertyChange(event);
+                list.get(i).propertyChange(event);
             }
             catch (RuntimeException e) {
                 Exceptions.printStackTrace(e);

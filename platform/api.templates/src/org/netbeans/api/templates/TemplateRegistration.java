@@ -135,9 +135,9 @@ public @interface TemplateRegistration {
      * </pre>
      * There is a tutorial describing usage of HTML UI in NetBeans wizards:
      * <ul>
-     *   <li>when coding <a href="@TOP@overview-summary.html#html-and-js">logic in JavaScript</a>
-     *   <li>when coding <a href="@TOP@overview-summary.html#html-and-java">logic in Java</a>
-     *   <li>when providing UI for <a href="@TOP@overview-summary.html#html-and-maven">Maven Archetypes</a>
+     *   <li>when coding <a href="@TOP@index.html#html-and-js">logic in JavaScript</a>
+     *   <li>when coding <a href="@TOP@index.html#html-and-java">logic in Java</a>
+     *   <li>when providing UI for <a href="@TOP@index.html#html-and-maven">Maven Archetypes</a>
      * </ul>
      * Creating portable UI for wizards has never been easier!
      * 
@@ -147,12 +147,12 @@ public @interface TemplateRegistration {
     String page() default "";
 
     /** Selects some of provided technologies. The 
-     * <a href="http://bits.netbeans.org/html+java/">HTML/Java API</a>
+     * <a href="https://bits.netbeans.org/html+java/dev">HTML/Java API</a>
      * provides support for technology ids since version 1.1. 
      * With this attribute one can specify the preferred technologies
      * to use in this wizard as well.
      * 
-     * @return list of preferred technology ids
+     * @return Strings array of preferred technology ids
      * @since 1.4
      */
     String[] techIds() default {};

@@ -38,7 +38,6 @@ import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.core.api.multiview.MultiViews;
 import org.netbeans.modules.db.api.sql.execute.SQLExecuteCookie;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
@@ -144,6 +143,8 @@ public class SQLEditorSupport extends DataEditorSupport
 
     @Override
     protected void initializeCloneableEditor(CloneableEditor editor) {
+        // Invoked when SQLCloneableEditor is deserialized and from the 
+        // SQLCloneableEditor(Lookup) constructor.
         super.initializeCloneableEditor(editor);
         ((SQLCloneableEditor) editor).initialize();
     }
@@ -490,7 +491,7 @@ public class SQLEditorSupport extends DataEditorSupport
         }
     }
 
-    private final static class SQLExecutor implements Runnable, Cancellable {
+    private static final class SQLExecutor implements Runnable, Cancellable {
         private final SQLCloneableEditor editor;
         private final SQLEditorSupport parent;
 
@@ -563,7 +564,7 @@ public class SQLEditorSupport extends DataEditorSupport
                     return;
                 }
 
-                ProgressHandle handle = ProgressHandleFactory.createHandle(
+                ProgressHandle handle = ProgressHandle.createHandle(
                         NbBundle.getMessage(SQLEditorSupport.class,
                         "LBL_ExecutingStatements"), this);
                 handle.start();

@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,7 +70,7 @@ public class HttpMonitorHelper {
     private static final String MONITOR_FILTER_PATTERN = "/*"; //NOI18N
     private static final String MONITOR_INTERNALPORT_PARAM_NAME = "netbeans.monitor.ide"; //NOI18N
     
-    public static boolean synchronizeMonitor(String domainLoc, String domainName, boolean monitorFlag, String... others)  throws FileNotFoundException, IOException, SAXException {
+    public static boolean synchronizeMonitor(String domainLoc, String domainName, boolean monitorFlag, boolean jakartaVariant, String... others)  throws FileNotFoundException, IOException, SAXException {
         boolean monitorModuleAvailable = isMonitorEnabled();
         boolean shouldInstall = monitorModuleAvailable && monitorFlag;
         // find the web.xml file
@@ -87,7 +88,7 @@ public class HttpMonitorHelper {
         boolean result;
         try {
             if (shouldInstall) {
-                needRestart = addMonitorJars(domainLoc,domainName,others);
+                needRestart = addMonitorJars(domainLoc, domainName, jakartaVariant, others);
                 result = changeFilterMonitor(webApp, true);
                 needsSave = needsSave || result;
                 result = specifyFilterPortParameter(webApp);
@@ -150,8 +151,8 @@ public class HttpMonitorHelper {
         BufferedWriter fw= null;
         boolean deleteNew = true;
         try {
-            fr = new BufferedReader(new InputStreamReader(new FileInputStream(webXML),"ISO-8859-1"));
-            fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(newWebXML),"ISO-8859-1"));
+            fr = new BufferedReader(new InputStreamReader(new FileInputStream(webXML), StandardCharsets.ISO_8859_1));
+            fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(newWebXML), StandardCharsets.ISO_8859_1));
             while (true) {
                 String line = fr.readLine();
                 if (line == null)
@@ -199,10 +200,15 @@ public class HttpMonitorHelper {
         }
     }
 
-    private static boolean addMonitorJars(String domainLoc, String domainName, String... others) throws FileNotFoundException, IOException {
+    private static boolean addMonitorJars(String domainLoc, String domainName, boolean jakartaVariant, String... others) throws FileNotFoundException, IOException {
         String loc = domainLoc+"/"+domainName;
         File instDir = new File(loc);
-        boolean retVal = copyFromIDEInstToDir("modules/ext/org-netbeans-modules-web-httpmonitor.jar"  , instDir, "lib/org-netbeans-modules-web-httpmonitor.jar");  // NOI18N  
+        boolean retVal;
+        if (jakartaVariant) {
+            retVal = copyFromIDEInstToDir("modules/ext/org-netbeans-modules-web-httpmonitor-jakarta.jar", instDir, "lib/org-netbeans-modules-web-httpmonitor.jar");  // NOI18N
+        } else {
+            retVal = copyFromIDEInstToDir("modules/ext/org-netbeans-modules-web-httpmonitor.jar", instDir, "lib/org-netbeans-modules-web-httpmonitor.jar");  // NOI18N
+        }
         for (String anOther : others) {
             int lastSlash = anOther.lastIndexOf("/");
             if (lastSlash > -1) {

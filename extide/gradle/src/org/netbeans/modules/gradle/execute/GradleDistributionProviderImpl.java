@@ -55,14 +55,13 @@ import org.openide.util.WeakListeners;
 @ProjectServiceProvider(service = {GradleDistributionProvider.class, WatchedResourceProvider.class}, projectType = NbGradleProject.GRADLE_PROJECT_TYPE)
 public class GradleDistributionProviderImpl implements GradleDistributionProvider, WatchedResourceProvider {
 
-    private final static Logger LOGGER = Logger.getLogger(GradleDistributionProviderImpl.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GradleDistributionProviderImpl.class.getName());
 
     private static final List<String> AFFECTING_PROPS = Arrays.asList(
             PROP_GRADLE_USER_HOME,
             PROP_USE_CUSTOM_GRADLE,
             PROP_GRADLE_DISTRIBUTION,
-            PROP_PREFER_WRAPPER,
-            PROP_GRADLE_VERSION
+            PROP_PREFER_WRAPPER
     );
 
     private final ChangeSupport support = new ChangeSupport(this);
@@ -74,18 +73,16 @@ public class GradleDistributionProviderImpl implements GradleDistributionProvide
 
     final NbGradleProjectImpl project;
     private GradleDistribution dist;
-    private PropertyChangeListener pcl;
-    private URI distributionURI;
+    private final PropertyChangeListener pcl;
 
     public GradleDistributionProviderImpl(Project project) {
         this.project = (NbGradleProjectImpl) project;
         pcl = (evt) -> {
-            if (NbGradleProject.PROP_RESOURCES.endsWith(evt.getPropertyName())) {
+            if (NbGradleProject.PROP_RESOURCES.equals(evt.getPropertyName())) {
                 URI uri = (URI) evt.getNewValue();
                 if ((uri != null) && (uri.getPath() != null) && uri.getPath().endsWith(GradleFiles.WRAPPER_PROPERTIES)) {
                     URI newDistURI = getWrapperDistributionURI();
-                    if (GradleSettings.getDefault().isWrapperPreferred() && (distributionURI != null) && !Objects.equal(distributionURI, newDistURI)) {
-                        distributionURI = newDistURI;
+                    if (GradleSettings.getDefault().isWrapperPreferred() && (dist != null) && !Objects.equal(dist.getDistributionURI(), newDistURI)) {
                         distributionChanged();
                     }
                 }
@@ -99,7 +96,7 @@ public class GradleDistributionProviderImpl implements GradleDistributionProvide
         if (dist == null) {
             GradleSettings settings = GradleSettings.getDefault();
 
-            GradleDistributionManager mgr = GradleDistributionManager.get(settings.getGradleUserHome());
+            GradleDistributionManager mgr = GradleDistributionManager.get();
 
             if (settings.isWrapperPreferred()) {
                 try {
@@ -116,9 +113,7 @@ public class GradleDistributionProviderImpl implements GradleDistributionProvide
                     LOGGER.log(Level.INFO, "Cannot evaulate Gradle Distribution", ex); //NOI18N
                 }
             }
-            if (dist == null) {
-                dist = mgr.distributionFromVersion(settings.getGradleVersion());
-            }
+            dist = dist != null ? dist : mgr.defaultDistribution();
             LOGGER.log(Level.INFO, "Gradle Distribution for {0} is {1}", new Object[]{project, dist}); //NOI18N
         }
         return dist;

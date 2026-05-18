@@ -21,7 +21,6 @@ package org.netbeans.modules.web.monitor.data;
 
 import java.beans.PropertyChangeListener;
 import java.util.Vector;
-import javax.servlet.http.Cookie;
 
 import org.netbeans.modules.schema2beans.BaseBean;
 import org.netbeans.modules.schema2beans.BeanComparator;
@@ -35,12 +34,6 @@ public class CookieIn extends BaseBean {
 
     public CookieIn() {
 	this(Common.USE_DEFAULT_VALUES);
-    }
-
-    public CookieIn(Cookie cookie) {
-	super(comparators, new Version(1, 0, 5));
-	this.setAttributeValue("name", cookie.getName());//NOI18N
-	this.setAttributeValue("value", cookie.getValue());//NOI18N
     }
 
     public CookieIn(String name, String value) {
@@ -94,13 +87,13 @@ public class CookieIn extends BaseBean {
     public void setValue(String  v)  {this.setAttributeValue("value", v);} //NOI18N
     
     //
-    static public void addComparator(BeanComparator c)
+    public static void addComparator(BeanComparator c)
     {
 	CookieIn.comparators.add(c);
     }
 
     //
-    static public void removeComparator(BeanComparator c)
+    public static void removeComparator(BeanComparator c)
     {
 	CookieIn.comparators.remove(c);
     }

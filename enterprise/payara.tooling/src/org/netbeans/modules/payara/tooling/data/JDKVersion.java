@@ -19,6 +19,7 @@
 package org.netbeans.modules.payara.tooling.data;
 
 import java.util.Optional;
+import org.netbeans.modules.payara.tooling.server.parser.JvmConfigReader;
 
 public final class JDKVersion {
 
@@ -52,10 +53,10 @@ public final class JDKVersion {
      */
     private final Optional<String> vm;
 
-    private final static int MAJOR_INDEX = 0;
-    private final static int MINOR_INDEX = 1;
-    private final static int SUBMINOR_INDEX = 2;
-    private final static int UPDATE_INDEX = 3;
+    private static final int MAJOR_INDEX = 0;
+    private static final int MINOR_INDEX = 1;
+    private static final int SUBMINOR_INDEX = 2;
+    private static final int UPDATE_INDEX = 3;
 
     private static JDKVersion IDE_JDK_VERSION;
 
@@ -283,24 +284,51 @@ public final class JDKVersion {
         return IDE_JDK_VERSION;
     }
 
-    public static boolean isCorrectJDK(JDKVersion jdkVersion, Optional<String> vendorOrVM, Optional<JDKVersion> minVersion, Optional<JDKVersion> maxVersion) {
+    public boolean isOptionSupported(
+            JvmConfigReader.JvmOption jvmOption,
+            String javaHome) {
+
         boolean correctJDK = true;
 
-        if (vendorOrVM.isPresent()) {
-            correctJDK = jdkVersion.getVendor().map(vendor -> vendor.contains(vendorOrVM.get())).orElse(false)
-                    || jdkVersion.getVM().map(vm -> vm.contains(vendorOrVM.get())).orElse(false);
+        if (jvmOption.vendorOrVM.isPresent()) {
+            correctJDK
+                    = this.getVendor()
+                            .map(v -> v.contains(jvmOption.vendorOrVM.get()))
+                            .orElse(false)
+                    || this.getVM()
+                            .map(vm -> vm.contains(jvmOption.vendorOrVM.get()))
+                            .orElse(false);
         }
-        if (correctJDK && minVersion.isPresent()) {
-            correctJDK = jdkVersion.ge(minVersion.get());
+
+        if (correctJDK && jvmOption.minVersion.isPresent()) {
+            correctJDK = this.ge(jvmOption.minVersion.get());
         }
-        if (correctJDK && maxVersion.isPresent()) {
-            correctJDK = jdkVersion.le(maxVersion.get());
+
+        if (correctJDK && jvmOption.maxVersion.isPresent()) {
+            correctJDK = this.le(jvmOption.maxVersion.get());
+        }
+
+        if (correctJDK
+                && jvmOption.option != null
+                && jvmOption.option.matches("^-XX:[+-]?CRaC.*")) {
+
+            correctJDK = this.isCRaCSupported(javaHome);
         }
         return correctJDK;
     }
 
-    public static boolean isCorrectJDK(Optional<JDKVersion> minVersion, Optional<JDKVersion> maxVersion) {
-        return isCorrectJDK(IDE_JDK_VERSION, Optional.empty(), minVersion, maxVersion);
+    /**
+     * Checks whether the given JDK installation supports CRaC by verifying the
+     * presence of the lib/criu directory.
+     *
+     * @param javaHome Java home directory to check
+     * @return true if CRaC-enabled JDK
+     */
+    private boolean isCRaCSupported(String javaHome) {
+        return Optional.ofNullable(javaHome)
+                .map(home -> new java.io.File(home, "lib/criu"))
+                .map(java.io.File::exists)
+                .orElse(false);
     }
 
     static {

@@ -83,6 +83,288 @@ is the proper place.
     <!-- ACTUAL CHANGES BEGIN HERE: -->
 
     <changes>
+        <change id="current-gradle-version-discovery">
+            <api name="general"/>
+            <summary>GradleDistributionManager can query latest available and latest supported versions and use in init</summary>
+            <version major="2" minor="47"/>
+            <date day="20" month="6" year="2025"/>
+            <author login="neilcsmith"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleDistributionManager.html#currentDistribution()">GradleDistributionManager.currentDistribution()</a></code> 
+                method to query the current (latest) release available from the Gradle web service.
+                Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleDistributionManager.html#latestSupportedDistribution()">GradleDistributionManager.latestSupportedDistribution()</a></code>
+                method to query the latest supported release from the Gradle web service.
+                Added <code>gradleVersion(String version)</code> to
+                <a href="@TOP@/org/netbeans/modules/gradle/spi/newproject/TemplateOperation.InitOperation.html">TemplateOperation.InitOperation</a>.
+            </description>
+        </change>
+        <change id="action-for-running-tests-in-parallel">
+            <api name="general"/>
+            <summary>Added action for running tests in parallel</summary>
+            <version major="2" minor="45"/>
+            <date day="18" month="12" year="2024"/>
+            <author login="petrovic-d"/>
+            <compatibility semantic="compatible" addition="yes" deprecation="yes"/>
+            <description>
+                Added action for running tests in parallel with ability to specify the projects on which
+                the action will be applied.
+            </description>
+        </change>
+        <change id="load-options-lookup">
+            <api name="general"/>
+            <summary>LoadOptions object replaces growing number of argumetns to project load APIs. Access to current Lookup added.</summary>
+            <version major="2" minor="43"/>
+            <date day="9" month="8" year="2024"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes" deprecation="yes"/>
+            <description>
+                <p>
+                    To avoid growing number of parameters to <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html#toQuality(java.lang.String,org.netbeans.modules.gradle.api.NbGradleProject.Quality,boolean)">toQuality()</a>, 
+                    a <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.LoadOptions.html">LoadOptions</a> structure was created that can be used to provide details on
+                    how the project should be loaded.
+                </p>
+                <p>
+                    The time the project data was actually loaded is now available using <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html#getEvaluateTime()">NbGradleProject.getEvaluateTime()</a>.
+                    The time can be used for timestamp checking against project files.
+                </p>
+                <p>
+                    Access to the current metadata information/services snapshot is newly available from <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html#curretLookup()">NbGradleProject.currentLookup()</a>.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="NbGradleProject"/>
+        </change>
+        <change id="gradle-init-javaversion">
+            <api name="general"/>
+            <summary>Gradle InitOperation now Supports  --java-version and --comments flags</summary>
+            <version major="2" minor="40"/>
+            <date day="31" month="3" year="2024"/>
+            <author login="lkishalmi"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                    Added <code>comments(Boolean comments)</code> and <code>javaVersion(String version)</code> to
+                    <a href="@TOP@/org/netbeans/modules/gradle/spi/newproject/TemplateOperation.InitOperation.html">TemplateOperation.InitOperation</a>
+                    allowing more detailed project creation.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.spi.newproject" name="TemplateOperation"/>
+        </change>
+        <change id="gradle-report-severity">
+            <api name="general"/>
+            <summary>Gradle project problems have severity and stacktraces</summary>
+            <version major="2" minor="38"/>
+            <date day="13" month="11" year="2023"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible"/>
+            <description>
+                <p>
+                    Reports from the NB tooling gradle plugin are now annotated by severity.
+                </p>
+            </description>
+        </change>
+        <change id="gradle-setting-deprecation">
+            <api name="general"/>
+            <summary>Some Gradle Settings Removed from Use</summary>
+            <version major="2" minor="36"/>
+            <date day="2" month="10" year="2023"/>
+            <author login="lkishalmi"/>
+            <compatibility semantic="incompatible" />
+            <description>
+                <p>
+                    Setting the following properties: <code>startDaemonOnStart</code>, <code>silentInstall</code>, and <code>noRebuild</code> are
+                    no longer in use. Their setters are no-ops,their getters returning <code>false</code>.
+                </p>
+                <p>
+                    The <code>gradleVersion</code> setting has also been deprecated, in favor of using Gradle Wrapper as a way to specify the
+                    Gradle Version used for a project. It is still possible to use specific version of Gradle by using custom Gradle version.
+                    The getter for the <code>gradleVersion</code> returns the version of the Gradle Tooling API bundled with the IDE.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.spi.newproject" name="TemplateOperation"/>
+        </change>
+        <change id="gradle-wrapper-version">
+            <api name="general"/>
+            <summary>Method to set the Gradle version when initalizing the wrapper</summary>
+            <version major="2" minor="34"/>
+            <date day="14" month="8" year="2023"/>
+            <author login="neilcsmith"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                Added additional <a href="@TOP@/org/netbeans/modules/gradle/spi/newproject/TemplateOperation.html#addWrapperInit(java.io.File,java.lang.String)">addWrapperInit</a>
+                method allowing to request a specific version or version label when initializing the Gradle wrapper.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.spi.newproject" name="TemplateOperation"/>
+        </change>
+        <change id="java-runtime-manager">
+            <api name="general"/>
+            <summary>Adding JavaRuntimeManager abstracting the Gradle Runtime from Java Platform</summary>
+            <version major="2" minor="32"/>
+            <date day="13" month="1" year="2023"/>
+            <author login="lkishalmi"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                Introduced a <code><a href="@TOP@/org/netbeans/modules/gradle/spi/execute/JavaRuntimeManager.html">JavaRuntimeManager</a></code> to
+                create abstraction between the necessary runtime that Gradle needs (just a Java home) and the actual JavaPlatform which is provided by
+                the modules in the Java cluster.
+                </p>
+                <p>
+                    JavaRuntime is bound to be the root project of a project tree from now. The ID of the active rintime is stored in the <code>gradle.properties</code>
+                    of the root project under the property name <code>netbeans.hint.jdkPlatform</code>.
+                </p>
+                <p>
+                    There are two new methods provided in <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html">RunUtils</a></code> to get and set the
+                    active runtime of a project.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.spi.execute" name="JavaRuntimeManager"/>
+            <class package="org.netbeans.modules.gradle.api.execute" name="RunUtils"/>
+        </change>
+        <change id="external-tasks">
+            <api name="general"/>
+            <summary>Representing external tasks</summary>
+            <version major="2" minor="29"/>
+            <date day="11" month="10" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                Tasks declared by other projects are marked as 'external'. Tasks can report their declaring project's path.
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="GradleTask"/>
+        </change>
+        <change id="build-properties-tasks">
+            <api name="general"/>
+            <summary>New APIs that provide access to values of build properties and tasks.</summary>
+            <version major="2" minor="28"/>
+            <date day="4" month="10" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                    Gradle buildscript objects are introspected from within the gradle instance. All active plugins are enumerated.
+                    Extensions are detected. An API is provided to get dependent task, or a closure of the dependents, and to check tasks' type 
+                    to identify tasks of interest.
+                    See <a href="@TOP@/org/netbeans/modules/gradle/api/GradleBaseProject.html#getTaskPredecessors(org.netbeans.modules.gradle.api.GradleTask,boolean)">GradleBaseProject.getTaskPredecessors()</a> and
+                    <a href="@TOP@/org/netbeans/modules/gradle/api/GradleBaseProject.html#isTaskInstanceOf(java.lang.String,java.lang.String)">GradleBaseProject.isTaskInstanceOf()</a>
+                </p>
+                <p>
+                    Certain task and extension property values can be accessed by APIs, that allows NetBean plugins to access
+                    configuration of tasks within the script. See <a href="@TOP@/org/netbeans/modules/gradle/api/BuildPropertiesSupport.html">BuildPropertiesSupport</a>.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="GradleBaseProject"/>
+            <class package="org.netbeans.modules.gradle.api" name="BuildPropertiesSupport"/>
+        </change>
+        <change id="regular-project-Lookup">
+            <api name="general"/>
+            <summary>Expose regular Lookup in NbGradleProject.</summary>
+            <version major="2" minor="28"/>
+            <date day="4" month="10" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                    <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html">NbGradleProject</a> offered just <a href="org/netbeans/modules/gradle/api/NbGradleProject.html#projectLookup(java.lang.Class)">projectLookup(Class)</a>,
+                    that cannot return more instances or deliver change events. A regular Lookup instance, that switch when the project reloads is now available from
+                    <a href="org/netbeans/modules/gradle/api/NbGradleProject.html#refreshableProjectLookup()">NbGradleProject.refreshableProjectLookup()</a>.
+                </p>
+                <p>
+                    Minor API changes giving access to a complete <a href="org/netbeans/modules/gradle/api/execute/RunConfig.html">RunConfig</a> for a project action or an action
+                    mapping.
+                </p>
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="NbGradleProject"/>
+            <class package="org.netbeans.modules.gradle.api.execute" name="RunUtils"/>
+        </change>
+        <change id="gradle-reports">
+            <api name="general"/>
+            <summary>Rich exception reports are exported from Gradle process.</summary>
+            <version major="2" minor="27"/>
+            <date day="20" month="8" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                Errors are transferred including their causes and script location(s), so the IDE may provide better messages or hints.
+                <p>
+                    The new class <code>
+                        <a href="@TOP@/org/netbeans/modules/gradle/api/GradleReport.html">GradleReport</a>
+                    </code> that contain this information is available from
+                <code><a href="@TOP@/org/netbeans/modules/gradle/api/GradleBaseProject.html#getProblems()">GradleBaseProject.getProblems()</a></code> method.
+                </p>
+            </description>
+        </change>
+        <change id="configuration-dependencies">
+            <api name="general"/>
+            <summary>Allow to inspect dependency tree</summary>
+            <version major="2" minor="27"/>
+            <date day="12" month="8" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                Gradle APIs allow to list dependencies as a flat list, mixing the 4th+ party dependencies in. The API extension allows
+                to inspect the dependency structure and determine what configuration the dependency originates from.
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="GradleBaseProject"/>
+            <class package="org.netbeans.modules.gradle.api" name="GradleConfiguration"/>
+        </change>
+        <change id="gradlefiles-versioncatalog">
+            <api name="general"/>
+            <summary>GradleFiles.Kind.VERSION_CATALOG introduced</summary>
+            <version major="2" minor="25"/>
+            <date day="15" month="7" year="2022"/>
+            <author login="lkishalmi"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <a href="@TOP@/org/netbeans/modules/gradle/spi/GradleFiles.Kind.html#VERSION_CATALOG">GradleFiles.Kind.VERSION_CATALOG</a>
+                was addedd to represent <code>$rootDir/gradle.libs.versions.toml</code> file of the project.
+                <code>
+                    <a href="@TOP@/org/netbeans/modules/gradle/spi/GradleFiles.html#getFile(org.netbeans.modules.gradle.spi.GradleFiles.Kind)">GradleFiles.getKind(VERSION_CATALOG)</a>
+                </code> can be used to retrieve the represented file. (The file might not exists though.)
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="NbGradleProject"/>
+        </change>
+        <change id="gradleproject-files">
+            <api name="general"/>
+            <summary>GradleFiles can be obtained from API</summary>
+            <version major="2" minor="24"/>
+            <date day="30" month="4" year="2022"/>
+            <author login="sdedic"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <a href="@TOP@/org/netbeans/modules/gradle/spi/GradleFiles.html">GradleFiles</a> can be obtained from
+                <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html">NbGradleProject</a> instance. Gradle project
+                users can use <code>GradleFiles</code> to get important files or pathnames in the project.
+            </description>
+            <class package="org.netbeans.modules.gradle.api" name="NbGradleProject"/>
+        </change>
+        <change id="gradle-cli-update">
+            <api name="general"/>
+            <summary>GradleCommandLine Flag, Parameter, and Property implements GradleOptionItem interface</summary>
+            <version major="2" minor="23"/>
+            <date day="17" month="2" year="2022"/>
+            <author login="lkishalmi"/>
+            <compatibility semantic="compatible" addition="yes"/>
+            <description>
+                <p>
+                    Added GradleOptionItem interface to <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleCommandLine.html">GradleCommandLine</a></code>
+                    in order to support a common interface for Flaf, Parameter, and Property enums.
+                </p>
+                <p>
+                    <code>
+                        <a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleCommandLine.html">GradleCommandLine</a>
+                    </code> also can be aware of the GradleDistribution it is plan to be used with, so it got a few
+                    new constructors supporting that.
+                </p>
+                <p>
+                    <code>
+                        <a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#getCompatibleGradleDistribution(org.netbeans.api.project.Project)">RunUtils.getCompatibleGradleDistribution</a>
+                    </code>is added to help retrieve the closest Gradle distribution a project could use to invoke Gradle build actions.
+                </p>
+            </description>
+        </change>
         <change id="tooling-runWorkingDir-runEnvironment">
             <api name="general"/>
             <summary>NetBeans Tooling plugin recognizes "runWorkingDir" and "runEnvironment" properties.</summary>
@@ -110,7 +392,7 @@ is the proper place.
             <author login="sdedic"/>
             <compatibility semantic="compatible" addition="yes"/>
             <description>
-                Use <a href="@TOP@/org/netbeans/modules/gradle/spi/newproject/TemplateOperation.html#createGradleInit-java.io.File-java.lang.String-">createGradleInit</a>
+                Use <a href="@TOP@/org/netbeans/modules/gradle/spi/newproject/TemplateOperation.html#createGradleInit(java.io.File,java.lang.String)">createGradleInit</a>
                 to ask Gradle to create new project using its <code>init</code> functionality.
             </description>
             <class package="org.netbeans.modules.gradle.spi.newproject" name="TemplateOperation"/>
@@ -144,16 +426,16 @@ is the proper place.
                     Concept of <a href="@org-netbeans-modules-projectapi@/org/netbeans/spi/project/ProjectConfiguration.html">ProjectConfigurations</a> was implemented for
                     Gradle projects with <a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleExecConfiguration.html">GradleExecConfiguration</a> class. Configurations
                     can be created by the user and are stored in project private/shared configuration storage. Configurations can be contributed by Plugins using 
-                    <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/GradleActionsProvider.html#define-configuration">GradleActionsProvider</a>. A configuration 
-                    <a href="@org-netbeans-modules-projectapi@/org/netbeans/spi/project/ProjectConfigurationProvider.html#setActiveConfiguration--">can be activated</a> or 
+                    <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/GradleActionsProvider.html">GradleActionsProvider</a>. A configuration 
+                    <a href="@org-netbeans-modules-projectapi@/org/netbeans/spi/project/ProjectConfigurationProvider.html#setActiveConfiguration(C)">can be activated</a> or 
                     explicitly requested for <a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleExecConfiguration.html#request-for-invocation">action invocation.</a>.
                 </p>
                 <p>
-                    Actions can have different <a href="@TOP@/org/netbeans/modules/gradle/api/actions/ActionMapping.html">ActionMappings</a> in individual Configurations, user-defined
+                    Actions can have different <a href="@TOP@/org/netbeans/modules/gradle/api/execute/ActionMapping.html">ActionMappings</a> in individual Configurations, user-defined
                     or provided for specific configuration by <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/GradleActionsProvider.html">GradleActionsProvider</a>.
                 </p>
                 <p>
-                    Action providers can be added fully declarative, using XML layer: See <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/DefaultGradleActionsProvider.html##forProjectLayer-org.openide.filesystems.FileObject-">
+                    Action providers can be added fully declarative, using XML layer: See <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/DefaultGradleActionsProvider.html#forProjectLayer(org.openide.filesystems.FileObject)">
                     DefaultGradleActionsProvider.forProjectLayer</a>
                 </p>
                 
@@ -173,7 +455,7 @@ is the proper place.
             <author login="sdedic"/>
             <compatibility semantic="compatible" addition="yes"/>
             <description>
-                Project information can be refreshed to a desired quality using <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html#toQuality-java.lang.String-org.netbeans.modules.gradle.api.NbGradleProject.Quality-boolean-">NbGradleProject.toQuality</a>. 
+                Project information can be refreshed to a desired quality using <a href="@TOP@/org/netbeans/modules/gradle/api/NbGradleProject.html#toQuality(java.lang.String,org.netbeans.modules.gradle.api.NbGradleProject.Quality,boolean)">NbGradleProject.toQuality</a>. 
                 The caller may chain after reload completes or block until the project is loaded.
             </description>
             <class package="org.netbeans.modules.gradle.api" name="NbGradleProject"/>
@@ -187,7 +469,7 @@ is the proper place.
             <author login="lkishalmi"/>
             <compatibility semantic="compatible" addition="yes"/>
             <description>
-                Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleDistributionManager.html#availableLocalDistributions--">GradleDistributionManager.availableLocalDistributions()</a></code> 
+                Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/GradleDistributionManager.html#availableLocalDistributions()">GradleDistributionManager.availableLocalDistributions()</a></code> 
                 method to help detection the already available GradleDistribution-s installed in the system.
             </description>
         </change>
@@ -212,7 +494,7 @@ is the proper place.
             <compatibility semantic="compatible" addition="yes"/>
             <description>
                 Branding API can be used to select and order options present in "Trust Gradle project for execution" confirmation
-                dialog. See <a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#isProjectTrusted-org.netbeans.api.project.Project-boolean-">RunUtils.isProjectTrusted</a>.
+                dialog. See <a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#isProjectTrusted(org.netbeans.api.project.Project,boolean)">RunUtils.isProjectTrusted</a>.
             </description>
         </change>
         <change id="deprecate-experimental-settings">
@@ -248,7 +530,7 @@ is the proper place.
                     utility method which can replace tokens provided in ActionMapping arguments.
                 </p>
                 <p>
-                    Finally to support this token replacement, <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/ReplacementTokenProvider.html">ReplacementTokenProvider</a>
+                    Finally to support this token replacement, <a href="@TOP@/org/netbeans/modules/gradle/spi/actions/ReplaceTokenProvider.html">ReplaceTokenProvider</a>
                     got a new static method <code>replaceTokens</code>.
                 </p>
             </description>
@@ -314,7 +596,7 @@ is the proper place.
                 <p>
                     <code><a href="@TOP@/org/netbeans/modules/gradle/spi/execute/GradleDistributionProvider.html">GradleDistributionProvider</a></code> has a default implementation it
                     is not necessary to implement it. With that new interface
-                    the <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#evaluateGradleDistribution-org.netbeans.api.project.Project-boolean-">RunUtils.evaluateGradleDistribution()</a></code>
+                    the <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#evaluateGradleDistribution(org.netbeans.api.project.Project,boolean)">RunUtils.evaluateGradleDistribution()</a></code>
                     got deprecated.
                 </p>
             </description>
@@ -333,14 +615,14 @@ is the proper place.
                     Java Platform module has been removed.
                 </p>
                 <p>
-                    The removal affects <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#getActivePlatform-java.lang.String-">RunUtils.getActivePlatform</a></code>
+                    The removal affects <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#getActivePlatform(java.lang.String)">RunUtils.getActivePlatform</a></code>
                     methods. The method returns a Pair with <code>null</code> as <code>second</code> which
                     indicates a broken Platform. This is for keeping the binary compatibility only.
                     These methods shall be not used at all. There is no
                     replacement planned for these API functions.
                 </p>
                 <p>
-                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/spi/exectute/GradleJavaPlatformProvider.html">GradleJavaPlatformProvider</a></code>
+                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/spi/execute/GradleJavaPlatformProvider.html">GradleJavaPlatformProvider</a></code>
                     which can be put into the project lookup, to be able to specify the JDK
                     to be used for Gradle build execution.
                 </p>
@@ -368,7 +650,7 @@ is the proper place.
                     This change is backported to version 2.0.1 as well.
                 </p>
                 <p>
-                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#isProjectTrusted-org.netbeans.api.project.Project-boolean-">RunUtils.isProjectTrusted(Project,boolean)</a></code>
+                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#isProjectTrusted(org.netbeans.api.project.Project,boolean)">RunUtils.isProjectTrusted(Project,boolean)</a></code>
                     where plugin can check if a project is trusted or request
                     one time trust with interactive mode.
                 </p>
@@ -434,7 +716,7 @@ is the proper place.
             <compatibility source="compatible"/>
             <description>
                 <p>
-                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#cancelGradle-org.netbeans.modules.gradle.api.execute.RunConfig-">RunUtils.cancelGradle(RunConfig)</a></code> to allow plugins to cancel an executed Gradle process.
+                    Added <code><a href="@TOP@/org/netbeans/modules/gradle/api/execute/RunUtils.html#cancelGradle(org.netbeans.modules.gradle.api.execute.RunConfig)">RunUtils.cancelGradle(RunConfig)</a></code> to allow plugins to cancel an executed Gradle process.
                 </p>
             </description>
             <class package="org.netbeans.modules.gradle.api.execute" name="RunUtils"/>
@@ -458,7 +740,6 @@ is the proper place.
         -->
         <head>
             <title>Change History for the Gradle Project API</title>
-            <link rel="stylesheet" href="prose.css" type="text/css"/>
         </head>
         <body>
 

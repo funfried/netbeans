@@ -45,10 +45,7 @@ import org.netbeans.modules.glassfish.tooling.utils.Utils;
  */
 public class ServerTasks {
 
-    ////////////////////////////////////////////////////////////////////////////
     // Inner classes                                                          //
-    ////////////////////////////////////////////////////////////////////////////
-
     public enum StartMode {
         /** Regular server start. */
         START,
@@ -58,10 +55,7 @@ public class ServerTasks {
         PROFILE;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Logger instance for this class. */
     private static final Logger LOGGER = new Logger(ServerTasks.class);
 
@@ -109,6 +103,28 @@ public class ServerTasks {
             }
         }
     }
+    
+    /**
+     * Append module path and add modules to java options when there is at least
+     * one '--add-opens' without 'ALL-UNNAMED'.
+     * <p/>
+     * @param server    GlassFish server entity.
+     * @param optList   Returned list of java options.
+     */
+    private static void appendModulePath(GlassFishServer server, List<String> optList) {
+        boolean needed = optList.stream()
+                .anyMatch(opt -> opt.contains("--add-opens") && !opt.contains("ALL-UNNAMED"));
+        if (needed) {
+            // appending module path and all modules in order to use
+            // '--add-opens' without 'ALL-UNNAMED'.
+            // See https://github.com/eclipse-ee4j/glassfish/pull/25537
+            String modulePath = server.getServerHome() + File.separator
+                    + ServerUtils.GF_LIB_DIR_NAME + File.separator 
+                    + "bootstrap";
+            optList.add("--module-path=" + modulePath);
+            optList.add("--add-modules=ALL-MODULE-PATH");
+        }
+    }
 
     /**
      * Adds server variables from variables map into Java VM options
@@ -148,8 +164,9 @@ public class ServerTasks {
         JvmConfigReader jvmConfigReader = new JvmConfigReader(DAS_NAME);
         String domainAbsolutePath = server.getDomainsFolder() + File.separator
                 + server.getDomainName();
-        String domainXmlPath = domainAbsolutePath + File.separator + "config"
-                + File.separator + "domain.xml";
+        String domainXmlPath = domainAbsolutePath + File.separator 
+                + ServerUtils.GF_DOMAIN_CONFIG_DIR_NAME + File.separator 
+                + ServerUtils.GF_DOMAIN_CONFIG_FILE_NAME;
         if (!TreeParser.readXml(new File(domainXmlPath), jvmConfigReader)) {
             // retry with platform default
             LOGGER.log(Level.INFO, "Retrying with {0} encoding", Charset.defaultCharset());
@@ -160,6 +177,7 @@ public class ServerTasks {
             }
         }
         List<String> optList = jvmConfigReader.getOptList();
+        appendModulePath(server, optList);
         Map<String, String> propMap = jvmConfigReader.getPropMap();
         addJavaAgent(server, jvmConfigReader);
         // try to find bootstraping jar - usually glassfish.jar
@@ -181,13 +199,13 @@ public class ServerTasks {
         // Add debug parameters read from domain.xml.
         // It's important to add them before java options specified by user
         // in case user specified it by himslef.
-        if (mode.equals(StartMode.DEBUG)) {
+        if (mode == StartMode.DEBUG) {
             String debugOpts = propMap.get("debug-options");
             String[] debugOptsSplited = debugOpts.split("\\s+(?=-)");
             optList.addAll(Arrays.asList(debugOptsSplited));
         }
         // add profile parameters
-        if (mode.equals(StartMode.PROFILE)) {
+        if (mode == StartMode.PROFILE) {
         }
         // appending IDE specified options after the ones got from domain.xml
         // IDE specified are takind precedence this way

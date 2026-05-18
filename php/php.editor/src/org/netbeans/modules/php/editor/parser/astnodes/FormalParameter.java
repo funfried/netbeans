@@ -59,7 +59,7 @@ public class FormalParameter extends ASTNode implements Attributed {
     }
 
     public FormalParameter(int start, int end, Expression type, final Expression parameterName) {
-        this(start, end, type, (Expression) parameterName, null);
+        this(start, end, type, parameterName, null);
     }
 
     public FormalParameter(int start, int end, Expression type, final Reference parameterName) {
@@ -127,6 +127,10 @@ public class FormalParameter extends ASTNode implements Attributed {
 
     public boolean isUnionType() {
         return getParameterType() instanceof UnionType;
+    }
+
+    public boolean isIntersectionType() {
+        return getParameterType() instanceof IntersectionType;
     }
 
     public Expression getParameterName() {

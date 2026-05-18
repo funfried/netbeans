@@ -22,7 +22,9 @@ import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.EnhancedForLoopTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
@@ -32,8 +34,9 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
-import com.sun.source.util.TreePathScanner;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +47,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -51,28 +58,36 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.project.JavaProjectConstants;
+import org.netbeans.api.java.source.ClassIndex;
+import org.netbeans.api.java.source.ClasspathInfo;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.ElementHandle;
+import org.netbeans.api.java.source.JavaSource;
+import org.netbeans.api.java.source.SourceUtils;
 import org.netbeans.api.java.source.support.ErrorAwareTreePathScanner;
+import org.netbeans.api.project.FileOwnerQuery;
+import org.netbeans.api.project.Project;
+import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.api.project.SourceGroup;
+import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.netbeans.spi.java.hints.unused.UsedDetector;
+import org.openide.filesystems.FileObject;
+import org.openide.util.Exceptions;
+import org.openide.util.Lookup;
 
 /**
  *
  * @author lahvac
  */
+@SuppressWarnings("AccessingNonPublicFieldOfAnotherObject")
 public class UnusedDetector {
 
-    public static class UnusedDescription {
-        public final Element unusedElement;
-        public final TreePath unusedElementPath;
-        public final UnusedReason reason;
-
-        public UnusedDescription(Element unusedElement, TreePath unusedElementPath, UnusedReason reason) {
-            this.unusedElement = unusedElement;
-            this.unusedElementPath = unusedElementPath;
-            this.reason = reason;
-        }
-
-    }
+    public record UnusedDescription(Element unusedElement, TreePath unusedElementPath, boolean packagePrivate, UnusedReason reason) {}
+    
+    private static final Object RESULTS_KEY = new Object();
+    private static final Object CLASS_INDEX_KEY = new Object();
 
     public enum UnusedReason {
         NOT_WRITTEN_READ("neither read or written to"),
@@ -87,50 +102,85 @@ public class UnusedDetector {
 
     }
 
-    public static List<UnusedDescription> findUnused(CompilationInfo info) {
-        List<UnusedDescription> cached = (List<UnusedDescription>) info.getCachedValue(UnusedDetector.class);
+    public static List<UnusedDescription> findUnused(CompilationInfo info, Callable<Boolean> cancel) {
+        @SuppressWarnings("unchecked")
+        List<UnusedDescription> cached = (List<UnusedDescription>) info.getCachedValue(RESULTS_KEY);
         if (cached != null) {
             return cached;
         }
 
         UnusedVisitor uv = new UnusedVisitor(info);
         uv.scan(info.getCompilationUnit(), null);
+        AtomicReference<List<UsedDetector>> usedDetectors = new AtomicReference<>();
+        BiFunction<Element, TreePath, Boolean> markedAsUsed = (el, path) -> {
+            if (usedDetectors.get() == null) {
+                usedDetectors.set(collectUsedDetectors(info));
+            }
+            for (UsedDetector detector : usedDetectors.get()) {
+                if (detector.isUsed(el, path)) {
+                    return true;
+                }
+            }
+            return false;
+        };
         List<UnusedDescription> result = new ArrayList<>();
         for (Entry<Element, TreePath> e : uv.element2Declaration.entrySet()) {
             Element el = e.getKey();
             TreePath declaration = e.getValue();
             Set<UseTypes> uses = uv.useTypes.getOrDefault(el, Collections.emptySet());
             boolean isPrivate = el.getModifiers().contains(Modifier.PRIVATE); //TODO: effectivelly private!
-            if (isLocalVariableClosure(el) || (el.getKind().isField() && isPrivate)) {
-                if (!isSerialSpecField(info, el)) {
+            boolean isPkgPrivate = !isPrivate && !el.getModifiers().contains(Modifier.PUBLIC) && !el.getModifiers().contains(Modifier.PROTECTED);
+            if (isLocalVariableClosure(el)) {
+                boolean isWritten = uses.contains(UseTypes.WRITTEN);
+                boolean isRead = uses.contains(UseTypes.READ);
+                if (!isWritten && !isRead && !markedAsUsed.apply(el, declaration)) {
+                    result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_WRITTEN_READ));
+                } else if (!isWritten && !markedAsUsed.apply(el, declaration)) {
+                    result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_WRITTEN));
+                } else if (!isRead && !markedAsUsed.apply(el, declaration)) {
+                    result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_READ));
+                }
+            } else if (el.getKind().isField() && (isPrivate || isPkgPrivate)) {
+                if (!isSerialSpecField(info, el) && !lookedUpElement(el, uv.type2LookedUpFields, uv.allStringLiterals)) {
                     boolean isWritten = uses.contains(UseTypes.WRITTEN);
                     boolean isRead = uses.contains(UseTypes.READ);
                     if (!isWritten && !isRead) {
-                        result.add(new UnusedDescription(el, declaration, UnusedReason.NOT_WRITTEN_READ));
-                    } else if (!isWritten) {
-                        result.add(new UnusedDescription(el, declaration, UnusedReason.NOT_WRITTEN));
+                        if ((isPrivate || isUnusedInPkg(info, el, cancel)) && !markedAsUsed.apply(el, declaration)) {
+                            result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_WRITTEN_READ));
+                        }
+                    } else if (!isWritten && !markedAsUsed.apply(el, declaration)) {
+                        result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_WRITTEN));
                     } else if (!isRead) {
-                        result.add(new UnusedDescription(el, declaration, UnusedReason.NOT_READ));
+                        if ((isPrivate || isUnusedInPkg(info, el, cancel)) && !markedAsUsed.apply(el, declaration)) {
+                            result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_READ));
+                        }
                     }
                 }
-            } else if ((el.getKind() == ElementKind.CONSTRUCTOR || el.getKind() == ElementKind.METHOD) && isPrivate) {
-                if (!isSerializationMethod(info, (ExecutableElement)el) && !uses.contains(UseTypes.USED)) {
-                    result.add(new UnusedDescription(el, declaration, UnusedReason.NOT_USED));
+            } else if ((el.getKind() == ElementKind.CONSTRUCTOR || el.getKind() == ElementKind.METHOD) && (isPrivate || isPkgPrivate)) {
+                ExecutableElement method = (ExecutableElement)el;
+                if (!isSerializationMethod(info, method) && !uses.contains(UseTypes.USED)
+                        && !info.getElementUtilities().overridesMethod(method) && !lookedUpElement(el, uv.type2LookedUpMethods, uv.allStringLiterals)
+                        && !SourceUtils.isMainMethod(method)) {
+                    if ((isPrivate || isUnusedInPkg(info, el, cancel)) && !markedAsUsed.apply(el, declaration)) {
+                        result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_USED));
+                    }
                 }
-            } else if ((el.getKind().isClass() || el.getKind().isInterface()) && isPrivate) {
+            } else if ((el.getKind().isClass() || el.getKind().isInterface()) && (isPrivate || isPkgPrivate)) {
                 if (!uses.contains(UseTypes.USED)) {
-                    result.add(new UnusedDescription(el, declaration, UnusedReason.NOT_USED));
+                    if ((isPrivate || isUnusedInPkg(info, el, cancel)) && !markedAsUsed.apply(el, declaration)) {
+                        result.add(new UnusedDescription(el, declaration, isPkgPrivate, UnusedReason.NOT_USED));
+                    }
                 }
             }
         }
 
-        info.putCachedValue(UnusedDetector.class, result, CompilationInfo.CacheClearPolicy.ON_CHANGE);
+        info.putCachedValue(RESULTS_KEY, result, CompilationInfo.CacheClearPolicy.ON_CHANGE);
 
         return result;
     }
 
     /** Detects static final long SerialVersionUID
-     * @return true if element is final static long serialVersionUID
+     * @return true if element is static final long serialVersionUID
      */
     private static boolean isSerialSpecField(CompilationInfo info, Element el) {
         if (el.getModifiers().contains(Modifier.FINAL)
@@ -248,6 +298,191 @@ public class UnusedDetector {
                LOCAL_VARIABLES.contains(el.getKind());
     }
 
+    private static boolean lookedUpElement(Element element, Map<Element, Set<String>> type2LookedUp, Set<String> allStringLiterals) {
+        String name = element.getKind() == ElementKind.CONSTRUCTOR ? "<init>" : element.getSimpleName().toString();
+        return isLookedUp(element.getEnclosingElement(), name, type2LookedUp, allStringLiterals) ||
+               isLookedUp(null, name, type2LookedUp, allStringLiterals);
+    }
+
+    private static boolean isLookedUp(Element owner, String name, Map<Element, Set<String>> type2LookedUp, Set<String> allStringLiterals) {
+        Set<String> lookedUp = type2LookedUp.getOrDefault(owner, Collections.emptySet());
+        return lookedUp.contains(name) || (allStringLiterals.contains(name) && lookedUp.contains(null));
+    }
+
+    private static boolean isUnusedInPkg(CompilationInfo info, Element el, Callable<Boolean> cancel) {
+        TypeElement typeElement;
+        Set<? extends String> packageSet = Collections.singleton(info.getElements().getPackageOf(el).getQualifiedName().toString());
+        Set<ClassIndex.SearchKind> searchKinds;
+        Set<ClassIndex.SearchScopeType> scope = Collections.singleton(new ClassIndex.SearchScopeType() {
+            @Override
+            public Set<? extends String> getPackages() {
+                return packageSet;
+            }
+
+            @Override
+            public boolean isSources() {
+                return true;
+            }
+
+            @Override
+            public boolean isDependencies() {
+                return false;
+            }
+        });
+        switch (el.getKind()) {
+            case FIELD -> {
+                typeElement = info.getElementUtilities().enclosingTypeElement(el);
+                searchKinds = EnumSet.of(ClassIndex.SearchKind.FIELD_REFERENCES);
+            }
+            case METHOD, CONSTRUCTOR -> {
+                typeElement = info.getElementUtilities().enclosingTypeElement(el);
+                searchKinds = EnumSet.of(ClassIndex.SearchKind.METHOD_REFERENCES);
+            }
+            case ANNOTATION_TYPE, CLASS, ENUM, RECORD, INTERFACE -> {
+                List<? extends TypeElement> topLevelElements = info.getTopLevelElements();
+                if (topLevelElements.size() == 1 && topLevelElements.get(0) == el) {
+                    return false;
+                }
+                typeElement = (TypeElement) el;
+                searchKinds = EnumSet.of(ClassIndex.SearchKind.TYPE_REFERENCES);
+            }
+            default -> {
+                return true;
+            }
+        }
+
+        // check if previous runs already found a usage in package-local files
+        FileObject fileObject = info.getFileObject();
+        ElementHandle<Element> eh = ElementHandle.create(el);
+        if (PkgScanResultCache.getCachedUsedInPkg(fileObject, eh)) {
+            return false;
+        }
+
+        // scan package for usage
+        ClassIndex classIndex = getCachedClassIndex(fileObject, info);
+        Set<FileObject> res = classIndex.getResources(ElementHandle.create(typeElement), searchKinds, scope);
+
+        if (res != null) {
+            for (FileObject fo : res) {
+                try {
+                    if (Boolean.TRUE.equals(cancel.call())) {
+                        return false;
+                    }
+                    if (fo != fileObject) {
+                        JavaSource js = JavaSource.forFileObject(fo);
+                        if (js == null) {
+                            return false;
+                        }
+                        AtomicBoolean found = new AtomicBoolean();
+                        js.runUserActionTask(cc -> {
+                            cc.toPhase(JavaSource.Phase.RESOLVED);
+                            new ErrorAwareTreePathScanner<Void, Element>() {
+                                @Override
+                                public Void scan(Tree tree, Element p) {
+                                    if (!found.get() && tree != null) {
+                                        Element element = cc.getTrees().getElement(new TreePath(getCurrentPath(), tree));
+                                        if (element != null && eh.signatureEquals(element)) {
+                                            found.set(true);
+                                            return null;
+                                        }
+                                        super.scan(tree, p);
+                                    }
+                                    return null;
+                                }
+                            }.scan(new TreePath(cc.getCompilationUnit()), el);
+                        }, true);
+                        if (found.get()) {
+                            PkgScanResultCache.markFoundInFile(fileObject, fo, ElementHandle.create(el));
+                            return false;
+                        }
+                    }
+                } catch (Exception ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // obtaining the ClassIndex can be expensive, this is usually called multiple times per search
+    private static ClassIndex getCachedClassIndex(FileObject fileObject, CompilationInfo info) {
+        ClassIndex classIndex = (ClassIndex) info.getCachedValue(CLASS_INDEX_KEY);
+        if (classIndex == null) {
+            ClasspathInfo cpInfo;
+            Project prj = FileOwnerQuery.getOwner(fileObject);
+            if (prj != null) {
+                SourceGroup[] sourceGroups = ProjectUtils.getSources(prj).getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA);
+                FileObject[] roots = new FileObject[sourceGroups.length];
+                for (int i = 0; i < sourceGroups.length; i++) {
+                    SourceGroup sourceGroup = sourceGroups[i];
+                    roots[i] = sourceGroup.getRootFolder();
+                }
+                cpInfo = ClasspathInfo.create(ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(roots));
+            } else {
+                cpInfo = info.getClasspathInfo();
+            }
+            classIndex = cpInfo.getClassIndex();
+            info.putCachedValue(CLASS_INDEX_KEY, classIndex, CompilationInfo.CacheClearPolicy.ON_CHANGE);
+        }
+        return classIndex;
+    }
+
+    /*
+     * Remembers if an Element is used in a package-local source file to avoid having to
+     * repeat the search.
+     *
+     * Invalidates the whole cache if the source file of the current CompilationInfo becomes a different file.
+     * Invalidates a single cached value if the file was (externally) modified in the meantime.
+     * The not-used case is not stored to keep the logic simple.
+     */
+    private static class PkgScanResultCache {
+        
+        private static FileObject lastSource;
+        private static Map<ElementHandle<Element>, Usage> cache = new HashMap<>();
+        
+        private record Usage(FileObject inFile, Instant markedTime) {}
+
+        private static void markFoundInFile(FileObject source, FileObject pkgLocalFile, ElementHandle<Element> signature) {
+            if (source == pkgLocalFile) {
+                throw new IllegalArgumentException();
+            }
+            lastSource = source;
+            cache.put(signature, new Usage(pkgLocalFile, Instant.now()));
+        }
+
+        private static boolean getCachedUsedInPkg(FileObject root, ElementHandle<Element> signature) {
+            if (lastSource == null) {
+                return false;
+            }
+            if (lastSource != root) {
+                lastSource = null;
+                cache = new HashMap<>();
+                return false;
+            }
+            Usage usage = cache.get(signature);
+            if (usage == null) {
+                return false;
+            }
+            if (usage.inFile().lastModified().toInstant().isAfter(usage.markedTime())) {
+                cache.remove(signature);
+                return false;
+            }
+            return true;
+        }
+    }
+    
+    private static List<UsedDetector> collectUsedDetectors(CompilationInfo info) {
+        List<UsedDetector> detectors = new ArrayList<>();
+        for (UsedDetector.Factory factory : Lookup.getDefault().lookupAll(UsedDetector.Factory.class)) {
+            UsedDetector detector = factory.create(info);
+            if (detector != null) {
+                detectors.add(detector);
+            }
+        }
+        return detectors;
+    }
+
     private enum UseTypes {
         READ, WRITTEN, USED;
     }
@@ -256,11 +491,16 @@ public class UnusedDetector {
 
         private final Map<Element, Set<UseTypes>> useTypes = new HashMap<>();
         private final Map<Element, TreePath> element2Declaration = new HashMap<>();
+        private final Map<Element, Set<String>> type2LookedUpMethods = new HashMap<>();
+        private final Map<Element, Set<String>> type2LookedUpFields = new HashMap<>();
+        private final Set<String> allStringLiterals = new HashSet<>();
+        private final TypeElement methodHandlesLookup;
         private final CompilationInfo info;
         private ExecutableElement recursionDetector;
 
         public UnusedVisitor(CompilationInfo info) {
             this.info = info;
+            this.methodHandlesLookup = info.getElements().getTypeElement(MethodHandles.Lookup.class.getCanonicalName());
         }
 
         @Override
@@ -295,8 +535,9 @@ public class UnusedDetector {
             }
 
             boolean isPrivate = el.getModifiers().contains(Modifier.PRIVATE); //TODO: effectivelly private!
+            boolean isPkgPrivate = !isPrivate && !el.getModifiers().contains(Modifier.PUBLIC) && !el.getModifiers().contains(Modifier.PROTECTED);
 
-            if (isLocalVariableClosure(el) || (el.getKind().isField() && isPrivate)) {
+            if (isLocalVariableClosure(el) || (el.getKind().isField() && (isPrivate | isPkgPrivate))) {
                 TreePath effectiveUse = getCurrentPath();
                 boolean isWrite = false;
                 boolean isRead = false;
@@ -343,7 +584,7 @@ public class UnusedDetector {
                 if (isRead) {
                     addUse(el, UseTypes.READ);
                 }
-            } else if (isPrivate) {
+            } else if (isPrivate | isPkgPrivate) {
                 if (el.getKind() != ElementKind.METHOD || recursionDetector != el)
                 addUse(el, UseTypes.USED);
             }
@@ -463,5 +704,45 @@ public class UnusedDetector {
                 }
             }
         }
+
+        @Override
+        public Void visitLiteral(LiteralTree node, Void p) {
+            if (node.getKind() == Kind.STRING_LITERAL) {
+                allStringLiterals.add((String)node.getValue());
+            }
+            return super.visitLiteral(node, p);
+        }
+
+        @Override
+        public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
+            Element invoked = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getMethodSelect()));
+            if (invoked != null && invoked.getEnclosingElement() == methodHandlesLookup && !node.getArguments().isEmpty()) {
+                ExpressionTree clazz = node.getArguments().get(0);
+                Element lookupType = null;
+                if (clazz.getKind() == Kind.MEMBER_SELECT) {
+                    MemberSelectTree mst = (MemberSelectTree) clazz;
+                    if (mst.getIdentifier().contentEquals("class")) {
+                        lookupType = info.getTrees().getElement(new TreePath(new TreePath(getCurrentPath(), clazz), mst.getExpression()));
+                    }
+                }
+                String lookupName = null;
+                if (node.getArguments().size() > 1) {
+                    ExpressionTree name  = node.getArguments().get(1);
+                    if (name.getKind() == Kind.STRING_LITERAL) {
+                        lookupName = (String) ((LiteralTree) name).getValue();
+                    }
+                }
+                switch (invoked.getSimpleName().toString()) {
+                    case "findStatic", "findVirtual", "findSpecial" ->
+                        type2LookedUpMethods.computeIfAbsent(lookupType, t -> new HashSet<>()).add(lookupName);
+                    case "findConstructor" ->
+                        type2LookedUpMethods.computeIfAbsent(lookupType, t -> new HashSet<>()).add("<init>");
+                    case "findGetter", "findSetter", "findStaticGetter", "findStaticSetter", "findStaticVarHandle", "findVarHandle" ->
+                        type2LookedUpFields.computeIfAbsent(lookupType, t -> new HashSet<>()).add(lookupName);
+                }
+            }
+            return super.visitMethodInvocation(node, p);
+        }
+
     }
 }

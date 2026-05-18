@@ -31,10 +31,7 @@ import java.util.TreeMap;
  */
 public class StringPrefixTree<Type> {
 
-    ////////////////////////////////////////////////////////////////////////////
     // Inner Classes                                                          //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Prefix tree internal node representing single character of stored
      * strings.
@@ -187,7 +184,7 @@ public class StringPrefixTree<Type> {
             sb.append("Value=");
             sb.append(value != null ? value.toString() : "null");
             sb.append(" Transitions=[");
-            for (Iterator i = next.keySet().iterator(); i.hasNext(); ) {
+            for (Iterator<Character> i = next.keySet().iterator(); i.hasNext(); ) {
                 sb.append(i.next());
                 if (i.hasNext()) {
                     sb.append(',');
@@ -225,10 +222,7 @@ public class StringPrefixTree<Type> {
 
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Instance attributes                                                    //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Root tree node. */
     private Node root;
 
@@ -241,20 +235,14 @@ public class StringPrefixTree<Type> {
      */
     private boolean caseSensitive;
     
-    ////////////////////////////////////////////////////////////////////////////
     // Constructors                                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     public StringPrefixTree(boolean caseSensitive) {
         root = new Node();
         size = 0;
         this.caseSensitive = caseSensitive;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Methods                                                                //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Add value into node and finish <cose>String</code> based on nodes
      * already stored in prefix tree.

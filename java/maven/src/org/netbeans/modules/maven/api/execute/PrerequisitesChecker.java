@@ -37,12 +37,12 @@ package org.netbeans.modules.maven.api.execute;
  * <li><i>_any</i> services. Provide a fallback if no packaging (or other specific) service created the necessary data. 
  * These are also run for all packaging types.
  * </ol>
- * <p>
+ *
  * <div class="nonnormative">
  * Let's have some examples:
- * {@codesnippet RunUtilsTest.GeneralPrerequisiteChecker}
- * {@codesnippet RunUtilsTest.SpecificPrerequisiteChecker}
- * {@codesnippet RunUtilsTest.FallbackPrerequisiteChecker}
+ * {@snippet file="org/netbeans/modules/maven/api/execute/RunUtilsTest.java" region="GeneralPrerequisiteChecker"}
+ * {@snippet file="org/netbeans/modules/maven/api/execute/RunUtilsTest.java" region="SpecificPrerequisiteChecker"}
+ * {@snippet file="org/netbeans/modules/maven/api/execute/RunUtilsTest.java" region="FallbackPrerequisiteChecker"}
  * </div>
 
 * @see LateBoundPrerequisitesChecker

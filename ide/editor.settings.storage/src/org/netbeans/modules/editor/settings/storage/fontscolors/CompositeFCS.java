@@ -127,7 +127,7 @@ public final class CompositeFCS extends FontColorSettings {
             colorings.add(AttributesUtilities.createImmutable(
                     EditorStyleConstants.RenderingHints, getRenderingHints()));
 
-            return AttributesUtilities.createImmutable(colorings.toArray(new AttributeSet[colorings.size()]));
+            return AttributesUtilities.createImmutable(colorings.toArray(new AttributeSet[0]));
 
         }
 
@@ -176,7 +176,7 @@ public final class CompositeFCS extends FontColorSettings {
         }
 
         if (colorings.size() > 0) {
-            return AttributesUtilities.createImmutable(colorings.toArray(new AttributeSet[colorings.size()]));
+            return AttributesUtilities.createImmutable(colorings.toArray(new AttributeSet[0]));
         } else {
             return NULL;
         }
@@ -258,8 +258,9 @@ public final class CompositeFCS extends FontColorSettings {
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("System provided desktop hints:"); //NOI18N
             if (desktopHints != null) {
-                for (Object key : desktopHints.keySet()) {
-                    Object value = desktopHints.get(key);
+                for (Map.Entry<?, ?> entry : desktopHints.entrySet()) {
+                    Object key = entry.getKey();
+                    Object value = entry.getValue();
                     String humanReadableKey = translateRenderingHintsConstant(key);
                     String humanReadableValue = translateRenderingHintsConstant(value);
                     LOG.fine("  " + humanReadableKey + " = " + humanReadableValue); //NOI18N
@@ -349,8 +350,9 @@ public final class CompositeFCS extends FontColorSettings {
 
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("Editor Rendering hints:"); //NOI18N
-            for (Object key : hints.keySet()) {
-                Object value = hints.get(key);
+            for (Map.Entry<Object, Object> entry : hints.entrySet()) {
+                Object key = entry.getKey();
+                Object value = entry.getValue();
                 String humanReadableKey = translateRenderingHintsConstant(key);
                 String humanReadableValue = translateRenderingHintsConstant(value);
                 LOG.fine("  " + humanReadableKey + " = " + humanReadableValue); //NOI18N

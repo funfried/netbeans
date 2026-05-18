@@ -45,4 +45,13 @@ public interface TreeViewService {
     
     @JsonRequest
     public CompletableFuture<Void> configure(ConfigureExplorerParams params);
+    
+    @JsonRequest("getresource")
+    public CompletableFuture<ResourceData> getResource(GetResourceParams params);
+    
+    @JsonRequest("findpath")
+    public CompletableFuture<int[]> findPath(FindPathParams params);
+    
+    @JsonRequest("changes")
+    public CompletableFuture<Long> changes(NodeChangesParams params);
 }

@@ -86,7 +86,7 @@ public abstract class DefaultSchemaGenerator extends SchemaGenerator {
     
     private int fgeCount;
     
-    public final static int commitRange = Integer.getInteger("schematools.axi.adp", 0);
+    public static final int commitRange = Integer.getInteger("schematools.axi.adp", 0);
     
     /**
      * Creates a new instance of DefaultSchemaGenerator
@@ -340,10 +340,7 @@ public abstract class DefaultSchemaGenerator extends SchemaGenerator {
     
     protected abstract SchemaGenerator.Pattern getSchemaDesignPattern();
     
-    ////////////////////////////////////////////////////////////////////
-    ////////////////////////// helper methods   ////////////////////////
-    ////////////////////////////////////////////////////////////////////
-    
+    // helper methods
     protected void prepareGlobalElement(Element element) {
         GlobalElement e = null;
         ElementReference eref = null;

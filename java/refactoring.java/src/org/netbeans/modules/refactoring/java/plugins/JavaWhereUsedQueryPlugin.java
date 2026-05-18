@@ -251,7 +251,7 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
                     }
                 } else if (el.getKind() == ElementKind.CONSTRUCTOR) {
                     sourceSet.addAll(idx.getResources(ElementHandle.create((TypeElement) el.getEnclosingElement()), EnumSet.of(ClassIndex.SearchKind.TYPE_REFERENCES, ClassIndex.SearchKind.IMPLEMENTORS), searchScopeType, resourceType));
-                } else if((el.getKind().equals(ElementKind.LOCAL_VARIABLE) || el.getKind().equals(ElementKind.PARAMETER))
+                } else if((el.getKind() == ElementKind.LOCAL_VARIABLE || el.getKind() == ElementKind.PARAMETER)
                         || el.getModifiers().contains(Modifier.PRIVATE)) {
                     sourceSet.add(file);
                 }
@@ -323,7 +323,7 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
                 a.addAll(customScope.getFiles());
                 fireProgressListenerStep(a.size());
                 try {
-                    queryFiles(a, findTask,  RefactoringUtils.getClasspathInfoFor(a.toArray(new FileObject[a.size()])));
+                    queryFiles(a, findTask,  RefactoringUtils.getClasspathInfoFor(a.toArray(new FileObject[0])));
                 } catch (IOException e) {
                     problem = JavaPluginUtils.chainProblems(problem, createProblemAndLog(null, e));
                 }
@@ -370,8 +370,9 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
                 }
                 packages.add(nonRecursiveFolder);
             }
-            for (FileObject sourceRoot1 : folders.keySet()) {
-                Set<NonRecursiveFolder> packages1 = folders.get(sourceRoot1);
+            for (Map.Entry<FileObject, Set<NonRecursiveFolder>> entry : folders.entrySet()) {
+                FileObject sourceRoot1 = entry.getKey();
+                Set<NonRecursiveFolder> packages1 = entry.getValue();
                 if (packages1 != null && !packages1.isEmpty()) {
                     ClasspathInfo cpath;
                     if (isSearchFromBaseClass() && fo != null) {

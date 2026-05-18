@@ -1,10 +1,11 @@
 #Signature file v4.1
-#Version 1.56
+#Version 1.73
 
 CLSS public java.lang.Object
 cons public init()
 meth protected java.lang.Object clone() throws java.lang.CloneNotSupportedException
 meth protected void finalize() throws java.lang.Throwable
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="9")
 meth public boolean equals(java.lang.Object)
 meth public final java.lang.Class<?> getClass()
 meth public final void notify()
@@ -79,8 +80,14 @@ fld protected final static java.lang.String VIEW_TAB_TABS_BORDER = "TabbedContai
 fld protected final static java.lang.String WARNING_FOREGROUND = "nb.warningForeground"
 fld protected final static java.lang.String WORKPLACE_FILL = "nb_workplace_fill"
 fld public final static java.lang.String CONTROLFONT = "controlFont"
+fld public final static java.lang.String FILECHOOSER_FAVORITES_ENABLED = "FileChooser.favorites.enabled"
+fld public final static java.lang.String FILECHOOSER_SHORTCUTS_FILESFUNCTION = "FileChooser.shortcuts.filesFunction"
+fld public final static java.lang.String FILECHOOSER_SHORTCUTS_PANEL_FACTORY = "FileChooser.shortcuts.panel.factory"
 fld public final static java.lang.String LISTFONT = "List.font"
 fld public final static java.lang.String MENUFONT = "menuFont"
+fld public final static java.lang.String OPTIONS_CATEGORIES_BUTTON_USE_NIMBUS = "nb.options.categories.button.useNimbusCategoryButton"
+fld public final static java.lang.String OPTIONS_CATEGORIES_SEPARATOR_COLOR = "nb.options.categories.separatorColor"
+fld public final static java.lang.String OPTIONS_USE_UI_DEFAULT_COLORS = "nb.options.useUIDefaultsColors"
 fld public final static java.lang.String PANELFONT = "Panel.font"
 fld public final static java.lang.String PROGRESS_CANCEL_BUTTON_ICON = "nb.progress.cancel.icon"
 fld public final static java.lang.String PROGRESS_CANCEL_BUTTON_PRESSED_ICON = "nb.progress.cancel.icon.pressed"

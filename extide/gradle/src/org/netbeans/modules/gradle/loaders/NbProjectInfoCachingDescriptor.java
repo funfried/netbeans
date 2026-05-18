@@ -21,7 +21,7 @@ package org.netbeans.modules.gradle.loaders;
 import java.util.Set;
 import org.netbeans.modules.gradle.GradleProjectStructure;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
-import org.netbeans.modules.gradle.api.NbProjectInfo;
+import org.netbeans.modules.gradle.tooling.internal.NbProjectInfo;
 import org.netbeans.modules.gradle.api.execute.GradleCommandLine;
 import org.netbeans.modules.gradle.cache.ProjectInfoDiskCache;
 import org.netbeans.modules.gradle.spi.GradleFiles;
@@ -59,7 +59,7 @@ public final class NbProjectInfoCachingDescriptor implements ModelCachingDescrip
     @Override
     public void onLoad(String target, NbProjectInfo model) {
         Quality quality = model.hasException() ? SIMPLE : FULL_ONLINE;
-        ProjectInfoDiskCache.QualifiedProjectInfo qinfo = new ProjectInfoDiskCache.QualifiedProjectInfo(quality, model);
+        ProjectInfoDiskCache.QualifiedProjectInfo qinfo = new ProjectInfoDiskCache.QualifiedProjectInfo(quality, model, System.currentTimeMillis());
         GradleFiles gf = new GradleFiles(structure.getProjectDir(target), true);
         ProjectInfoDiskCache.get(gf).storeData(qinfo);
     }

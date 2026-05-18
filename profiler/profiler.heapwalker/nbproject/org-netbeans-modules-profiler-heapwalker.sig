@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.126
+#Version 1.143
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -850,8 +850,8 @@ hfds classesListController,heapFragmentWalker,staticFieldsBrowserController
 
 CLSS public static org.netbeans.modules.profiler.heapwalk.ClassesController$Configuration
  outer org.netbeans.modules.profiler.heapwalk.ClassesController
-cons public init(long,java.util.List,javax.swing.tree.TreePath)
-meth public java.util.List getExpandedStaticFields()
+cons public init(long,java.util.List<javax.swing.tree.TreePath>,javax.swing.tree.TreePath)
+meth public java.util.List<javax.swing.tree.TreePath> getExpandedStaticFields()
 meth public javax.swing.tree.TreePath getSelectedStaticField()
 meth public long getJavaClassID()
 supr org.netbeans.modules.profiler.heapwalk.NavigationHistoryManager$Configuration
@@ -892,7 +892,7 @@ innr public abstract interface static Handler
 meth protected javax.swing.AbstractButton createControllerPresenter()
 meth protected javax.swing.JPanel createControllerUI()
 meth public int getRootMode()
-meth public java.util.List getExpandedPaths()
+meth public java.util.List<javax.swing.tree.TreePath> getExpandedPaths()
 meth public javax.swing.tree.TreePath getSelectedRow()
 meth public org.netbeans.modules.profiler.heapwalk.FieldsBrowserController$Handler getInstancesControllerHandler()
 meth public org.netbeans.modules.profiler.heapwalk.model.HeapWalkerNode getFilteredSortedFields(java.lang.String,int,boolean)
@@ -931,6 +931,7 @@ meth public final int countClassLoaders()
 meth public final int getRetainedSizesStatus()
 meth public final void addStateListener(org.netbeans.modules.profiler.heapwalk.HeapFragmentWalker$StateListener)
 meth public final void removeStateListener(org.netbeans.modules.profiler.heapwalk.HeapFragmentWalker$StateListener)
+meth public int getHeapSegment()
 meth public java.io.File getHeapDumpFile()
 meth public javax.swing.JPanel getPanel()
 meth public long getTotalLiveBytes()
@@ -958,7 +959,7 @@ meth public void switchToInstancesView()
 meth public void switchToOQLView()
 meth public void switchToSummaryView()
 supr java.lang.Object
-hfds analysisController,classLoaderCount,classesController,heapFragment,heapWalker,instancesController,navigationHistoryManager,oqlController,retainedSizesStatus,stateListeners,summaryController,walkerUI
+hfds analysisController,classLoaderCount,classesController,heapFragment,heapSegment,heapWalker,instancesController,navigationHistoryManager,oqlController,retainedSizesStatus,stateListeners,summaryController,walkerUI
 
 CLSS public final static org.netbeans.modules.profiler.heapwalk.HeapFragmentWalker$StateEvent
  outer org.netbeans.modules.profiler.heapwalk.HeapFragmentWalker
@@ -974,6 +975,7 @@ meth public abstract void stateChanged(org.netbeans.modules.profiler.heapwalk.He
 CLSS public org.netbeans.modules.profiler.heapwalk.HeapWalker
 cons public init(java.io.File) throws java.io.IOException
 cons public init(org.netbeans.lib.profiler.heap.Heap)
+meth public int getHeapDumpSegment()
 meth public java.io.File getHeapDumpFile()
 meth public java.lang.String getName()
 meth public org.netbeans.modules.profiler.heapwalk.HeapFragmentWalker getMainHeapWalker()
@@ -981,7 +983,7 @@ meth public org.openide.util.Lookup$Provider getHeapDumpProject()
 meth public org.openide.windows.TopComponent getTopComponent()
 meth public void open()
 supr java.lang.Object
-hfds heapDumpFile,heapDumpProject,heapWalkerName,heapWalkerUI,mainHeapWalker
+hfds heapDumpFile,heapDumpProject,heapWalkerName,heapWalkerUI,mainHeapWalker,segment
 
 CLSS public org.netbeans.modules.profiler.heapwalk.HeapWalkerManager
 meth public boolean isHeapWalkerOpened(java.io.File)
@@ -991,10 +993,11 @@ meth public void closeHeapWalker(org.netbeans.modules.profiler.heapwalk.HeapWalk
 meth public void deleteHeapDump(java.io.File)
 meth public void heapWalkerClosed(org.netbeans.modules.profiler.heapwalk.HeapWalker)
 meth public void openHeapWalker(java.io.File)
+meth public void openHeapWalker(java.io.File,int)
 meth public void openHeapWalker(org.netbeans.modules.profiler.heapwalk.HeapWalker)
 meth public void openHeapWalkers(java.io.File[])
 supr java.lang.Object
-hfds dumpsBeingDeleted,heapDumps,heapWalkers,heapwalkerRp
+hfds dumpsBeingDeleted,heapWalkers,heapwalkerRp
 hcls Singleton
 
 CLSS public org.netbeans.modules.profiler.heapwalk.HintsController
@@ -1036,9 +1039,9 @@ hfds classPresenter,fieldsBrowserController,heapFragmentWalker,instancesListCont
 
 CLSS public static org.netbeans.modules.profiler.heapwalk.InstancesController$Configuration
  outer org.netbeans.modules.profiler.heapwalk.InstancesController
-cons public init(long,java.util.List,javax.swing.tree.TreePath,java.util.List,javax.swing.tree.TreePath)
-meth public java.util.List getExpandedFields()
+cons public init(long,java.util.List<javax.swing.tree.TreePath>,javax.swing.tree.TreePath,java.util.List<javax.swing.tree.TreePath>,javax.swing.tree.TreePath)
 meth public java.util.List getExpandedReferences()
+meth public java.util.List<javax.swing.tree.TreePath> getExpandedFields()
 meth public javax.swing.tree.TreePath getSelectedField()
 meth public javax.swing.tree.TreePath getSelectedReference()
 meth public long getInstanceID()
@@ -1316,6 +1319,7 @@ hfds description,name,script
 
 CLSS public org.netbeans.modules.profiler.heapwalk.OverviewController
 cons public init(org.netbeans.modules.profiler.heapwalk.SummaryController)
+fld public final static java.lang.String SHOW_NEXT_SEGMENT_URL = "file:/next"
 fld public final static java.lang.String SHOW_SYSPROPS_URL = "file:/sysprops"
 fld public final static java.lang.String SHOW_THREADS_URL = "file:/threads"
 meth protected javax.swing.AbstractButton createControllerPresenter()
@@ -1325,6 +1329,7 @@ meth public java.lang.String computeSummary()
 meth public java.lang.String computeSystemProperties(boolean)
 meth public java.lang.String computeThreads(boolean)
 meth public org.netbeans.modules.profiler.heapwalk.SummaryController getSummaryController()
+meth public void showNextSegment()
 meth public void showURL(java.lang.String)
 supr org.netbeans.modules.profiler.heapwalk.AbstractController
 hfds CLASS_URL_PREFIX,INSTANCE_URL_PREFIX,JVMTI_THREAD_STATE_ALIVE,JVMTI_THREAD_STATE_BLOCKED_ON_MONITOR_ENTER,JVMTI_THREAD_STATE_RUNNABLE,JVMTI_THREAD_STATE_TERMINATED,JVMTI_THREAD_STATE_WAITING_INDEFINITELY,JVMTI_THREAD_STATE_WAITING_WITH_TIMEOUT,LINE_PREFIX,OPEN_THREADS_URL,THREAD_URL_PREFIX,heapFragmentWalker,java_lang_Class,oome,stackTrace,summaryController,systemProperties,systemPropertiesComputed
@@ -1335,7 +1340,7 @@ fld public final static org.netbeans.modules.profiler.heapwalk.model.AbstractHea
 innr public abstract interface static Handler
 meth protected javax.swing.AbstractButton createControllerPresenter()
 meth protected javax.swing.JPanel createControllerUI()
-meth public java.util.List getExpandedPaths()
+meth public java.util.List<javax.swing.tree.TreePath> getExpandedPaths()
 meth public javax.swing.tree.TreePath getSelectedRow()
 meth public org.netbeans.modules.profiler.heapwalk.ReferencesBrowserController$Handler getReferencesControllerHandler()
 meth public org.netbeans.modules.profiler.heapwalk.model.HeapWalkerNode getFilteredSortedReferences(java.lang.String,int,boolean)

@@ -310,9 +310,13 @@ public final class ProjectEar extends J2eeApplicationProvider
         if (p == null) {
             p = Profile.JAVA_EE_7_FULL;
         }
-        if (Profile.JAKARTA_EE_8_FULL.equals(p)) {
-            return Application.VERSION_8;
-        } else if (Profile.JAVA_EE_8_FULL.equals(p)) {
+        if (Profile.JAKARTA_EE_11_FULL.equals(p)) {
+            return Application.VERSION_11;
+        } else if (Profile.JAKARTA_EE_10_FULL.equals(p)) {
+            return Application.VERSION_10;
+        } else if (Profile.JAKARTA_EE_9_1_FULL.equals(p) || Profile.JAKARTA_EE_9_FULL.equals(p)) {
+            return Application.VERSION_9;
+        } else if (Profile.JAKARTA_EE_8_FULL.equals(p) || Profile.JAVA_EE_8_FULL.equals(p)) {
             return Application.VERSION_8;
         } else if (Profile.JAVA_EE_7_FULL.equals(p)) {
             return Application.VERSION_7;
@@ -413,7 +417,7 @@ public final class ProjectEar extends J2eeApplicationProvider
             }
             
             ArrayList<FileObject> filteredContent = new ArrayList<FileObject>(5);
-            Enumeration ch = f.getChildren(true);
+            Enumeration<? extends FileObject> ch = f.getChildren(true);
             while (ch.hasMoreElements()) {
                 FileObject fo = (FileObject) ch.nextElement();
                 String fileName = fo.getNameExt();

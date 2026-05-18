@@ -20,12 +20,12 @@ package org.netbeans.modules.php.samples;
 
 import java.awt.Component;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
@@ -91,7 +91,7 @@ public class PHPSamplesWizardIterator implements WizardDescriptor./*Progress*/In
         // Always open top dir as a project:
         resultSet.add(dir);
         // Look for nested projects to open as well:
-        Enumeration e = dir.getFolders(true);
+        Enumeration<? extends FileObject> e = dir.getFolders(true);
         while (e.hasMoreElements()) {
             FileObject subfolder = (FileObject) e.nextElement();
             if (ProjectManager.getDefault().isProject(subfolder)) {
@@ -106,7 +106,7 @@ public class PHPSamplesWizardIterator implements WizardDescriptor./*Progress*/In
 
         if (!DO_NOT_OPEN_README_HTML) {
             // Open readme.html in a browser
-            File urlTempF = File.createTempFile("phpSamplesReadme", ".url"); // NOI18N
+            File urlTempF = Files.createTempFile("phpSamplesReadme", ".url").toFile(); // NOI18N
 
             urlTempF.deleteOnExit();
             FileObject readmeURL = FileUtil.toFileObject(FileUtil.normalizeFile(urlTempF));
@@ -225,19 +225,14 @@ public class PHPSamplesWizardIterator implements WizardDescriptor./*Progress*/In
     }
 
     private static void writeFile(ZipInputStream str, FileObject fo) throws IOException {
-        OutputStream out = fo.getOutputStream();
-        try {
-            FileUtil.copy(str, out);
-        } finally {
-            out.close();
+        try (OutputStream out = fo.getOutputStream()) {
+            str.transferTo(out);
         }
     }
 
     private static void filterProjectXML(FileObject fo, ZipInputStream str, String name) throws IOException {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            FileUtil.copy(str, baos);
-            Document doc = XMLUtil.parse(new InputSource(new ByteArrayInputStream(baos.toByteArray())), false, false, null, null);
+            Document doc = XMLUtil.parse(new InputSource(new ByteArrayInputStream(str.readAllBytes())), false, false, null, null);
             NodeList nl = doc.getDocumentElement().getElementsByTagName("name");
             if (nl != null) {
                 for (int i = 0; i < nl.getLength(); i++) {
@@ -251,11 +246,8 @@ public class PHPSamplesWizardIterator implements WizardDescriptor./*Progress*/In
                     }
                 }
             }
-            OutputStream out = fo.getOutputStream();
-            try {
+            try (OutputStream out = fo.getOutputStream()) {
                 XMLUtil.write(doc, out, "UTF-8");
-            } finally {
-                out.close();
             }
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);

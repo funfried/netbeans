@@ -38,9 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,9 +64,9 @@ import org.json.simple.parser.ParseException;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.modules.gradle.api.NbGradleProject;
 import org.netbeans.modules.gradle.spi.GradleFiles;
+import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.openide.awt.Notification;
 import org.openide.awt.NotificationDisplayer;
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 
@@ -84,9 +82,9 @@ public final class GradleDistributionManager {
 
     private static final String DOWNLOAD_URI = "https://services.gradle.org/distributions/gradle-%s-%s.zip"; //NOI18N
     private static final Pattern DIST_VERSION_PATTERN = Pattern.compile(".*(gradle-(\\d+\\.\\d+.*))-(bin|all)\\.zip"); //NOI18N
-    private static final Set<String> VERSION_BLACKLIST = new HashSet<>(Arrays.asList("2.3", "2.13")); //NOI18N
+    private static final Set<String> VERSION_BLACKLIST = Set.of("2.3", "2.13"); //NOI18N
     private static final Map<File, GradleDistributionManager> CACHE = new WeakHashMap<>();
-    private static final GradleVersion MINIMUM_SUPPORTED_VERSION = GradleVersion.version("2.0"); //NOI18N
+    private static final GradleVersion MINIMUM_SUPPORTED_VERSION = GradleVersion.version("3.0"); //NOI18N
     private static final GradleVersion[] JDK_COMPAT = new GradleVersion[]{
         GradleVersion.version("4.2.1"), // JDK-9
         GradleVersion.version("4.7"), // JDK-10
@@ -97,25 +95,20 @@ public final class GradleDistributionManager {
         GradleVersion.version("6.7"), // JDK-15
         GradleVersion.version("7.0"), // JDK-16
         GradleVersion.version("7.3"), // JDK-17
+        GradleVersion.version("7.5"), // JDK-18
+        GradleVersion.version("7.6"), // JDK-19
+        GradleVersion.version("8.3"), // JDK-20
+        GradleVersion.version("8.5"), // JDK-21
+        GradleVersion.version("8.8"), // JDK-22
+        GradleVersion.version("8.10"),// JDK-23
+        GradleVersion.version("8.14"),// JDK-24
+        GradleVersion.version("9.1.0"),// JDK-25
+        GradleVersion.version("9.4.0"),// JDK-26
     };
-    private static final int JAVA_VERSION;
 
-    static {
-        int ver = 8;
-        String version = System.getProperty("java.specification.version", System.getProperty("java.version")); //NOI18N
-        try {
-            int dot = version.indexOf('.');
-            ver = dot > 0 ? Integer.parseInt(version.substring(0, dot)) : Integer.parseInt(version);
-            if (ver == 1) {
-                version = version.substring(dot + 1);
-                dot = version.indexOf('.');
-                ver = dot > 0 ? Integer.parseInt(version.substring(0, dot)) : Integer.parseInt(version);
-            }
-        } catch (NumberFormatException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-        JAVA_VERSION = ver;
-    }
+    private static final GradleVersion LAST_KNOWN_GRADLE = GradleVersion.version("9.4.1"); //NOI18N
+
+    private static final int LATEST_SUPPORTED_MAJOR = 9;
 
     final File gradleUserHome;
 
@@ -131,12 +124,24 @@ public final class GradleDistributionManager {
      * @return
      */
     public static GradleDistributionManager get(File gradleUserHome) {
-        GradleDistributionManager ret = CACHE.get(gradleUserHome);
+        File home = gradleUserHome != null ? gradleUserHome : GradleSettings.getDefault().getGradleUserHome();
+        GradleDistributionManager ret = CACHE.get(home);
         if (ret == null) {
-            ret = new GradleDistributionManager(gradleUserHome);
-            CACHE.put(gradleUserHome, ret);
+            ret = new GradleDistributionManager(home);
+            CACHE.put(home, ret);
         }
         return ret;
+    }
+
+    /**
+     * Return a {@link GradleDistributionManager} for the Gradle user
+     * home, set in the IDE.
+     * 
+     * @return the GradleDistributionManager for the default Gradle user home.
+     * @since 2.23
+     */
+    public static GradleDistributionManager get() {
+        return GradleDistributionManager.get(null);
     }
 
     /**
@@ -260,6 +265,64 @@ public final class GradleDistributionManager {
     }
 
     /**
+     * Create a {@link GradleDistribution} from the current (latest) Gradle
+     * release available from the Gradle site. This method uses the
+     * <a href="https://services.gradle.org/versions/current">https://services.gradle.org/versions/current</a>
+     * web service to query the latest available version.
+     *
+     * @return the current Gradle distribution
+     * @throws java.io.IOException if information on the current Gradle release
+     * cannot be accessed
+     */
+    public GradleDistribution currentDistribution() throws IOException {
+        JSONParser parser = new JSONParser();
+        URL versionsCurrent = URI.create("https://services.gradle.org/versions/current").toURL(); //NOI18N
+        try (InputStreamReader is = new InputStreamReader(versionsCurrent.openStream(), StandardCharsets.UTF_8)) {
+            JSONObject current = (JSONObject) parser.parse(is);
+            URI downloadURL = new URI((String) current.get("downloadUrl")); //NOI18N
+            String version = (String) current.get("version");
+            return new GradleDistribution(distributionBaseDir(downloadURL, version), downloadURL, version);
+        } catch (ParseException | URISyntaxException | ClassCastException ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    /**
+     * Returns the latest {@link GradleDistribution} which is supported by this
+     * {@link GradleDistributionManager}. This method uses the
+     * <a href="https://services.gradle.org/versions">https://services.gradle.org/versions</a>
+     * web service to query the version.
+     *
+     * @return the latest Gradle distribution which can still be supported
+     * @throws java.io.IOException if information on the current Gradle release
+     * cannot be accessed
+     */
+    public GradleDistribution latestSupportedDistribution() throws IOException {
+        JSONParser parser = new JSONParser();
+        URL versionsCurrent = URI.create("https://services.gradle.org/versions/" + LATEST_SUPPORTED_MAJOR).toURL(); //NOI18N
+        try (InputStreamReader is = new InputStreamReader(versionsCurrent.openStream(), StandardCharsets.UTF_8)) {
+            JSONArray releases = (JSONArray) parser.parse(is);
+            for (Object obj : releases) {
+                JSONObject release = (JSONObject) obj;
+                if (release.get("snapshot") instanceof Boolean snapshot && !snapshot //NOI18N
+                        && release.get("nightly") instanceof Boolean nightly && !nightly //NOI18N
+                        && release.get("releaseNightly") instanceof Boolean releaseNightly && !releaseNightly //NOI18N
+                        && release.get("activeRc") instanceof Boolean activeRc && !activeRc //NOI18N
+                        && release.get("broken") instanceof Boolean broken && !broken //NOI18N
+                        && release.get("rcFor") instanceof String rcFor && rcFor.isBlank() //NOI18N
+                        && release.get("milestoneFor") instanceof String milestoneFor && milestoneFor.isBlank()) { //NOI18N
+                    URI downloadURL = new URI((String) release.get("downloadUrl")); //NOI18N
+                    String version = (String) release.get("version"); //NOI18N
+                    return new GradleDistribution(distributionBaseDir(downloadURL, version), downloadURL, version);
+                }
+            }
+            throw new IOException("no release found with major version " + LATEST_SUPPORTED_MAJOR);
+        } catch (ParseException | URISyntaxException | ClassCastException ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    /**
      * Create a {@link GradleDistribution} from the Gradle version distributed
      * with the Gradle Tooling of the IDE. This should be the most IDE compatible
      * version, so it can be used as a fallback.
@@ -284,7 +347,7 @@ public final class GradleDistributionManager {
         List<GradleDistribution> ret = new ArrayList<>();
         JSONParser parser = new JSONParser();
         try {
-            URL allVersions = new URL("https://services.gradle.org/versions/all"); //NOI18N
+            URL allVersions = URI.create("https://services.gradle.org/versions/all").toURL(); //NOI18N
             try (InputStreamReader is = new InputStreamReader(allVersions.openStream(), StandardCharsets.UTF_8)) {
                 JSONArray versions = (JSONArray) parser.parse(is);
                 for (Object o : versions) {
@@ -365,6 +428,62 @@ public final class GradleDistributionManager {
         return new File(dist.getDistributionDir(), "gradle-" + version);
     }
 
+    @SuppressWarnings("PackageVisibleInnerClass")
+    static final class GradleVersionRange {
+
+        public final GradleVersion lowerBound;
+        public final GradleVersion upperBound;
+        public static final GradleVersionRange UNBOUNDED = new GradleVersionRange(null, null);
+
+        GradleVersionRange(GradleVersion lowerBound, GradleVersion upperBound) {
+            if ((lowerBound != null) && (upperBound != null) && (lowerBound.compareTo(upperBound) >= 0)) {
+                throw new IllegalArgumentException("Invalid version range: [" + lowerBound + ", " + upperBound + ")");
+            }
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+        }
+
+        public boolean contains(GradleVersion ver) {
+            return ((lowerBound == null) || (lowerBound.compareTo(ver) <= 0)) && ((upperBound == null) || (upperBound.compareTo(ver) > 0));
+        }
+
+        public boolean contains(String ver) {
+            return contains(GradleVersion.version(ver));
+        }
+
+        public static GradleVersionRange from(GradleVersion lowerBound) {
+            return new GradleVersionRange(lowerBound, null);
+        }
+
+        public static GradleVersionRange from(String lowerBound) {
+            return from(GradleVersion.version(lowerBound));
+        }
+
+        public static GradleVersionRange until(GradleVersion upperBound) {
+            return new GradleVersionRange(null, upperBound);
+        }
+
+        public static GradleVersionRange until(String upperBound) {
+            return until(GradleVersion.version(upperBound));
+        }
+
+        public static GradleVersionRange range(GradleVersion lowerRange, GradleVersion upperRange) {
+            return new GradleVersionRange(lowerRange, upperRange);
+        }
+
+        public static GradleVersionRange range(GradleVersion lowerRange, String upperRange) {
+            return range(lowerRange, GradleVersion.version(upperRange));
+        }
+
+        public static GradleVersionRange range(String lowerRange, GradleVersion upperRange) {
+            return new GradleVersionRange(GradleVersion.version(lowerRange), upperRange);
+        }
+
+        public static GradleVersionRange range(String lowerRange, String upperRange) {
+            return new GradleVersionRange(GradleVersion.version(lowerRange), GradleVersion.version(upperRange));
+        }
+    }
+
     /**
      * This object represents a Gradle distribution in NetBeans combining the
      * following four attributes:
@@ -431,12 +550,21 @@ public final class GradleDistributionManager {
          * Checks if this Gradle distribution is compatible with the given
          * major version of Java. Java 1.6, 1.7 and 1.8 are treated as major
          * version 6, 7, and 8.
-         *
+         * <p>
+         * NetBeans uses a built in fixed list of compatibility matrix. That
+         * means it might not know about the compatibility of newer Gradle
+         * versions. Optimistic bias would return {@code true} on these
+         * versions form 2.37. 
+         * </p>
          * @param jdkMajorVersion the major version of the JDK
          * @return <code>true</code> if this version is supported with that JDK.
          */
         public boolean isCompatibleWithJava(int jdkMajorVersion) {
-            return jdkMajorVersion <= lastSupportedJava();
+            
+            // Optimistic bias, if the GradleVersion is newer than the last NB
+            // knows, we say it's compatible with any JDK
+            return LAST_KNOWN_GRADLE.compareTo(version.getBaseVersion()) < 0
+                    || jdkMajorVersion <= lastSupportedJava();
         }
 
         /**
@@ -448,7 +576,9 @@ public final class GradleDistributionManager {
          */
         public int lastSupportedJava() {
             int i = JDK_COMPAT.length - 1;
-            while ((i >= 0) && version.compareTo(JDK_COMPAT[i]) < 0) {
+            //Make sure that even RC-s are considered to be compatible.
+            GradleVersion baseVersion = version.getBaseVersion();
+            while ((i >= 0) && baseVersion.compareTo(JDK_COMPAT[i]) < 0) {
                 i--;
             }
             return i + 9;
@@ -458,10 +588,12 @@ public final class GradleDistributionManager {
          * Checks if this Gradle distribution is compatible the NetBeans
          * runtime JDK.
          *
-         * @return <code>true</code> if this version is supported with the runtime JDK.
+         * @return <code>true</code>.
+         * @deprecated shall be no reason to be used.
          */
+        @Deprecated
         public boolean isCompatibleWithSystemJava() {
-            return isCompatibleWithJava(JAVA_VERSION);
+            return true;
         }
 
         /**
@@ -598,6 +730,7 @@ public final class GradleDistributionManager {
         }
 
         @Override
+        @SuppressWarnings("NestedAssignment")
         public void download(URI uri, File file) throws Exception {
             URL url = uri.toURL();
             URLConnection conn = url.openConnection();

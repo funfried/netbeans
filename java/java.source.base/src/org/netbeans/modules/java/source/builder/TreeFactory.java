@@ -32,6 +32,7 @@ import com.sun.source.doctree.IndexTree;
 import com.sun.source.doctree.InheritDocTree;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.RawTextTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SerialDataTree;
@@ -61,21 +62,26 @@ import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.jvm.ClassReader;
 import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.model.JavacTypes;
+import com.sun.tools.javac.parser.Tokens.Comment;
+import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
+import com.sun.tools.javac.tree.DCTree.DCReference;
 import com.sun.tools.javac.tree.DocTreeMaker;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.JCTree.JCCaseLabel;
-import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.DiagnosticSource;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Context;
-import java.lang.reflect.InvocationTargetException;
+import com.sun.tools.javac.util.JCDiagnostic;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.lang.model.element.*;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
@@ -93,6 +99,8 @@ import static org.netbeans.modules.java.source.save.PositionEstimator.*;
  * @since 0.44.0
  */
 public class TreeFactory {
+    private static final Logger LOG = Logger.getLogger(TreeFactory.class.getName());
+
     Names names;
     ClassReader classReader;
     com.sun.tools.javac.tree.TreeMaker make;
@@ -209,36 +217,60 @@ public class TreeFactory {
         return make.at(NOPOS).DefaultCaseLabel();
     }
 
+    public ConstantCaseLabelTree ConstantCaseLabel(ExpressionTree expr) {
+        return make.at(NOPOS).ConstantCaseLabel((JCExpression) expr);
+    }
+
+    public PatternCaseLabelTree PatternCaseLabel(PatternTree pat) {
+        return make.at(NOPOS).PatternCaseLabel((JCPattern) pat);
+    }
+
+    public AnyPatternTree AnyPattern() {
+        return make.at(NOPOS).AnyPattern();
+    }
+
+    public DeconstructionPatternTree DeconstructionPattern(ExpressionTree deconstructor, List<? extends PatternTree> nested) {
+        ListBuffer<JCPattern> pats = new ListBuffer<>();
+        for (PatternTree t : nested)
+            pats.append((JCPattern)t);
+        return make.at(NOPOS).RecordPattern((JCExpression) deconstructor, pats.toList());
+    }
+
     public CaseTree Case(ExpressionTree expression, List<? extends StatementTree> statements) {
         return Case(expression != null ? Collections.singletonList(expression) : Collections.emptyList(), statements);
     }
     
     public CaseTree Case(List<? extends ExpressionTree> expressions, List<? extends StatementTree> statements) {
-        return CaseMultiplePatterns(expressions.isEmpty() ? Collections.singletonList(DefaultCaseLabel()) : expressions, statements);
+        return CaseMultiplePatterns(expressions.stream().map(this::ConstantCaseLabel).toList(), null, statements);
     }
     
     public CaseTree Case(List<? extends ExpressionTree> expressions, Tree body) {
-        return CaseMultiplePatterns(expressions.isEmpty() ? Collections.singletonList(DefaultCaseLabel()) : expressions, body);
+        return CaseMultiplePatterns(expressions.stream().map(this::ConstantCaseLabel).toList(), null, body);
     }
     
-    public CaseTree CaseMultiplePatterns(List<? extends CaseLabelTree> expressions, Tree body) {
+    public CaseTree CaseMultiplePatterns(List<? extends CaseLabelTree> expressions, ExpressionTree guard, Tree body) {
+        if (expressions.isEmpty()) {
+            expressions = Collections.singletonList(DefaultCaseLabel());
+        }
         ListBuffer<JCStatement> lb = new ListBuffer<>();
         lb.append(body instanceof ExpressionTree ? (JCStatement) Yield((ExpressionTree) body) : (JCStatement) body);
         ListBuffer<JCCaseLabel> exprs = new ListBuffer<>();
         for (Tree t : expressions)
             exprs.append((JCCaseLabel)t);
-        return make.at(NOPOS).Case(CaseKind.RULE, exprs.toList(), lb.toList(), (JCTree) body);
+        return make.at(NOPOS).Case(CaseKind.RULE, exprs.toList(), (JCExpression) guard, lb.toList(), (JCTree) body);
     }
-    
 
-    public CaseTree CaseMultiplePatterns(List<? extends CaseLabelTree> expressions, List<? extends StatementTree> statements) {
-        ListBuffer<JCStatement> lb = new ListBuffer<JCStatement>();
+    public CaseTree CaseMultiplePatterns(List<? extends CaseLabelTree> expressions, ExpressionTree guard, List<? extends StatementTree> statements) {
+        if (expressions.isEmpty()) {
+            expressions = Collections.singletonList(DefaultCaseLabel());
+        }
+        ListBuffer<JCStatement> lb = new ListBuffer<>();
         for (StatementTree t : statements)
             lb.append((JCStatement)t);
         ListBuffer<JCCaseLabel> exprs = new ListBuffer<>();
         for (Tree t : expressions)
             exprs.append((JCCaseLabel)t);
-        return make.at(NOPOS).Case(CaseKind.STATEMENT, exprs.toList(), lb.toList(), null);
+        return make.at(NOPOS).Case(CaseKind.STATEMENT, exprs.toList(), (JCExpression) guard, lb.toList(), null);
     }
     
     public CatchTree Catch(VariableTree parameter, BlockTree block) {
@@ -250,6 +282,7 @@ public class TreeFactory {
                      List<? extends TypeParameterTree> typeParameters,
                      Tree extendsClause,
                      List<? extends Tree> implementsClauses,
+                     List<? extends Tree> permitsClauses,
                      List<? extends Tree> memberDecls) 
     {
         ListBuffer<JCTypeParameter> typarams = new ListBuffer<JCTypeParameter>();
@@ -258,6 +291,9 @@ public class TreeFactory {
         ListBuffer<JCExpression> impls = new ListBuffer<JCExpression>();
         for (Tree t : implementsClauses)
             impls.append((JCExpression)t);
+        ListBuffer<JCExpression> permits = new ListBuffer<JCExpression>();
+        for (Tree t : permitsClauses)
+            permits.append((JCExpression)t);
         ListBuffer<JCTree> defs = new ListBuffer<JCTree>();
         for (Tree t : memberDecls)
             defs.append((JCTree)t);
@@ -266,6 +302,7 @@ public class TreeFactory {
                              typarams.toList(),
                              (JCExpression)extendsClause,
                              impls.toList(),
+                             permits.toList(),
                              defs.toList());
         
     }
@@ -274,17 +311,18 @@ public class TreeFactory {
                      CharSequence simpleName,
                      List<? extends TypeParameterTree> typeParameters,
                      List<? extends Tree> extendsClauses,
+                     List<? extends Tree> permitsClauses,
                      List<? extends Tree> memberDecls) 
     {
         long flags = getBitFlags(modifiers.getFlags()) | Flags.INTERFACE;
-        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, typeParameters, null, extendsClauses, memberDecls);
+        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, typeParameters, null, extendsClauses, permitsClauses, memberDecls);
     }
 
     public ClassTree AnnotationType(ModifiersTree modifiers, 
              CharSequence simpleName,
              List<? extends Tree> memberDecls) {
         long flags = getBitFlags(modifiers.getFlags()) | Flags.ANNOTATION;
-        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, Collections.<TypeParameterTree>emptyList(), null, Collections.<ExpressionTree>emptyList(), memberDecls);
+        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, Collections.<TypeParameterTree>emptyList(), null, Collections.<ExpressionTree>emptyList(), Collections.emptyList(), memberDecls);
     }
     
     public ClassTree Enum(ModifiersTree modifiers, 
@@ -292,7 +330,7 @@ public class TreeFactory {
              List<? extends Tree> implementsClauses,
              List<? extends Tree> memberDecls) {
         long flags = getBitFlags(modifiers.getFlags()) | Flags.ENUM;
-        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, Collections.<TypeParameterTree>emptyList(), null, implementsClauses, memberDecls);
+        return Class(flags, (com.sun.tools.javac.util.List<JCAnnotation>) modifiers.getAnnotations(), simpleName, Collections.<TypeParameterTree>emptyList(), null, implementsClauses, Collections.emptyList(), memberDecls);
     }
     
     public CompilationUnitTree CompilationUnit(PackageTree packageDecl,
@@ -447,9 +485,22 @@ public class TreeFactory {
     }
     
     public ImportTree Import(Tree qualid, boolean importStatic) {
-        return make.at(NOPOS).Import((JCTree)qualid, importStatic);
+        if (qualid.getKind() == Kind.IDENTIFIER) {
+            //existing code sometimes sends the FQN as an identifier:
+            String fqn = ((IdentifierTree) qualid).getName().toString();
+            int lastDot = fqn.lastIndexOf('.');
+            if (lastDot != (-1)) {
+                qualid = make.Select(make.Ident(names.fromString(fqn.substring(0, lastDot))),
+                                     names.fromString(fqn.substring(lastDot + 1)));
+            }
+        }
+        return make.at(NOPOS).Import((JCFieldAccess)qualid, importStatic);
     }
     
+    public ImportTree ImportModule(Tree moduleName) {
+        return make.at(NOPOS).ModuleImport((JCExpression) moduleName);
+    }
+
     public InstanceOfTree InstanceOf(ExpressionTree expression, Tree type) {
         return make.at(NOPOS).TypeTest((JCExpression)expression, (JCTree)type);
     }
@@ -612,6 +663,8 @@ public class TreeFactory {
                 case NATIVE: flags |= Flags.NATIVE; break;
                 case STRICTFP: flags |= Flags.STRICTFP; break;
                 case DEFAULT: flags |= Flags.DEFAULT; break;
+                case SEALED: flags |= Flags.SEALED; break;
+                case NON_SEALED: flags |= Flags.NON_SEALED; break;
                 default:
                     throw new AssertionError("Unknown Modifier: " + mod); //NOI18N
             }
@@ -892,6 +945,15 @@ public class TreeFactory {
                            (JCExpression)type, (JCExpression)initializer);
     }
     
+    public VariableTree RecordComponent(ModifiersTree modifiers,
+                          CharSequence name,
+                          Tree type) {
+        JCModifiers augmentedModifiers = (JCModifiers) Modifiers(modifiers.getFlags(), modifiers.getAnnotations());
+
+        augmentedModifiers.flags |= Flags.RECORD;
+
+        return Variable(augmentedModifiers, name, type, null);
+    }
     public Tree BindingPattern(CharSequence name,
                                Tree type) {
         try {
@@ -903,14 +965,6 @@ public class TreeFactory {
     
     public BindingPatternTree BindingPattern(VariableTree vt) {
         return make.at(NOPOS).BindingPattern((JCVariableDecl) vt);
-    }
-
-    public GuardedPatternTree GuardedPattern(PatternTree pattern, ExpressionTree guard) {
-        return make.at(NOPOS).GuardPattern((JCPattern) pattern, (JCExpression) guard);
-    }
-
-    public ParenthesizedPatternTree ParenthesizedPattern(PatternTree pattern) {
-        return make.at(NOPOS).ParenthesizedPattern((JCPattern) pattern);
     }
 
     public VariableTree Variable(VariableElement variable, ExpressionTree initializer) {
@@ -940,7 +994,7 @@ public class TreeFactory {
         return make.at(NOPOS).Wildcard(tbk, (JCExpression)type);
     }
     
-    ////////////////////////////////////// makers modification suggested by Tom
+    // makers modification suggested by Tom
     
     // AnnotationTree
     public AnnotationTree addAnnotationAttrValue(AnnotationTree annotation, ExpressionTree attrValue) {
@@ -1009,8 +1063,9 @@ public class TreeFactory {
     }
     
     private CaseTree modifyCaseStatement(CaseTree kejs, int index, StatementTree statement, Operation op) {
-        CaseTree copy = Case(
-                kejs.getExpression(),
+        CaseTree copy = CaseMultiplePatterns(
+                kejs.getLabels(),
+                kejs.getGuard(),
                 c(kejs.getStatements(), index, statement, op)
         );
         return copy;
@@ -1065,6 +1120,7 @@ public class TreeFactory {
             clazz.getTypeParameters(),
             clazz.getExtendsClause(),
             (List<ExpressionTree>) clazz.getImplementsClause(),
+            clazz.getPermitsClause(),
             c(clazz.getMembers(), index, member, op)
         );
         return copy;
@@ -1093,6 +1149,7 @@ public class TreeFactory {
             c(clazz.getTypeParameters(), index, typeParameter, op),
             clazz.getExtendsClause(),
             (List<ExpressionTree>) clazz.getImplementsClause(),
+            clazz.getPermitsClause(),
             clazz.getMembers()
         );
         return copy;
@@ -1121,6 +1178,7 @@ public class TreeFactory {
             clazz.getTypeParameters(),
             clazz.getExtendsClause(),
             c((List<ExpressionTree>) clazz.getImplementsClause(), index, implementsClause, op), // todo: cast!
+            clazz.getPermitsClause(),
             clazz.getMembers()
         );
         return copy;
@@ -1714,6 +1772,7 @@ public class TreeFactory {
                      List<? extends TypeParameterTree> typeParameters,
                      Tree extendsClause,
                      List<? extends Tree> implementsClauses,
+                     List<? extends Tree> permitsClauses,
                      List<? extends Tree> memberDecls) {
         ListBuffer<JCTypeParameter> typarams = new ListBuffer<JCTypeParameter>();
         for (TypeParameterTree t : typeParameters)
@@ -1721,6 +1780,9 @@ public class TreeFactory {
         ListBuffer<JCExpression> impls = new ListBuffer<JCExpression>();
         for (Tree t : implementsClauses)
             impls.append((JCExpression)t);
+        ListBuffer<JCExpression> permits = new ListBuffer<JCExpression>();
+        for (Tree t : permitsClauses)
+            permits.append((JCExpression)t);
         ListBuffer<JCTree> defs = new ListBuffer<JCTree>();
         for (Tree t : memberDecls)
             defs.append((JCTree)t);
@@ -1729,12 +1791,13 @@ public class TreeFactory {
                              typarams.toList(),
                              (JCExpression)extendsClause,
                              impls.toList(),
+                             permits.toList(),
                              defs.toList());
         
     }
     
     private long getBitFlags(Set<Modifier> modifiers) {
-        int flags  = 0;
+        long flags  = 0;
         for (Modifier modifier : modifiers) {
             switch (modifier) {
                 case PUBLIC:       flags |= PUBLIC; break;
@@ -1748,8 +1811,10 @@ public class TreeFactory {
                 case SYNCHRONIZED: flags |= SYNCHRONIZED; break;
                 case NATIVE:       flags |= NATIVE; break;
                 case STRICTFP:     flags |= STRICTFP; break;
+                case SEALED:       flags |= SEALED; break;
+                case NON_SEALED:   flags |= NON_SEALED; break;
                 default:
-                    break;
+                    throw new IllegalStateException("Unknown modifier: " + modifier);
             }
         }
         return flags;
@@ -1771,14 +1836,38 @@ public class TreeFactory {
     }
     
     public DocCommentTree DocComment(List<? extends DocTree> fullBody, List<? extends DocTree> tags) {
-        return docMake.at(NOPOS).newDocCommentTree(fullBody, tags);
+        return DocComment(HTML_JAVADOC_COMMENT, fullBody, tags);
+    }
+
+    public DocCommentTree MarkdownDocComment(List<? extends DocTree> fullBody, List<? extends DocTree> tags) {
+        return DocComment(MARKDOWN_JAVADOC_COMMENT, fullBody, tags);
+    }
+    
+    private DocCommentTree DocComment(Comment comment, List<? extends DocTree> fullBody, List<? extends DocTree> tags) {
+        return docMake.at(NOPOS).newDocCommentTree(comment, fullBody, tags, Collections.emptyList(), Collections.emptyList());
+    }
+
+    public DocTree Snippet(List<? extends DocTree> attributes, TextTree text){
+        try {
+            return (DocTree) docMake.getClass().getMethod("newSnippetTree", List.class, TextTree.class).invoke(docMake.at(NOPOS), attributes, text);
+        } catch (Throwable t) {
+            throw throwAny(t);
+        }
     }
     
     public DocCommentTree DocComment(List<? extends DocTree> firstSentence, List<? extends DocTree> body, List<? extends DocTree> tags) {
+        return DocComment(HTML_JAVADOC_COMMENT, firstSentence, body, tags);
+    }
+
+    public DocCommentTree MarkdownDocComment(List<? extends DocTree> firstSentence, List<? extends DocTree> body, List<? extends DocTree> tags) {
+        return DocComment(MARKDOWN_JAVADOC_COMMENT, firstSentence, body, tags);
+    }
+
+    private DocCommentTree DocComment(Comment comment, List<? extends DocTree> firstSentence, List<? extends DocTree> body, List<? extends DocTree> tags) {
         final ArrayList<DocTree> fullBody = new ArrayList<>(firstSentence.size() + body.size());
         fullBody.addAll(firstSentence);
         fullBody.addAll(body);                
-        return docMake.at(NOPOS).newDocCommentTree(fullBody, tags);
+        return docMake.at(NOPOS).newDocCommentTree(comment, fullBody, tags, Collections.emptyList(), Collections.emptyList());
     }
     
     public com.sun.source.doctree.ErroneousTree Erroneous(String text, DiagnosticSource diagSource, String code, Object... args) {
@@ -1859,6 +1948,10 @@ public class TreeFactory {
     public VersionTree Version(List<? extends DocTree> text) {
         return docMake.at(NOPOS).newVersionTree(text);
     }
+
+    public RawTextTree RawText(String text) {
+        return docMake.at(NOPOS).newRawTextTree(DocTree.Kind.MARKDOWN, text);
+    }
     
     public com.sun.source.doctree.LiteralTree Code(TextTree text) {
         return docMake.at(NOPOS).newCodeTree(text);
@@ -1905,19 +1998,90 @@ public class TreeFactory {
     }
 
     public ReferenceTree Reference(ExpressionTree qualExpr, CharSequence member, List<? extends Tree> paramTypes) {
-        com.sun.tools.javac.util.List<JCTree> paramTypesParam = null;
-        if (paramTypes != null) {
-            ListBuffer<JCTree> lbl = new ListBuffer<>();
-            for (Tree t : paramTypes) {
-                lbl.append((JCTree) t);
+        try {
+            com.sun.tools.javac.util.List<JCTree> paramTypesParam = null;
+            if (paramTypes != null) {
+                ListBuffer<JCTree> lbl = new ListBuffer<>();
+                for (Tree t : paramTypes) {
+                    lbl.append((JCTree) t);
+                }
+                paramTypesParam = lbl.toList();
             }
-            paramTypesParam = lbl.toList();
+            Constructor<DCReference> c = DCReference.class.getDeclaredConstructor(String.class, JCExpression.class, JCTree.class, javax.lang.model.element.Name.class, List.class);
+            c.setAccessible(true);
+            DCReference result = c.newInstance("", (JCTree.JCExpression) qualExpr, qualExpr == null ? null : ((JCTree.JCExpression) qualExpr).getTree(), member != null ? (com.sun.tools.javac.util.Name) names.fromString(member.toString()) : null, paramTypesParam);
+            result.pos = NOPOS;
+            return result;
+        } catch (ReflectiveOperationException ex) {
+            LOG.log(Level.INFO, "Cannot fully create DCReference, using fallback approach", ex);
+
+            StringBuilder ref = new StringBuilder();
+            if (qualExpr != null) {
+                ref.append(qualExpr.toString());
+            }
+            if (member != null) {
+                ref.append("#");
+                ref.append(member);
+            }
+            if (paramTypes != null) {
+                ref.append("(");
+                String sep = "";
+                for (Tree t : paramTypes) {
+                    ref.append(sep);
+                    ref.append(t.toString());
+                    sep = ",";
+                }
+                ref.append(")");
+            }
+            return docMake.at(NOPOS).newReferenceTree(ref.toString());
         }
-        return docMake.at(NOPOS).newReferenceTree("", (JCTree.JCExpression) qualExpr, qualExpr == null ? null : ((JCTree.JCExpression) qualExpr).getTree(), member != null ? (com.sun.tools.javac.util.Name) names.fromString(member.toString()) : null, paramTypesParam);
     }
     
     @SuppressWarnings("unchecked")
     private <T extends Throwable> RuntimeException throwAny(Throwable t) throws T {
         throw (T) t;
+    }
+
+    private static final Comment HTML_JAVADOC_COMMENT = new CommentImpl(CommentStyle.JAVADOC_BLOCK);
+    private static final Comment MARKDOWN_JAVADOC_COMMENT = new CommentImpl(CommentStyle.JAVADOC_LINE);
+
+    private static class CommentImpl implements Comment {
+
+        private final CommentStyle style;
+
+        public CommentImpl(CommentStyle style) {
+            this.style = style;
+        }
+
+        @Override
+        public String getText() {
+            return "";
+        }
+
+        @Override
+        public JCDiagnostic.DiagnosticPosition getPos() {
+            return null;
+        }
+
+        @Override
+        public int getSourcePos(int index) {
+            return -1;
+        }
+
+        @Override
+        public CommentStyle getStyle() {
+            return style;
+        }
+
+        @Override
+        public boolean isDeprecated() {
+            return false;
+        }
+
+        @Override
+        public Comment stripIndent() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+        
     }
 }

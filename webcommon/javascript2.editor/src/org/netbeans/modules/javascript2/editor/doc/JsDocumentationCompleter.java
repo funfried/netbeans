@@ -20,6 +20,7 @@ package org.netbeans.modules.javascript2.editor.doc;
 
 import com.oracle.js.parser.ir.AccessNode;
 import com.oracle.js.parser.ir.BinaryNode;
+import com.oracle.js.parser.ir.ClassElement;
 import com.oracle.js.parser.ir.FunctionNode;
 import com.oracle.js.parser.ir.IdentNode;
 import com.oracle.js.parser.ir.Node;
@@ -92,8 +93,7 @@ public class JsDocumentationCompleter {
                     @Override
                     public void run(ResultIterator resultIterator) throws Exception {
                         ParserResult parserResult = (ParserResult) resultIterator.getParserResult(offset);
-                        if (parserResult != null && parserResult instanceof JsParserResult) {
-                            final JsParserResult jsParserResult = (JsParserResult) parserResult;
+                        if (parserResult instanceof JsParserResult jsParserResult) {
                             if (jsParserResult.getRoot() == null) {
                                 // broken source
                                 return;
@@ -157,19 +157,19 @@ public class JsDocumentationCompleter {
 
     private static JsObject getWrapperScope(JsParserResult jsParserResult, JsObject jsObject, Node nearestNode, int offset) {
         JsObject result = null;
-        if (jsObject instanceof JsFunction) {
+        if (jsObject instanceof JsFunction jsFunction) {
             result = jsObject;
-            for (DeclarationScope declarationScope : ((JsFunction) jsObject).getChildrenScopes()) {
-                if (declarationScope instanceof JsFunction) {
-                    if (((JsFunction) declarationScope).getOffsetRange(jsParserResult).containsInclusive(offset)) {
-                        result = getWrapperScope(jsParserResult, (JsFunction) declarationScope, nearestNode, offset);
+            for (DeclarationScope declarationScope : jsFunction.getChildrenScopes()) {
+                if (declarationScope instanceof JsFunction declarationFunction) {
+                    if (declarationFunction.getOffsetRange(jsParserResult).containsInclusive(offset)) {
+                        result = getWrapperScope(jsParserResult, declarationFunction, nearestNode, offset);
                     }
                 }
             }
         }
         return result;
     }
-    
+
     private static boolean isWrapperObject(JsParserResult jsParserResult, JsObject jsObject, Node nearestNode) {
         List<Identifier> nodeName = Model.getModel(jsParserResult, false).getNodeName(nearestNode);
         if (nodeName == null || nodeName.isEmpty()) {
@@ -333,8 +333,7 @@ public class JsDocumentationCompleter {
         return offsetVisitor.getNearestNode();
     }
 
-    private static JsObject findJsObjectFunctionVariable(JsObject object, int offset) {
-        JsObject jsObject = (JsObject) object;
+    private static JsObject findJsObjectFunctionVariable(JsObject jsObject, int offset) {
         JsObject result = null;
         JsObject tmpObject = null;
         if (jsObject.getOffsetRange().containsInclusive(offset)) {
@@ -342,8 +341,11 @@ public class JsDocumentationCompleter {
             for (JsObject property : jsObject.getProperties().values()) {
                 JsElement.Kind kind = property.getJSKind();
                 if (kind == JsElement.Kind.OBJECT
-                        || kind == JsElement.Kind.FUNCTION || kind == JsElement.Kind.METHOD || kind == JsElement.Kind.CONSTRUCTOR
-                        || kind == JsElement.Kind.VARIABLE) {
+                        || kind == JsElement.Kind.FUNCTION
+                        || kind == JsElement.Kind.METHOD
+                        || kind == JsElement.Kind.CONSTRUCTOR
+                        || kind == JsElement.Kind.VARIABLE
+                        || kind == JsElement.Kind.ARROW_FUNCTION) {
                     tmpObject = findJsObjectFunctionVariable(property, offset);
                 }
                 if (tmpObject != null) {
@@ -397,6 +399,12 @@ public class JsDocumentationCompleter {
         public boolean enterPropertyNode(PropertyNode propertyNode) {
             processNode(propertyNode);
             return super.enterPropertyNode(propertyNode);
+        }
+
+        @Override
+        public boolean enterClassElement(ClassElement classElement) {
+            processNode(classElement);
+            return super.enterClassElement(classElement);
         }
 
         @Override

@@ -33,6 +33,7 @@ import org.netbeans.api.lexer.TokenUtilities;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
 import org.netbeans.modules.csl.api.OffsetRange;
+import static org.netbeans.modules.php.editor.CodeUtils.PIPE_OPERATOR;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
@@ -47,7 +48,7 @@ import org.openide.util.Exceptions;
  * @author Petr Pisl
  */
 public final class LexUtilities {
-
+    
     private LexUtilities() {
     }
 
@@ -327,8 +328,8 @@ public final class LexUtilities {
     /* Compute the balance of begin/end tokens on the line */
     public static int getLineBalance(BaseDocument doc, int offset, TokenId up, TokenId down, LineBalance lineBalance) {
         try {
-            int begin = LineDocumentUtils.getLineStart(doc, offset);
-            int end = LineDocumentUtils.getLineEnd(doc, offset);
+            int begin = LineDocumentUtils.getLineStartOffset(doc, offset);
+            int end = LineDocumentUtils.getLineEndOffset(doc, offset);
 
             TokenSequence<?extends PHPTokenId> ts = LexUtilities.getPHPTokenSequence(doc, begin);
             if (ts == null) {
@@ -423,7 +424,7 @@ public final class LexUtilities {
      */
     public static boolean isCommentOnlyLine(BaseDocument doc, int offset)
         throws BadLocationException {
-        int begin = Utilities.getRowFirstNonWhite(doc, offset);
+        int begin = LineDocumentUtils.getLineFirstNonWhitespace(doc, offset);
 
         if (begin == -1) {
             return false; // whitespace only
@@ -507,6 +508,7 @@ public final class LexUtilities {
         Token token;
         int balance = 0;
         int curlyBalance = 0;
+        boolean isInQuotes = false; // GH-6731 for checking a variable in string
         do {
             token = ts.token();
             if (token.id() == PHPTokenId.PHP_TOKEN) {
@@ -519,6 +521,14 @@ public final class LexUtilities {
                         break;
                     default:
                         //no-op
+                }
+            } else if (token.id() == PHPTokenId.PHP_CONSTANT_ENCAPSED_STRING) {
+                // GH-6731 for checking a variable in string
+                // e.g. "example {$example}"
+                if ((token.text().length() == 1 && TokenUtilities.textEquals(token.text(), "\"")) // NOI18N
+                        || (!TokenUtilities.startsWith(token.text(), "\"") && TokenUtilities.endsWith(token.text(), "\"")) // NOI18N
+                        || (TokenUtilities.startsWith(token.text(), "\"") && !TokenUtilities.endsWith(token.text(), "\""))) { // NOI18N
+                    isInQuotes = !isInQuotes;
                 }
             } else if ((token.id() == PHPTokenId.PHP_SEMICOLON || token.id() == PHPTokenId.PHP_OPENTAG)
                     && ts.moveNext()) {
@@ -584,7 +594,7 @@ public final class LexUtilities {
                 break;
             } else if (token.id() == PHPTokenId.PHP_CURLY_CLOSE) {
                 curlyBalance--;
-                if (curlyBalance == -1 && ts.moveNext()) {
+                if (!isInQuotes && curlyBalance == -1 && ts.moveNext()) {
                     // we are after previous blog close
                     LexUtilities.findNext(ts, Arrays.asList(
                             PHPTokenId.WHITESPACE,
@@ -600,7 +610,7 @@ public final class LexUtilities {
                 }
             } else if (token.id() == PHPTokenId.PHP_CURLY_OPEN) {
                 curlyBalance++;
-                if (curlyBalance == 1 && ts.moveNext()) {
+                if (!isInQuotes && curlyBalance == 1 && ts.moveNext()) {
                     // we are at the begining of a blog
                     LexUtilities.findNext(ts, Arrays.asList(
                             PHPTokenId.WHITESPACE,
@@ -614,6 +624,10 @@ public final class LexUtilities {
                     }
                     break;
                 }
+            } else if (token.id() == PHPTokenId.PHP_OPERATOR && TokenUtilities.textEquals(token.text(), PIPE_OPERATOR)) { // NOI18N
+                //PHP 8.5 pipe operator
+                start = ts.offset();
+                break;
             } else if (balance == 1 && token.id() == PHPTokenId.PHP_STRING) {
                 // probably there is a function call insede the expression
                 start = ts.offset();

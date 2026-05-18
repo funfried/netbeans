@@ -157,16 +157,22 @@ if [ -z "$jdkhome" ] ; then
                 jdkhome="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home"
             fi
             ;;
-            *) javac=`which javac`
-            if [ -z "$javac" ] ; then
-                java=`which java`
-                if [ ! -z "$java" ] ; then
-                    java=`resolve_symlink "$java"`
-                    jdkhome=`dirname $java`"/.."
-                fi
+            *)
+            if [ ! -z "${JAVA_HOME}" ]; then
+                jdkhome="${JAVA_HOME}"
             else
-                javac=`resolve_symlink "$javac"`
-                jdkhome=`dirname $javac`"/.."
+                # Doesn't work with jenv-style shims
+                javac=`which javac`
+                if [ -z "$javac" ] ; then
+                    java=`which java`
+                    if [ ! -z "$java" ] ; then
+                        java=`resolve_symlink "$java"`
+                        jdkhome=`dirname $java`"/.."
+                    fi
+                else
+                    javac=`resolve_symlink "$javac"`
+                    jdkhome=`dirname $javac`"/.."
+                fi
             fi
             ;;
         esac
@@ -192,7 +198,7 @@ fi
 # rename old heap dump to .old
 mv "${userdir}/var/log/heapdump.hprof" "${userdir}/var/log/heapdump.hprof.old" > /dev/null 2>&1
 
-jargs_without_clusters="$jargs -Djava.security.manager=allow"
+jargs_without_clusters="$jargs"
 jargs="-Dnetbeans.dirs=\"${clusters}\" $jargs_without_clusters"
 
 if [ -z "$cachedirspecified" ]; then
@@ -216,7 +222,7 @@ append_jars_to_cp() {
         if [ "`echo "${dir}"/*.$ex`" != "${dir}/*.$ex" ] ; then
             for x in "${dir}"/*.$ex ; do
                 subx=`basename "$x"`
-                if [ -z "`echo "$paths" | egrep "$subpath$subx"`" ] ; then
+                if [ -z "`echo "$paths" | grep -E "$subpath$subx"`" ] ; then
                     if [ ! -z "$cp" ] ; then cp="$cp:" ; fi
                     cp="$cp$x"
                     if [ ! -z "$paths" ] ; then paths="$paths:" ; fi
@@ -291,7 +297,7 @@ look_for_pre_runs() {
         run_updater=yes
     else
         dir="${base}/update/deactivate"
-        if [ -f "${dir}/to_disable.txt" -o -f "${dir}/to_uninstall.txt" ] ; then
+        if [ -f "${dir}/to_disable.txt" -o -f "${dir}/to_uninstall.txt" -o -f "${dir}/to_enable.txt" ] ; then
             run_updater=yes
         fi
     fi
@@ -306,7 +312,7 @@ look_for_post_runs() {
     else
         dir="${base}/update/deactivate"
         if [ \! -f "${dir}/deactivate_later.txt" ] ; then
-            if [ -f "${dir}/to_disable.txt" -o -f "${dir}/to_uninstall.txt" ] ; then
+            if [ -f "${dir}/to_disable.txt" -o -f "${dir}/to_uninstall.txt" -o -f "${dir}/to_enable.txt" ] ; then
                 run_updater=yes
             fi
         fi

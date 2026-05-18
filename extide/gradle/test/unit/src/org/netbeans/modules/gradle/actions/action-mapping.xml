@@ -19,7 +19,8 @@
     under the License.
 
 -->
-<!-- BEGIN:action-declaration-xml -->
+<!-- // @start region="action-declaration-xml" 
+-->
 <!DOCTYPE actions SYSTEM "action-mapping.dtd">
 <actions>
     <action name="clean">
@@ -38,4 +39,5 @@
         <args>--rerun-tasks test</args>
     </action>
 </actions>
-<!-- END:action-declaration-xml -->
+<!-- // @end region="action-declaration-xml" 
+-->

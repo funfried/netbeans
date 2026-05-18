@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -58,7 +59,7 @@ import javax.swing.text.Document;
 import javax.swing.text.EditorKit;
 import javax.swing.text.StyledDocument;
 import org.netbeans.api.annotations.common.NullAllowed;
-import org.netbeans.api.progress.ProgressUtils;
+import org.netbeans.api.progress.BaseProgressUtils;
 import org.netbeans.api.queries.FileEncodingQuery;
 import org.netbeans.modules.openide.loaders.AskEditorQuestions;
 import org.netbeans.modules.openide.loaders.DataObjectAccessor;
@@ -157,7 +158,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
     /** Factory method to create a bit more complicated CloneableEditorSupport for a given
      * entry of a given DataObject. The common use inside DataObject looks like
      * this:
-     * <pre>
+     * <pre>{@code
      *  getCookieSet().add((Node.Cookie) DataEditorSupport.create(
      *    this, getPrimaryEntry(), getCookieSet(),
      *    new Callable<Pane>() { 
@@ -166,7 +167,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
      *      }
      *    }
      *  ));
-     * </pre>
+     * }</pre>
      * The method can be used to instantiate <b>multi view</b> editor by returning
      * <a href="@org-netbeans-core-multiview@/org/netbeans/core/api/multiview/MultiViews.html">
      * MultiViews.createCloneableMultiView("text/yourmime", this)</a>.
@@ -358,8 +359,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
     protected String messageLine (Line line) {
         return NbBundle.getMessage(DataObject.class, "FMT_LineDisplayName2",
             obj.getPrimaryFile().getNameExt(),
-            FileUtil.getFileDisplayName(obj.getPrimaryFile()),
-            new Integer(line.getLineNumber() + 1));
+            FileUtil.getFileDisplayName(obj.getPrimaryFile()), line.getLineNumber() + 1);
     }
     
     
@@ -435,7 +435,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
     }
     
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     protected void loadFromStreamToKit(StyledDocument doc, InputStream stream, EditorKit kit) throws IOException, BadLocationException {
@@ -476,7 +476,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
         };
     }
 
-    private static Set<FileObject> warnedEncodingFiles = new WeakSet<FileObject>();
+    private static Set<FileObject> warnedEncodingFiles = Collections.newSetFromMap(new WeakHashMap<>());
 
     /** can hold the right charset to be used during save, needed for communication
      * between saveFromKitToStream and saveDocument
@@ -512,7 +512,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     protected void saveFromKitToStream(StyledDocument doc, EditorKit kit, OutputStream stream) throws IOException, BadLocationException {
@@ -731,7 +731,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
 
     /** Environment that connects the data object and the CloneableEditorSupport.
     */
-    public static abstract class Env extends OpenSupport.Env implements CloneableEditorSupport.Env {
+    public abstract static class Env extends OpenSupport.Env implements CloneableEditorSupport.Env {
         /** generated Serialized Version UID */
         private static final long serialVersionUID = -2945098431098324441L;
 
@@ -748,9 +748,9 @@ public class DataEditorSupport extends CloneableEditorSupport {
         
         /** did we warned about the size of the file?
          */
-        private transient static Set<FileObject> warnedFiles = new HashSet<FileObject>();
+        private static transient Set<FileObject> warnedFiles = new HashSet<FileObject>();
 
-        private transient static boolean sentBigFileInfo;
+        private static transient boolean sentBigFileInfo;
 
         /** Atomic action used to ignore fileChange event from FileObject.refresh */
         private transient FileSystem.AtomicAction action = null;
@@ -837,9 +837,9 @@ public class DataEditorSupport extends CloneableEditorSupport {
         }
         
         /**
-         * default threshold for big file to warn user (default is 1MB)
+         * default threshold for big file to warn user (default is 5MB)
          */
-        private transient final long BIG_FILE_THRESHOLD_MB = Integer.getInteger("org.openide.text.big.file.size", 1) * 1024 * 1024;
+        private final transient long BIG_FILE_THRESHOLD_MB = Integer.getInteger("org.openide.text.big.file.size", 5) * 1024 * 1024;
         
         /** Obtains the input stream.
         * @exception IOException if an I/O error occurs
@@ -911,7 +911,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
          * <p><b>Note: There is a contract (better saying a curse)
          * that this method has to call {@link #takeLock} method
          * in order to keep working some special filesystem's feature.
-         * See <a href="http://www.netbeans.org/issues/show_bug.cgi?id=28212">issue #28212</a></b>.
+         * See <a href="https://bz.apache.org/netbeans/show_bug.cgi?id=28212">issue #28212</a></b>.
         *
         * @exception IOException if the environment cannot be marked modified
         *   (for example when the file is readonly), when such exception
@@ -943,7 +943,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
                     }
                 }
                 Mark m = new Mark(fileObject);
-                ProgressUtils.runOffEventDispatchThread(m, 
+                BaseProgressUtils.runOffEventDispatchThread(m, 
                     NbBundle.getMessage(DataObject.class, "MSG_MarkModified", fileObject.getPath()),
                     m.cancel, false, 1000, 3000
                 );
@@ -1116,11 +1116,11 @@ public class DataEditorSupport extends CloneableEditorSupport {
             public String getLocalizedMessage () {
                 Object[] arr = {
                     getFileImpl().getPath (),
-                    getFileImpl().getNameExt (),
-                    new Long (size), // bytes
-                    new Long (size / 1024 + 1), // kilobytes
-                    new Long (size / (1024 * 1024)), // megabytes
-                    new Long (size / (1024 * 1024 * 1024)), // gigabytes
+                    getFileImpl().getNameExt (), 
+                    Long.valueOf(size), // bytes
+                    Long.valueOf(size / 1024 + 1), // kilobytes
+                    Long.valueOf(size / (1024 * 1024)), // megabytes
+                    Long.valueOf(size / (1024 * 1024 * 1024)) // gigabytes
                 };
                 return NbBundle.getMessage(DataObject.class, "MSG_ObjectIsTooBig", arr);
             }

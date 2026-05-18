@@ -19,7 +19,7 @@
 
 package org.netbeans.modules.gradle.tooling;
 
-import org.netbeans.modules.gradle.api.NbProjectInfo;
+import org.netbeans.modules.gradle.tooling.internal.NbProjectInfo;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -92,6 +92,8 @@ public class NetBeansToolingPlugin implements Plugin<Project> {
                     }
                 }
                 return model;
+            } catch (NeedOnlineModeException ex) {
+                throw ex;
             } catch (RuntimeException ex) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
@@ -104,7 +106,8 @@ public class NetBeansToolingPlugin implements Plugin<Project> {
                 Throwable cause = ex;
                 while ((cause != null) && (cause.getCause() != cause)) {
                     if (cause instanceof GradleException) {
-                        ret.noteProblem((GradleException) cause);
+                        // unexpected exceptions at this level
+                        ret.noteProblem((GradleException) cause, true);
                         break;
                     }
                     cause = cause.getCause();

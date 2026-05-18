@@ -109,45 +109,26 @@ public class FoldManagerImpl implements FoldManager, BackgroundTask {
     }
 
     @Override
-    public void run(LSPBindings bindings, FileObject file) {
+    public void run(List<LSPBindings> servers, FileObject file) {
         EditorCookie ec = file.getLookup().lookup(EditorCookie.class);
         Document doc = ec != null ? ec.getDocument() : null;
         if (doc == null) {
-            return ;
+            return;
         }
-        Set<FoldingRangeInfo2> foldingRangesSeen = new HashSet<>();
-        List<FoldingRange> ranges = computeRanges(bindings, file);
-        List<FoldInfo> infos = new ArrayList<>();
-        if (ranges != null) {
-            for (FoldingRange r : ranges) {
-                int start = Utils.getOffset(doc, new Position(r.getStartLine(), r.getStartCharacter() != null ? r.getStartCharacter() : 0));
-                int end;
-                if (r.getEndCharacter() == null) {
-                    end = Utils.getOffset(doc, new Position(r.getEndLine() + 1, 0)) - 1;
-                } else {
-                    end = Utils.getOffset(doc, new Position(r.getEndLine(), r.getEndCharacter()));
-                }
-                // Map the fold range type to netbeans as far as possible
-                FoldType foldType;
-                if("comment".equals(r.getKind())) {
-                    foldType = FoldType.COMMENT;
-                } else if ("imports".equals(r.getKind())) {
-                    foldType = FoldType.IMPORT;
-                } else {
-                    foldType = FoldType.CODE_BLOCK;
-                }
-                FoldingRangeInfo2 fri2 = new FoldingRangeInfo2(start, end, foldType);
-                if(! foldingRangesSeen.contains(fri2)) {
-                    infos.add(FoldInfo.range(start, end, foldType));
-                    foldingRangesSeen.add(fri2);
-                }
-            }
-        }
+
+        List<FoldInfo> allFolds = new ArrayList<>();
+
+        Utils.handleBindings(servers,
+                             capa -> Utils.isEnabled(capa.getFoldingRangeProvider()),
+                             () -> new FoldingRangeRequestParams(new TextDocumentIdentifier(Utils.toURI(file))),
+                             (server, param) -> server.getTextDocumentService().foldingRange(param),
+                             (server, result) -> allFolds.addAll(computeInfos(doc, result)));
+
         SwingUtilities.invokeLater(() -> {
             doc.render(() -> {
                 operation.getHierarchy().render(() -> {
                     try {
-                        operation.update(infos, null, null);
+                        operation.update(allFolds, null, null);
                     } catch (BadLocationException ex) {
                         LOG.log(Level.FINE, null, ex);
                     }
@@ -155,20 +136,45 @@ public class FoldManagerImpl implements FoldManager, BackgroundTask {
             });
         });
     }
-
-    static List<FoldingRange> computeRanges(LSPBindings bindings, FileObject file) {
-        if (bindings.getInitResult() != null &&
-            bindings.getInitResult().getCapabilities() != null &&
-            bindings.getInitResult().getCapabilities().getFoldingRangeProvider() != null) { //XXX
-            try {
-                return bindings.getTextDocumentService().foldingRange(new FoldingRangeRequestParams(new TextDocumentIdentifier(Utils.toURI(file)))).get();
-            } catch (InterruptedException | ExecutionException ex) {
-                LOG.log(Level.FINE, null, ex);
+    
+    static List<FoldInfo> computeInfos(Document doc, List<FoldingRange> ranges) {
+        Set<FoldingRangeInfo2> foldingRangesSeen = new HashSet<>();
+        List<FoldInfo> infos = new ArrayList<>();
+        if (ranges != null) {
+            for (FoldingRange r : ranges) {
+                int start;
+                if(r.getStartCharacter() == null) {
+                    int endCharacter = Utils.getEndCharacter(doc, r.getStartLine());
+                    start = Utils.getOffset(doc, new Position(r.getStartLine(), endCharacter));
+                } else {
+                    start = Utils.getOffset(doc, new Position(r.getStartLine(), r.getStartCharacter()));
+                }
+                int end;
+                if (r.getEndCharacter() == null) {
+                    int endCharacter = Utils.getEndCharacter(doc, r.getEndLine());
+                    end = Utils.getOffset(doc, new Position(r.getEndLine(), endCharacter));
+                } else {
+                    end = Utils.getOffset(doc, new Position(r.getEndLine(), r.getEndCharacter()));
+                }
+                // Map the fold range type to netbeans as far as possible
+                FoldType foldType;
+                if ("comment".equals(r.getKind())) {
+                    foldType = FoldType.COMMENT;
+                } else if ("imports".equals(r.getKind())) {
+                    foldType = FoldType.IMPORT;
+                } else {
+                    foldType = FoldType.CODE_BLOCK;
+                }
+                FoldingRangeInfo2 fri2 = new FoldingRangeInfo2(start, end, foldType);
+                if (!foldingRangesSeen.contains(fri2)) {
+                    infos.add(FoldInfo.range(start, end, foldType));
+                    foldingRangesSeen.add(fri2);
+                }
             }
         }
-        return Collections.emptyList();
+        return infos;
     }
-
+   
     private static final Logger LOG = Logger.getLogger(FoldManagerImpl.class.getName());
 
     @MimeRegistration(mimeType="", service=FoldManagerFactory.class, position = 1950)

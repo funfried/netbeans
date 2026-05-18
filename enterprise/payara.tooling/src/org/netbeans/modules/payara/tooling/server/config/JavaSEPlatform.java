@@ -28,10 +28,7 @@ import java.util.Map;
  */
 public enum JavaSEPlatform {
 
-    ////////////////////////////////////////////////////////////////////////////
     // Enum values                                                            //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** JavaSE 1.1. */
     v1_1,
     /** JavaSE 1.2. */
@@ -49,15 +46,16 @@ public enum JavaSEPlatform {
     /** JavaSE 1.8. */
     v1_8,
     /** JavaSE 11. */
-    v11;
+    v11,
+    /** JavaSE 17. */
+    v17,
+    /** JavaSE 21. */
+    v21;
 
-    ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Payara JavaEE platform enumeration length. */
     public static final int length = JavaSEPlatform.values().length;
-    
+
     /** JavaEE platform version elements separator character. */
     public static final char SEPARATOR = '.';
 
@@ -88,6 +86,12 @@ public enum JavaSEPlatform {
     /**  A <code>String</code> representation of v11 value. */
     static final String V11_STR = "11";
 
+    /**  A <code>String</code> representation of v17 value. */
+    static final String V17_STR = "17";
+
+    /**  A <code>String</code> representation of v21 value. */
+    static final String V21_STR = "21";
+
     /** 
      * Stored <code>String</code> values for backward <code>String</code>
      * conversion.
@@ -102,10 +106,7 @@ public enum JavaSEPlatform {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Static methods                                                         //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Returns a <code>JavaSEPlatform</code> with a value represented by the
      * specified <code>String</code>. The <code>JavaSEPlatform</code> returned
@@ -127,10 +128,7 @@ public enum JavaSEPlatform {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Methods                                                                //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Convert JavaEE platform version value to <code>String</code>.
      * <p/>
@@ -148,6 +146,8 @@ public enum JavaSEPlatform {
             case v1_7:     return V1_7_STR;
             case v1_8:     return V1_8_STR;
             case v11:     return V11_STR;
+            case v17:     return V17_STR;
+            case v21:     return V21_STR;
             // This is unrecheable. Being here means this class does not handle
             // all possible values correctly.
             default:   throw new ServerConfigException(

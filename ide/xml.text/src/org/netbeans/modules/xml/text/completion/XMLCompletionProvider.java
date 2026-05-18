@@ -47,7 +47,7 @@ import org.openide.util.NbBundle;
  * @author Samaresh (Samaresh.Panda@Sun.Com)
  */
 @MimeRegistrations({
-    @MimeRegistration(mimeType = "text/xml", service = CompletionProvider.class),
+    @MimeRegistration(mimeType = "text/xml", service = CompletionProvider.class, position = 700),
     @MimeRegistration(mimeType = "text/xml-external-parsed-entity", service = CompletionProvider.class),
 })
 public class XMLCompletionProvider implements CompletionProvider {
@@ -64,7 +64,7 @@ public class XMLCompletionProvider implements CompletionProvider {
     @Override
     public int getAutoQueryTypes(JTextComponent component, String typedText) {
         XMLSyntaxSupport support = XMLSyntaxSupport.getSyntaxSupport(component.getDocument());
-        if( (support == null) || !(support instanceof XMLSyntaxSupport))
+        if(!(support instanceof XMLSyntaxSupport))
             return 0;
         
         int type = checkCompletion(support, component, typedText, false);

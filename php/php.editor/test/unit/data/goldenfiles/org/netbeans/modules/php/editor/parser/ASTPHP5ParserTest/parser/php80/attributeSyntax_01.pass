@@ -306,14 +306,8 @@
         <token id='T_ATTRIBUTE' start='1220' end='1222'>
             <text>#[</text>
         </token>
-        <token id='T_STRING' start='1222' end='1228'>
-            <text>Class1</text>
-        </token>
-        <token id='T_NS_SEPARATOR' start='1228' end='1229'>
-            <text>\</text>
-        </token>
-        <token id='T_STRING' start='1229' end='1233'>
-            <text>Test</text>
+        <token id='T_NAME_QUALIFIED' start='1222' end='1233'>
+            <text>Class1\Test</text>
         </token>
         <token id='T_OPEN_PARENTHESE' start='1233' end='1234'>
             <text>(</text>
@@ -1598,7 +1592,7 @@
                                 </AttributeName>
                                 <AttributeParameters>
                                     <Scalar start='824' end='825' type='INT' value='1'/>
-                                    <StaticConstantAccess start='827' end='841'>
+                                    <StaticConstantAccess start='827' end='841' isDynamicName='false'>
                                         <NamespaceName start='827' end='831' isCurrent='false' isGlobal='false'>
                                             <Identifier start='827' end='831' name='self'/>
                                         </NamespaceName>

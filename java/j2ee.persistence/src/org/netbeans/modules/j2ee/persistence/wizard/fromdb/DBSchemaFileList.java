@@ -57,13 +57,13 @@ public class DBSchemaFileList {
         }
 
         List<FileObject> tempDBSchemaList = new ArrayList<>(dbschema2DisplayName.keySet());
-        Collections.sort(tempDBSchemaList, new DBSchemaComparator());
+        tempDBSchemaList.sort(new DBSchemaComparator());
 
         dbschemaList = Collections.unmodifiableList(tempDBSchemaList);
     }
 
     private void searchRoot(FileObject root, String rootDisplayName) {
-        Enumeration ch = root.getChildren(true);
+        Enumeration<? extends FileObject> ch = root.getChildren(true);
         while (ch.hasMoreElements()) {
             FileObject f = (FileObject) ch.nextElement();
             if (f.getExt().equals(DBSchemaManager.DBSCHEMA_EXT) && !f.isFolder()) {
@@ -91,6 +91,7 @@ public class DBSchemaFileList {
 
     private final class DBSchemaComparator implements Comparator {
 
+        @Override
         public int compare(Object o1, Object o2) {
             FileObject f1 = (FileObject)o1;
             FileObject f2 = (FileObject)o2;

@@ -820,7 +820,7 @@ abstract class AbstractFolder extends FileObject {
                 fire && (added == null) && (removed == null) && !getFileSystem().isReadOnly() &&
                     !(this instanceof MultiFileObject)
             ) {
-                Set<String> nameFilter = nameFilter = new HashSet<String>();
+                Set<String> nameFilter = new HashSet<>();
 
                 if (addedNames != null) {
                     nameFilter.addAll(addedNames);
@@ -910,7 +910,7 @@ abstract class AbstractFolder extends FileObject {
         }
 
         if (childrenList.size() != newChildren.length) {
-            newChildren = childrenList.toArray(new String[childrenList.size()]);
+            newChildren = childrenList.toArray(new String[0]);
         }
 
         return newChildren;
@@ -953,7 +953,7 @@ abstract class AbstractFolder extends FileObject {
     * @param lock the lock obtained by a call to {@link #lock}
     * @exception IOException if the file could not be deleted
     */
-    final public void delete(FileLock lock) throws IOException {
+    public final void delete(FileLock lock) throws IOException {
         if (isFolder()) {
             FileObject[] fos = this.getChildren();
 

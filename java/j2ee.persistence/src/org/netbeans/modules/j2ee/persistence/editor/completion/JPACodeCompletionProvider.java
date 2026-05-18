@@ -65,7 +65,7 @@ import org.openide.util.NbBundle;
  *
  * @author sp153251
  */
-@MimeRegistration(mimeType = "text/x-java", service = CompletionProvider.class, position = 400)///,//NOI18N
+@MimeRegistration(mimeType = "text/x-java", service = CompletionProvider.class, position = 400) //NOI18N
 public class JPACodeCompletionProvider implements CompletionProvider {
 
     @Override
@@ -146,7 +146,7 @@ public class JPACodeCompletionProvider implements CompletionProvider {
                 if (anchorOffset > -1) {
                     resultSet.setAnchorOffset(anchorOffset);
                 }
-            } catch (Exception e) {
+            } catch (MissingResourceException | ParseException e) {
                 Exceptions.printStackTrace(e);
             } finally {
                 resultSet.finish();
@@ -205,7 +205,7 @@ public class JPACodeCompletionProvider implements CompletionProvider {
         private void run(CompilationController controller) {
             if (!hasTask || !isTaskCancelled()){
                 int startOffset = caretOffset;
-                Iterator resolversItr = resolvers.iterator();
+                Iterator<CompletionContextResolver> resolversItr = resolvers.iterator();
                 TreePath env = null;
                 try {
                     env = getCompletionTreePath(controller, caretOffset, CompletionProvider.COMPLETION_QUERY_TYPE);
@@ -217,7 +217,7 @@ public class JPACodeCompletionProvider implements CompletionProvider {
                 }
                 results = new ArrayList<JPACompletionItem>();
                 while (resolversItr.hasNext()) {
-                    CompletionContextResolver resolver = (CompletionContextResolver) resolversItr.next();
+                    CompletionContextResolver resolver = resolversItr.next();
                     TaskUserAction task = new TaskUserAction(controller, resolver, startOffset);
                     try {
                         EntityClassScope scope = EntityClassScope.getEntityClassScope(URLMapper.findFileObject(controller.getCompilationUnit().getSourceFile().toUri().toURL()));

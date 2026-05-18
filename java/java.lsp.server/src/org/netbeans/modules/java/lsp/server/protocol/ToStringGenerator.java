@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
@@ -48,6 +49,8 @@ import org.netbeans.api.java.source.GeneratorUtilities;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.TreeUtilities;
 import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.openide.filesystems.FileObject;
 import org.openide.util.NbBundle;
@@ -60,6 +63,7 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service = CodeActionsProvider.class, position = 50)
 public final class ToStringGenerator extends CodeActionsProvider {
 
+    private static final String GENERATE_TO_STRING = "nbls.java.generate.toString";
     private static final String URI =  "uri";
     private static final String OFFSET =  "offset";
     private static final String FIELDS =  "fields";
@@ -70,12 +74,12 @@ public final class ToStringGenerator extends CodeActionsProvider {
     @NbBundle.Messages({
         "DN_GenerateToString=Generate toString()...",
     })
-    public List<CodeAction> getCodeActions(ResultIterator resultIterator, CodeActionParams params) throws Exception {
+    public List<CodeAction> getCodeActions(NbCodeLanguageClient client, ResultIterator resultIterator, CodeActionParams params) throws Exception {
         List<String> only = params.getContext().getOnly();
         if (only == null || !only.contains(CodeActionKind.Source)) {
             return Collections.emptyList();
         }
-        CompilationController info = CompilationController.get(resultIterator.getParserResult());
+        CompilationController info = resultIterator.getParserResult() != null ? CompilationController.get(resultIterator.getParserResult()) : null;
         if (info == null) {
             return Collections.emptyList();
         }
@@ -112,35 +116,34 @@ public final class ToStringGenerator extends CodeActionsProvider {
         data.put(URI, uri);
         data.put(OFFSET, offset);
         data.put(FIELDS, fields);
-        return Collections.singletonList(createCodeAction(Bundle.DN_GenerateToString(), CODE_GENERATOR_KIND, data, null));
+        return Collections.singletonList(createCodeAction(client, Bundle.DN_GenerateToString(), CODE_GENERATOR_KIND, null, "nbls.generate.code", Utils.encodeCommand(GENERATE_TO_STRING, client.getNbCodeCapabilities()), data));
+    }
+
+    @Override
+    public Set<String> getCommands() {
+        return Collections.singleton(GENERATE_TO_STRING);
     }
 
     @Override
     @NbBundle.Messages({
         "DN_SelectToString=Select fields to be included in toString()",
     })
-    public CompletableFuture<CodeAction> resolve(NbCodeLanguageClient client, CodeAction codeAction, Object data) {
-        CompletableFuture<CodeAction> future = new CompletableFuture<>();
+    public CompletableFuture<Object> processCommand(NbCodeLanguageClient client, String command, List<Object> arguments) {
+        if (arguments.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        JsonObject data = (JsonObject) arguments.get(0);
+        CompletableFuture<Object> future = new CompletableFuture<>();
         try {
-            String uri = ((JsonObject) data).getAsJsonPrimitive(URI).getAsString();
-            int offset = ((JsonObject) data).getAsJsonPrimitive(OFFSET).getAsInt();
-            List<QuickPickItem> fields = Arrays.asList(gson.fromJson(((JsonObject) data).get(FIELDS), QuickPickItem[].class));
+            String uri = data.getAsJsonPrimitive(URI).getAsString();
+            int offset = data.getAsJsonPrimitive(OFFSET).getAsInt();
+            List<QuickPickItem> fields = Arrays.asList(gson.fromJson(data.get(FIELDS), QuickPickItem[].class));
             if (fields.isEmpty()) {
-                WorkspaceEdit edit = generate(uri, offset, fields);
-                if (edit != null) {
-                    codeAction.setEdit(edit);
-                }
-                future.complete(codeAction);
+                future.complete(generate(uri, offset, fields));
             } else {
-                client.showQuickPick(new ShowQuickPickParams(Bundle.DN_SelectToString(), true, fields)).thenAccept(selected -> {
+                client.showQuickPick(new ShowQuickPickParams(Bundle.DN_GenerateToString(), Bundle.DN_SelectToString(), true, fields)).thenAccept(selected -> {
                     try {
-                        if (selected != null) {
-                            WorkspaceEdit edit = generate(uri, offset, fields);
-                            if (edit != null) {
-                                codeAction.setEdit(edit);
-                            }
-                        }
-                        future.complete(codeAction);
+                        future.complete(selected != null ? generate(uri, offset, fields) : null);
                     } catch (IOException | IllegalArgumentException ex) {
                         future.completeExceptionally(ex);
                     }

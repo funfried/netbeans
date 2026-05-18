@@ -317,12 +317,12 @@ public class JPDATruffleAccessor extends Object {
         str.append(position.sourceSection);
         return str.toString();
     }
-
+/*
     static Object[] getTruffleAST(int depth) {
         TruffleAST ast = TruffleAST.get(depth);
         return new Object[] { ast.getNodes(), ast.getRawArguments(), ast.getRawSlots() };
     }
-
+*/
     // Unwind the current thread to given depth
     static boolean setUnwind(int depth) {
         SuspendedEvent evt = getCurrentSuspendedEvent();
@@ -501,6 +501,7 @@ public class JPDATruffleAccessor extends Object {
             bb.resolveListener(new Breakpoint.ResolveListener() {
                 @Override
                 public void breakpointResolved(Breakpoint breakpoint, SourceSection section) {
+                    trace("JPDATruffleAccessor breakpointResolved({0}, {1})", breakpoint, section);
                     // Notify breakpoint resolution after we actually install it.
                     // Resolution that is performed synchronously with the breakpoint installation
                     // would block doSetLineBreakpoint() method invocation on breakpointResolvedAccess breakpoint

@@ -829,7 +829,7 @@ public class Term extends JComponent implements Accessible {
      * Be careful with control characters you need to create the keystroke
      * as follows (note the - 64):
      * <pre>
-     * KeyStroke.getKeyStroke(new Character((char)('T'-64)), Event.CTRL_MASK)
+     * KeyStroke.getKeyStroke(Character.valueOf((char)('T'-64)), Event.CTRL_MASK)
      * </pre>
      * @return Property value.
      */
@@ -1513,10 +1513,10 @@ public class Term extends JComponent implements Accessible {
      */
     private class Scroller extends Thread {
 
-        public final static int UP = 1 << 1;
-        public final static int DOWN = 1 << 2;
-        public final static int LEFT = 1 << 3;
-        public final static int RIGHT = 1 << 4;
+        public static final int UP = 1 << 1;
+        public static final int DOWN = 1 << 2;
+        public static final int LEFT = 1 << 3;
+        public static final int RIGHT = 1 << 4;
         private int direction;
 
         public Scroller(int direction) {

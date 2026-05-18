@@ -29,14 +29,14 @@ import java.util.*;
 *
 * @author Jaroslav Tulach
 * @since 3.30
-* @see BaseMutexUtilities#topologicalSort
+* @see BaseUtilities#topologicalSort
 */
 public final class TopologicalSortException extends Exception {
     /** all vertexes */
     private Collection vertexes;
 
     /** map with edges */
-    private Map<?,? extends Collection<?>> edges;
+    private Map<?, ? extends Collection<?>> edges;
 
     /** result if called twice */
     private Set[] result;
@@ -60,7 +60,7 @@ public final class TopologicalSortException extends Exception {
     public final List partialSort() {
         Set[] all = topologicalSets();
 
-        ArrayList<Object> res = new ArrayList<Object>(vertexes.size());
+        List<Object> res = new ArrayList<Object>(vertexes.size());
 
         for (int i = 0; i < all.length; i++) {
             for (Object e : all[i]) {
@@ -141,6 +141,7 @@ public final class TopologicalSortException extends Exception {
     /** Adds description why the graph cannot be sorted.
      * @param w writer to write to
      */
+    @Override
     public final void printStackTrace(java.io.PrintWriter w) {
         printDebug(w);
         super.printStackTrace(w);
@@ -149,6 +150,7 @@ public final class TopologicalSortException extends Exception {
     /** Adds description why the graph cannot be sorted.
      * @param s stream to write to
      */
+    @Override
     public final void printStackTrace(java.io.PrintStream s) {
         java.io.PrintWriter w = new java.io.PrintWriter(s);
         this.printStackTrace(w);
@@ -180,7 +182,7 @@ public final class TopologicalSortException extends Exception {
         // computes value X and Y for each vertex
         counter = 0;
 
-        Iterator it = vertexes.iterator();
+        Iterator<?> it = vertexes.iterator();
 
         while (it.hasNext()) {
             constructDualGraph(counter, it.next(), vertexInfo);
@@ -239,7 +241,7 @@ public final class TopologicalSortException extends Exception {
             Collection<Set> setsTo = edgesBetweenSets.get(from);
 
             if (setsTo == null) {
-                setsTo = new ArrayList<Set>();
+                setsTo = new ArrayList<>();
                 edgesBetweenSets.put(from, setsTo);
             }
 
@@ -286,7 +288,7 @@ public final class TopologicalSortException extends Exception {
         Collection c = (Collection) edges.get(vertex);
 
         if (c != null) {
-            Iterator it = c.iterator();
+            Iterator<?> it = c.iterator();
 
             while (it.hasNext()) {
                 Vertex next = constructDualGraph(counter, it.next(), vertexInfo);

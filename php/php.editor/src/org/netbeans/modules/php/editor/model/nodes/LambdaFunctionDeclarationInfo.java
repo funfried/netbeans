@@ -28,6 +28,7 @@ import org.netbeans.modules.php.editor.api.QualifiedName;
 import org.netbeans.modules.php.editor.api.elements.ParameterElement;
 import org.netbeans.modules.php.editor.parser.astnodes.Expression;
 import org.netbeans.modules.php.editor.parser.astnodes.FormalParameter;
+import org.netbeans.modules.php.editor.parser.astnodes.IntersectionType;
 import org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.UnionType;
 import org.openide.util.Pair;
@@ -38,7 +39,7 @@ import org.openide.util.Pair;
  */
 public class LambdaFunctionDeclarationInfo extends ASTNodeInfo<LambdaFunctionDeclaration> {
 
-    private final Map<String, List<Pair<QualifiedName, Boolean>>> paramDocTypes = Collections.emptyMap();
+    private final Map<String, Pair<String /*declared type*/, List<Pair<QualifiedName, Boolean>>>> paramDocTypes = Collections.emptyMap();
 
 
     protected LambdaFunctionDeclarationInfo(LambdaFunctionDeclaration node) {
@@ -88,6 +89,8 @@ public class LambdaFunctionDeclarationInfo extends ASTNodeInfo<LambdaFunctionDec
         }
         if (returnType instanceof UnionType) {
             return QualifiedName.create((UnionType) returnType);
+        } else if (returnType instanceof IntersectionType) {
+            return QualifiedName.create((IntersectionType) returnType);
         } else {
             return Collections.singletonList(QualifiedName.create(returnType));
         }

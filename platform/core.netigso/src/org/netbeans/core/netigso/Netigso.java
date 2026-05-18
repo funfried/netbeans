@@ -27,16 +27,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -291,12 +292,8 @@ implements Cloneable, Stamps.Updater {
                         }
                     }
                     if (exported instanceof String) {
-                        for (String p : exported.toString().split(",")) { // NOI18N
-                            int semic = p.indexOf(';');
-                            if (semic >= 0) {
-                                p = p.substring(0, semic);
-                            }
-                            pkgs.add(p);
+                        for (String p : splitExportPackages(exported.toString())) {
+                            pkgs.add(extractBundleName(p));
                         }
                     }
                 } finally {
@@ -328,7 +325,7 @@ implements Cloneable, Stamps.Updater {
                     throw possible;
                 }
                 // Bundle is a fragment, replace it with host in classloader
-                String fragmentHost = b.getHeaders("").get("Fragment-Host");
+                String fragmentHost = extractBundleName(b.getHeaders("").get("Fragment-Host"));
                 Bundle hostBundle = findBundle(fragmentHost);
                 if (hostBundle == null) {
                     LOG.log(Level.WARNING, "Failed to locate fragment host bundle {0} for fragment bundle {1}",
@@ -355,6 +352,17 @@ implements Cloneable, Stamps.Updater {
 
     private static boolean isRealBundle(Bundle b) {
         return b.getHeaders("").get("Fragment-Host") == null; // NOI18N
+    }
+
+    private static String extractBundleName(String fullBundleSpec) {
+        if (fullBundleSpec == null) {
+            return fullBundleSpec;
+        }
+        int semic = fullBundleSpec.indexOf(';');
+        if (semic >= 0) {
+            return fullBundleSpec.substring(0, semic);
+        }
+        return fullBundleSpec;
     }
 
     @Override
@@ -793,4 +801,48 @@ implements Cloneable, Stamps.Updater {
     public final byte[] patchBC(ClassLoader l, String className, ProtectionDomain pd, byte[] arr) {
         return patchByteCode(l, className, pd, arr);
     }
+
+    static List<String> splitExportPackages(String exportPkg) {
+        List<String> elements = new ArrayList<>();
+        StringBuilder buffer = new StringBuilder();
+        boolean inQuotedString = false;
+        for (int i = 0; i < exportPkg.length(); i++) {
+            char nextChar = exportPkg.charAt(i);
+            switch(nextChar) {
+                case '"' -> {
+                    inQuotedString = ! inQuotedString;
+                    buffer.append(nextChar);
+                }
+                case ',' -> {
+                    if (inQuotedString) {
+                        buffer.append(nextChar);
+                    } else {
+                        elements.add(buffer.toString());
+                        buffer.setLength(0);
+                    }
+                }
+                case '\\' -> {
+                    buffer.append(nextChar);
+                    if (inQuotedString) {
+                        if((i + 1) == exportPkg.length()) {
+                            throw new IllegalStateException("Invalid escape sequence");
+                        }
+                        nextChar = exportPkg.charAt(i + 1);
+                        i++;
+                        if (nextChar == '"' || nextChar == '\\') {
+                            buffer.append(nextChar);
+                        } else {
+                            throw new IllegalStateException("Invalid escape sequence");
+                        }
+                    }
+                }
+                default -> buffer.append(nextChar);
+            }
+        }
+        if(! buffer.isEmpty()){
+            elements.add(buffer.toString());
+        }
+        return elements;
+    }
+
 }

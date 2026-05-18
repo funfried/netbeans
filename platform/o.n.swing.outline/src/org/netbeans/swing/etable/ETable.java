@@ -89,6 +89,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.table.*;
 import org.netbeans.swing.outline.DefaultOutlineModel;
 import org.openide.util.ImageUtilities;
+import org.openide.util.Utilities;
 
 /**
  * Extended JTable (ETable) adds these features to JTable:
@@ -124,11 +125,11 @@ public class ETable extends JTable {
     private static final String ACTION_FOCUS_NEXT = "focusNext"; //NOI18N
 
     /** Possible value for editing property */
-    private final static int FULLY_EDITABLE = 1;
+    private static final int FULLY_EDITABLE = 1;
     /** Possible value for editing property */
-    private final static int FULLY_NONEDITABLE = 2;
+    private static final int FULLY_NONEDITABLE = 2;
     /** Possible value for editing property */
-    private final static int DEFAULT = 3;
+    private static final int DEFAULT = 3;
 
     /** Key for storing the currently searched column's index. */
     private static final String SEARCH_COLUMN = "SearchColumn";
@@ -177,9 +178,9 @@ public class ETable extends JTable {
     /** */
     int SEARCH_FIELD_SPACE = 3;
     /** */
-    final private JTextField searchTextField = new SearchTextField();
+    private final JTextField searchTextField = new SearchTextField();
     /** */
-    final private int heightOfTextField = searchTextField.getPreferredSize().height;
+    private final int heightOfTextField = searchTextField.getPreferredSize().height;
     
     /** */
     private JPanel searchPanel = null;
@@ -339,7 +340,6 @@ public class ETable extends JTable {
      * should contain the values for that row. In other words,
      * the value of the cell at row 1, column 5 can be obtained
      * with the following code:
-     * <p>
      * <pre>((Vector)rowData.elementAt(1)).elementAt(5);</pre>
      * <p>
      * @param rowData           the data for the new table
@@ -355,7 +355,6 @@ public class ETable extends JTable {
      * <code>rowData</code>, with column names, <code>columnNames</code>.
      * <code>rowData</code> is an array of rows, so the value of the cell at row 1,
      * column 5 can be obtained with the following code:
-     * <p>
      * <pre> rowData[1][5]; </pre>
      * <p>
      * All rows must be of the same length as <code>columnNames</code>.
@@ -530,11 +529,11 @@ public class ETable extends JTable {
      * Sets the table cell background colors accodring to NET UI guidelines.
      * <p>
      * This is needed in case where the user does not use the NET Look and Feel,
-     * but still wants to paint the cell background colors accoring to NET L&F.
+     * but still wants to paint the cell background colors accoring to NET L&amp;F.
      * <p>
      * This needs to be called also in case where the user has custom table cell
      * renderer (that is not a <code>DefaultTableCellRenderer</code> or a
-     * sub-class of it) for a cell even though NET L&F package is used, if the
+     * sub-class of it) for a cell even though NET L&amp;F package is used, if the
      * cell background colors need to be consistent for the custom renderer.
      *
      * @param   renderer   the custom cell renderer to be painted
@@ -908,7 +907,12 @@ public class ETable extends JTable {
 
         InputMap imp = getInputMap(WHEN_FOCUSED);
         ActionMap am = getActionMap();
-        
+
+        if (Utilities.isMac()) {
+            // On Windows, this shortcut is already present in JTable's InputMap.
+            imp.put(Utilities.stringToKey("F2"), "startEditing");
+        }
+
         //Issue 37919, reinstate support for up/down cycle focus transfer.
         //being focus cycle root mangles this in some dialogs
         imp.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB,
@@ -1849,7 +1853,7 @@ public class ETable extends JTable {
                         rows.add(new RowMapping(i, model, this));
                     }
                 }
-                Collections.sort(rows, c);
+                rows.sort(c);
                 int [] res = new int[rows.size()];
                 int [] invRes = new int[noRows]; // carefull - this one is bigger!
                 for (int i = 0; i < res.length; i++) {
@@ -1869,7 +1873,7 @@ public class ETable extends JTable {
         }
     }
     
-    /**
+    /*
      * Adjusts selected rows when sorting changes.
      *
     protected final void adjustSelectedRows(int[] oldSortingPermutation, int[] oldInverseSortingPermutation,
@@ -2075,7 +2079,7 @@ public class ETable extends JTable {
                 s = convertValueToString(val);
             }   
             if ((s != null) && (s.toUpperCase().indexOf(prefix.toUpperCase()))!= -1   ) {
-                results.add(new Integer(startIndex));
+                results.add(startIndex);
             
                 // initialize prefix
                 if (maxPrefix == null) {
@@ -2247,7 +2251,7 @@ public class ETable extends JTable {
                 if (currentSelectionIndex >= sz) {
                     currentSelectionIndex = sz - 1;
                 }
-                int selRow = ((Integer)results.get(currentSelectionIndex)).intValue();
+                int selRow = results.get(currentSelectionIndex).intValue();
                 setRowSelectionInterval(selRow, selRow);
                 Rectangle rect = getCellRect(selRow, 0, true);
                 scrollRectToVisible(rect);
@@ -2366,7 +2370,7 @@ public class ETable extends JTable {
     }
     
     private ComboBoxModel<String> getSearchComboModel() {
-        DefaultComboBoxModel<String> result = new DefaultComboBoxModel();
+        DefaultComboBoxModel<String> result = new DefaultComboBoxModel<>();
         for (Enumeration<TableColumn> en = getColumnModel().getColumns(); en.hasMoreElements(); ) {
             TableColumn column = en.nextElement();
             if (column instanceof ETableColumn) {
@@ -2436,7 +2440,7 @@ public class ETable extends JTable {
     /**
      * Item to the collection when doing the sorting of table rows.
      */
-    public final static class RowMapping {
+    public static final class RowMapping {
         // index (of the row) in the TableModel
         private final int originalIndex;
         // table model of my table
@@ -2490,7 +2494,7 @@ public class ETable extends JTable {
          * Get the model object at the row index of this mapping and the given column.
          * @param column The column
          * @return The model object
-         * @see {@link #getTransformedValue(int)}
+         * @see #getTransformedValue(int)
          */
         public Object getModelObject(int column) {
             return model.getValueAt(originalIndex, column);
@@ -2701,7 +2705,7 @@ public class ETable extends JTable {
         if (c == editorComp) {
             return true;
         }
-        if (editorComp != null && (editorComp instanceof Container) &&
+        if (editorComp instanceof Container &&
             ((Container) editorComp).isAncestorOf(c)) {
                 return true;
         }
@@ -3051,7 +3055,7 @@ public class ETable extends JTable {
     }
 
     /**
-     * The column selection corner can use either dialog or popup menu.<br/>
+     * The column selection corner can use either dialog or popup menu.<br>
      * This method is equivalent to {@link #setColumnSelectionOn(int, org.netbeans.swing.etable.ETable.ColumnSelection)}
      * with arguments <code>1</code> and appropriate column selection constant.
      * 
@@ -3067,7 +3071,7 @@ public class ETable extends JTable {
     /**
      * Get the column selection method, that is displayed as a response to the
      * mouse event. A popup with column selection menu, or column selection
-     * dialog can be displayed.<br/>
+     * dialog can be displayed.<br>
      * By default, popup menu is displayed on button3 mouse click
      * and dialog or popup menu is displayed on the corner
      * button1 mouse action, depending on the value of {@link #isPopupUsedFromTheCorner()}
@@ -3090,7 +3094,7 @@ public class ETable extends JTable {
     
     /**
      * Set if popup with column selection menu or column selection dialog
-     * should be displayed as a response to the mouse event.<br/>
+     * should be displayed as a response to the mouse event.<br>
      * 
      * @param mouseButton The button of the mouse event
      * @param selection The column selection method.

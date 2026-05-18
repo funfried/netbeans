@@ -190,7 +190,7 @@ final class Memory {
         }
 
         // keep promised value in tread local to survive paralell GC
-        boolean isPrepared = attributes != null && attributes.keySet().contains(name);
+        boolean isPrepared = attributes != null && attributes.containsKey(name);
         if (isPrepared) {
             Entry entry = prepared.get();
             if (entry == null) {
@@ -229,7 +229,7 @@ final class Memory {
     }
 
     /** Limited size LRU map implementation. */
-    private final static class LRU extends LinkedHashMap {
+    private static final class LRU extends LinkedHashMap {
 
         private final int maxSize;
 

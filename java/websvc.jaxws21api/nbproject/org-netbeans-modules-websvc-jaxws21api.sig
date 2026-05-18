@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.46
+#Version 1.63
 
 CLSS public abstract interface java.io.Serializable
 
@@ -9,13 +9,17 @@ meth public abstract int compareTo({java.lang.Comparable%0})
 CLSS public abstract interface !annotation java.lang.Deprecated
  anno 0 java.lang.annotation.Documented()
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE])
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, MODULE, PARAMETER, TYPE])
 intf java.lang.annotation.Annotation
+meth public abstract !hasdefault boolean forRemoval()
+meth public abstract !hasdefault java.lang.String since()
 
 CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
 cons protected init(java.lang.String,int)
+innr public final static EnumDesc
 intf java.io.Serializable
 intf java.lang.Comparable<{java.lang.Enum%0}>
+intf java.lang.constant.Constable
 meth protected final java.lang.Object clone() throws java.lang.CloneNotSupportedException
 meth protected final void finalize()
 meth public final boolean equals(java.lang.Object)
@@ -24,9 +28,11 @@ meth public final int hashCode()
 meth public final int ordinal()
 meth public final java.lang.Class<{java.lang.Enum%0}> getDeclaringClass()
 meth public final java.lang.String name()
+meth public final java.util.Optional<java.lang.Enum$EnumDesc<{java.lang.Enum%0}>> describeConstable()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
+hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -35,11 +41,13 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
+hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
 meth protected java.lang.Object clone() throws java.lang.CloneNotSupportedException
 meth protected void finalize() throws java.lang.Throwable
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="9")
 meth public boolean equals(java.lang.Object)
 meth public final java.lang.Class<?> getClass()
 meth public final void notify()
@@ -57,6 +65,7 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
+hfds serialVersionUID
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -79,6 +88,8 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
+hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,depth,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
+hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -98,6 +109,13 @@ CLSS public abstract interface !annotation java.lang.annotation.Inherited
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[ANNOTATION_TYPE])
 intf java.lang.annotation.Annotation
 
+CLSS public abstract interface !annotation java.lang.annotation.Repeatable
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[ANNOTATION_TYPE])
+intf java.lang.annotation.Annotation
+meth public abstract java.lang.Class<? extends java.lang.annotation.Annotation> value()
+
 CLSS public abstract interface !annotation java.lang.annotation.Retention
  anno 0 java.lang.annotation.Documented()
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
@@ -112,6 +130,9 @@ CLSS public abstract interface !annotation java.lang.annotation.Target
 intf java.lang.annotation.Annotation
 meth public abstract java.lang.annotation.ElementType[] value()
 
+CLSS public abstract interface java.lang.constant.Constable
+meth public abstract java.util.Optional<? extends java.lang.constant.ConstantDesc> describeConstable()
+
 CLSS public abstract java.security.BasicPermission
 cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.String)
@@ -122,6 +143,7 @@ meth public int hashCode()
 meth public java.lang.String getActions()
 meth public java.security.PermissionCollection newPermissionCollection()
 supr java.security.Permission
+hfds exitVM,path,serialVersionUID,wildcard
 
 CLSS public abstract interface java.security.Guard
 meth public abstract void checkGuard(java.lang.Object)
@@ -139,9 +161,12 @@ meth public java.lang.String toString()
 meth public java.security.PermissionCollection newPermissionCollection()
 meth public void checkGuard(java.lang.Object)
 supr java.lang.Object
+hfds name,serialVersionUID
 
 CLSS public abstract interface java.util.Map<%0 extends java.lang.Object, %1 extends java.lang.Object>
 innr public abstract interface static Entry
+meth public !varargs static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> ofEntries(java.util.Map$Entry<? extends {%%0},? extends {%%1}>[])
+ anno 0 java.lang.SafeVarargs()
 meth public abstract boolean containsKey(java.lang.Object)
 meth public abstract boolean containsValue(java.lang.Object)
 meth public abstract boolean equals(java.lang.Object)
@@ -158,6 +183,19 @@ meth public abstract {java.util.Map%1} put({java.util.Map%0},{java.util.Map%1})
 meth public abstract {java.util.Map%1} remove(java.lang.Object)
 meth public boolean remove(java.lang.Object,java.lang.Object)
 meth public boolean replace({java.util.Map%0},{java.util.Map%1},{java.util.Map%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map$Entry<{%%0},{%%1}> entry({%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> copyOf(java.util.Map<? extends {%%0},? extends {%%1}>)
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of()
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
+meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> of({%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1},{%%0},{%%1})
 meth public void forEach(java.util.function.BiConsumer<? super {java.util.Map%0},? super {java.util.Map%1}>)
 meth public void replaceAll(java.util.function.BiFunction<? super {java.util.Map%0},? super {java.util.Map%1},? extends {java.util.Map%1}>)
 meth public {java.util.Map%1} compute({java.util.Map%0},java.util.function.BiFunction<? super {java.util.Map%0},? super {java.util.Map%1},? extends {java.util.Map%1}>)
@@ -175,100 +213,12 @@ meth public abstract boolean isDone()
 meth public abstract {java.util.concurrent.Future%0} get() throws java.lang.InterruptedException,java.util.concurrent.ExecutionException
 meth public abstract {java.util.concurrent.Future%0} get(long,java.util.concurrent.TimeUnit) throws java.lang.InterruptedException,java.util.concurrent.ExecutionException,java.util.concurrent.TimeoutException
 
-CLSS public abstract interface !annotation javax.annotation.Generated
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=SOURCE)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[PACKAGE, TYPE, ANNOTATION_TYPE, METHOD, CONSTRUCTOR, FIELD, LOCAL_VARIABLE, PARAMETER])
-intf java.lang.annotation.Annotation
-meth public abstract !hasdefault java.lang.String comments()
-meth public abstract !hasdefault java.lang.String date()
-meth public abstract java.lang.String[] value()
-
-CLSS public abstract interface !annotation javax.annotation.ManagedBean
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
-intf java.lang.annotation.Annotation
-meth public abstract !hasdefault java.lang.String value()
-
-CLSS public abstract interface !annotation javax.annotation.PostConstruct
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[METHOD])
-intf java.lang.annotation.Annotation
-
-CLSS public abstract interface !annotation javax.annotation.PreDestroy
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[METHOD])
-intf java.lang.annotation.Annotation
-
-CLSS public abstract interface !annotation javax.annotation.Resource
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, FIELD, METHOD])
-innr public final static !enum AuthenticationType
-intf java.lang.annotation.Annotation
-meth public abstract !hasdefault boolean shareable()
-meth public abstract !hasdefault java.lang.Class type()
-meth public abstract !hasdefault java.lang.String description()
-meth public abstract !hasdefault java.lang.String lookup()
-meth public abstract !hasdefault java.lang.String mappedName()
-meth public abstract !hasdefault java.lang.String name()
-meth public abstract !hasdefault javax.annotation.Resource$AuthenticationType authenticationType()
-
-CLSS public final static !enum javax.annotation.Resource$AuthenticationType
- outer javax.annotation.Resource
-fld public final static javax.annotation.Resource$AuthenticationType APPLICATION
-fld public final static javax.annotation.Resource$AuthenticationType CONTAINER
-meth public static javax.annotation.Resource$AuthenticationType valueOf(java.lang.String)
-meth public static javax.annotation.Resource$AuthenticationType[] values()
-supr java.lang.Enum<javax.annotation.Resource$AuthenticationType>
-
-CLSS public abstract interface !annotation javax.annotation.Resources
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
-intf java.lang.annotation.Annotation
-meth public abstract javax.annotation.Resource[] value()
-
-CLSS public abstract interface !annotation javax.annotation.security.DeclareRoles
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
-intf java.lang.annotation.Annotation
-meth public abstract java.lang.String[] value()
-
-CLSS public abstract interface !annotation javax.annotation.security.DenyAll
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD])
-intf java.lang.annotation.Annotation
-
-CLSS public abstract interface !annotation javax.annotation.security.PermitAll
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD])
-intf java.lang.annotation.Annotation
-
-CLSS public abstract interface !annotation javax.annotation.security.RolesAllowed
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD])
-intf java.lang.annotation.Annotation
-meth public abstract java.lang.String[] value()
-
-CLSS public abstract interface !annotation javax.annotation.security.RunAs
- anno 0 java.lang.annotation.Documented()
- anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
-intf java.lang.annotation.Annotation
-meth public abstract java.lang.String value()
-
 CLSS public abstract interface !annotation javax.jws.HandlerChain
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD, FIELD])
 intf java.lang.annotation.Annotation
 meth public abstract !hasdefault java.lang.String name()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract java.lang.String file()
 
 CLSS public abstract interface !annotation javax.jws.Oneway
@@ -300,8 +250,8 @@ CLSS public final static !enum javax.jws.WebParam$Mode
 fld public final static javax.jws.WebParam$Mode IN
 fld public final static javax.jws.WebParam$Mode INOUT
 fld public final static javax.jws.WebParam$Mode OUT
-meth public final static javax.jws.WebParam$Mode[] values()
 meth public static javax.jws.WebParam$Mode valueOf(java.lang.String)
+meth public static javax.jws.WebParam$Mode[] values()
 supr java.lang.Enum<javax.jws.WebParam$Mode>
 
 CLSS public abstract interface !annotation javax.jws.WebResult
@@ -325,7 +275,7 @@ meth public abstract !hasdefault java.lang.String targetNamespace()
 meth public abstract !hasdefault java.lang.String wsdlLocation()
 
 CLSS public abstract interface !annotation javax.jws.soap.InitParam
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 intf java.lang.annotation.Annotation
 meth public abstract java.lang.String name()
 meth public abstract java.lang.String value()
@@ -345,28 +295,28 @@ CLSS public final static !enum javax.jws.soap.SOAPBinding$ParameterStyle
  outer javax.jws.soap.SOAPBinding
 fld public final static javax.jws.soap.SOAPBinding$ParameterStyle BARE
 fld public final static javax.jws.soap.SOAPBinding$ParameterStyle WRAPPED
-meth public final static javax.jws.soap.SOAPBinding$ParameterStyle[] values()
 meth public static javax.jws.soap.SOAPBinding$ParameterStyle valueOf(java.lang.String)
+meth public static javax.jws.soap.SOAPBinding$ParameterStyle[] values()
 supr java.lang.Enum<javax.jws.soap.SOAPBinding$ParameterStyle>
 
 CLSS public final static !enum javax.jws.soap.SOAPBinding$Style
  outer javax.jws.soap.SOAPBinding
 fld public final static javax.jws.soap.SOAPBinding$Style DOCUMENT
 fld public final static javax.jws.soap.SOAPBinding$Style RPC
-meth public final static javax.jws.soap.SOAPBinding$Style[] values()
 meth public static javax.jws.soap.SOAPBinding$Style valueOf(java.lang.String)
+meth public static javax.jws.soap.SOAPBinding$Style[] values()
 supr java.lang.Enum<javax.jws.soap.SOAPBinding$Style>
 
 CLSS public final static !enum javax.jws.soap.SOAPBinding$Use
  outer javax.jws.soap.SOAPBinding
 fld public final static javax.jws.soap.SOAPBinding$Use ENCODED
 fld public final static javax.jws.soap.SOAPBinding$Use LITERAL
-meth public final static javax.jws.soap.SOAPBinding$Use[] values()
 meth public static javax.jws.soap.SOAPBinding$Use valueOf(java.lang.String)
+meth public static javax.jws.soap.SOAPBinding$Use[] values()
 supr java.lang.Enum<javax.jws.soap.SOAPBinding$Use>
 
 CLSS public abstract interface !annotation javax.jws.soap.SOAPMessageHandler
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 intf java.lang.annotation.Annotation
 meth public abstract !hasdefault java.lang.String name()
 meth public abstract !hasdefault java.lang.String[] headers()
@@ -375,7 +325,7 @@ meth public abstract !hasdefault javax.jws.soap.InitParam[] initParams()
 meth public abstract java.lang.String className()
 
 CLSS public abstract interface !annotation javax.jws.soap.SOAPMessageHandlers
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
 intf java.lang.annotation.Annotation
@@ -423,9 +373,9 @@ meth public abstract java.io.InputStream getBase64Content() throws javax.xml.soa
 meth public abstract java.io.InputStream getRawContent() throws javax.xml.soap.SOAPException
 meth public abstract java.lang.Object getContent() throws javax.xml.soap.SOAPException
 meth public abstract java.lang.String[] getMimeHeader(java.lang.String)
-meth public abstract java.util.Iterator getAllMimeHeaders()
-meth public abstract java.util.Iterator getMatchingMimeHeaders(java.lang.String[])
-meth public abstract java.util.Iterator getNonMatchingMimeHeaders(java.lang.String[])
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getAllMimeHeaders()
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getMatchingMimeHeaders(java.lang.String[])
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getNonMatchingMimeHeaders(java.lang.String[])
 meth public abstract javax.activation.DataHandler getDataHandler() throws javax.xml.soap.SOAPException
 meth public abstract void addMimeHeader(java.lang.String,java.lang.String)
 meth public abstract void clearContent()
@@ -447,7 +397,7 @@ supr java.lang.Object
 
 CLSS public abstract interface javax.xml.soap.Detail
 intf javax.xml.soap.SOAPFaultElement
-meth public abstract java.util.Iterator getDetailEntries()
+meth public abstract java.util.Iterator<javax.xml.soap.DetailEntry> getDetailEntries()
 meth public abstract javax.xml.soap.DetailEntry addDetailEntry(javax.xml.namespace.QName) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.DetailEntry addDetailEntry(javax.xml.soap.Name) throws javax.xml.soap.SOAPException
 
@@ -461,7 +411,7 @@ meth public abstract javax.xml.soap.SOAPMessage createMessage(javax.xml.soap.Mim
 meth public static javax.xml.soap.MessageFactory newInstance() throws javax.xml.soap.SOAPException
 meth public static javax.xml.soap.MessageFactory newInstance(java.lang.String) throws javax.xml.soap.SOAPException
 supr java.lang.Object
-hfds DEFAULT_MESSAGE_FACTORY,MESSAGE_FACTORY_PROPERTY
+hfds DEFAULT_MESSAGE_FACTORY
 
 CLSS public javax.xml.soap.MimeHeader
 cons public init(java.lang.String,java.lang.String)
@@ -473,9 +423,9 @@ hfds name,value
 CLSS public javax.xml.soap.MimeHeaders
 cons public init()
 meth public java.lang.String[] getHeader(java.lang.String)
-meth public java.util.Iterator getAllHeaders()
-meth public java.util.Iterator getMatchingHeaders(java.lang.String[])
-meth public java.util.Iterator getNonMatchingHeaders(java.lang.String[])
+meth public java.util.Iterator<javax.xml.soap.MimeHeader> getAllHeaders()
+meth public java.util.Iterator<javax.xml.soap.MimeHeader> getMatchingHeaders(java.lang.String[])
+meth public java.util.Iterator<javax.xml.soap.MimeHeader> getNonMatchingHeaders(java.lang.String[])
 meth public void addHeader(java.lang.String,java.lang.String)
 meth public void removeAllHeaders()
 meth public void removeHeader(java.lang.String)
@@ -504,7 +454,7 @@ cons protected init()
 meth protected abstract javax.xml.soap.MessageFactory newMessageFactory(java.lang.String) throws javax.xml.soap.SOAPException
 meth protected abstract javax.xml.soap.SOAPFactory newSOAPFactory(java.lang.String) throws javax.xml.soap.SOAPException
 supr java.lang.Object
-hfds DEFAULT_META_FACTORY_CLASS,META_FACTORY_CLASS_PROPERTY
+hfds DEFAULT_META_FACTORY_CLASS,META_FACTORY_DEPRECATED_CLASS_PROPERTY
 
 CLSS public javax.xml.soap.SAAJResult
 cons public init() throws javax.xml.soap.SOAPException
@@ -543,7 +493,7 @@ cons public init()
 meth public abstract javax.xml.soap.SOAPConnection createConnection() throws javax.xml.soap.SOAPException
 meth public static javax.xml.soap.SOAPConnectionFactory newInstance() throws javax.xml.soap.SOAPException
 supr java.lang.Object
-hfds DEFAULT_SOAP_CONNECTION_FACTORY,SF_PROPERTY
+hfds DEFAULT_SOAP_CONNECTION_FACTORY
 
 CLSS public abstract interface javax.xml.soap.SOAPConstants
 fld public final static java.lang.String DEFAULT_SOAP_PROTOCOL = "SOAP 1.1 Protocol"
@@ -578,13 +528,13 @@ meth public abstract java.lang.String getAttributeValue(javax.xml.namespace.QNam
 meth public abstract java.lang.String getAttributeValue(javax.xml.soap.Name)
 meth public abstract java.lang.String getEncodingStyle()
 meth public abstract java.lang.String getNamespaceURI(java.lang.String)
-meth public abstract java.util.Iterator getAllAttributes()
-meth public abstract java.util.Iterator getAllAttributesAsQNames()
-meth public abstract java.util.Iterator getChildElements()
-meth public abstract java.util.Iterator getChildElements(javax.xml.namespace.QName)
-meth public abstract java.util.Iterator getChildElements(javax.xml.soap.Name)
-meth public abstract java.util.Iterator getNamespacePrefixes()
-meth public abstract java.util.Iterator getVisibleNamespacePrefixes()
+meth public abstract java.util.Iterator<java.lang.String> getNamespacePrefixes()
+meth public abstract java.util.Iterator<java.lang.String> getVisibleNamespacePrefixes()
+meth public abstract java.util.Iterator<javax.xml.namespace.QName> getAllAttributesAsQNames()
+meth public abstract java.util.Iterator<javax.xml.soap.Name> getAllAttributes()
+meth public abstract java.util.Iterator<javax.xml.soap.Node> getChildElements()
+meth public abstract java.util.Iterator<javax.xml.soap.Node> getChildElements(javax.xml.namespace.QName)
+meth public abstract java.util.Iterator<javax.xml.soap.Node> getChildElements(javax.xml.soap.Name)
 meth public abstract javax.xml.namespace.QName createQName(java.lang.String,java.lang.String) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.namespace.QName getElementQName()
 meth public abstract javax.xml.soap.Name getElementName()
@@ -645,7 +595,7 @@ meth public javax.xml.soap.SOAPElement createElement(org.w3c.dom.Element) throws
 meth public static javax.xml.soap.SOAPFactory newInstance() throws javax.xml.soap.SOAPException
 meth public static javax.xml.soap.SOAPFactory newInstance(java.lang.String) throws javax.xml.soap.SOAPException
 supr java.lang.Object
-hfds SOAP_FACTORY_PROPERTY
+hfds DEFAULT_SOAP_FACTORY
 
 CLSS public abstract interface javax.xml.soap.SOAPFault
 intf javax.xml.soap.SOAPBodyElement
@@ -656,9 +606,9 @@ meth public abstract java.lang.String getFaultNode()
 meth public abstract java.lang.String getFaultReasonText(java.util.Locale) throws javax.xml.soap.SOAPException
 meth public abstract java.lang.String getFaultRole()
 meth public abstract java.lang.String getFaultString()
-meth public abstract java.util.Iterator getFaultReasonLocales() throws javax.xml.soap.SOAPException
-meth public abstract java.util.Iterator getFaultReasonTexts() throws javax.xml.soap.SOAPException
-meth public abstract java.util.Iterator getFaultSubcodes()
+meth public abstract java.util.Iterator<java.lang.String> getFaultReasonTexts() throws javax.xml.soap.SOAPException
+meth public abstract java.util.Iterator<java.util.Locale> getFaultReasonLocales() throws javax.xml.soap.SOAPException
+meth public abstract java.util.Iterator<javax.xml.namespace.QName> getFaultSubcodes()
 meth public abstract java.util.Locale getFaultStringLocale()
 meth public abstract javax.xml.namespace.QName getFaultCodeAsQName()
 meth public abstract javax.xml.soap.Detail addDetail() throws javax.xml.soap.SOAPException
@@ -681,17 +631,17 @@ intf javax.xml.soap.SOAPElement
 
 CLSS public abstract interface javax.xml.soap.SOAPHeader
 intf javax.xml.soap.SOAPElement
-meth public abstract java.util.Iterator examineAllHeaderElements()
-meth public abstract java.util.Iterator examineHeaderElements(java.lang.String)
-meth public abstract java.util.Iterator examineMustUnderstandHeaderElements(java.lang.String)
-meth public abstract java.util.Iterator extractAllHeaderElements()
-meth public abstract java.util.Iterator extractHeaderElements(java.lang.String)
+meth public abstract java.util.Iterator<javax.xml.soap.SOAPHeaderElement> examineAllHeaderElements()
+meth public abstract java.util.Iterator<javax.xml.soap.SOAPHeaderElement> examineHeaderElements(java.lang.String)
+meth public abstract java.util.Iterator<javax.xml.soap.SOAPHeaderElement> examineMustUnderstandHeaderElements(java.lang.String)
+meth public abstract java.util.Iterator<javax.xml.soap.SOAPHeaderElement> extractAllHeaderElements()
+meth public abstract java.util.Iterator<javax.xml.soap.SOAPHeaderElement> extractHeaderElements(java.lang.String)
 meth public abstract javax.xml.soap.SOAPHeaderElement addHeaderElement(javax.xml.namespace.QName) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.SOAPHeaderElement addHeaderElement(javax.xml.soap.Name) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.SOAPHeaderElement addNotUnderstoodHeaderElement(javax.xml.namespace.QName) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.SOAPHeaderElement addUpgradeHeaderElement(java.lang.String) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.SOAPHeaderElement addUpgradeHeaderElement(java.lang.String[]) throws javax.xml.soap.SOAPException
-meth public abstract javax.xml.soap.SOAPHeaderElement addUpgradeHeaderElement(java.util.Iterator) throws javax.xml.soap.SOAPException
+meth public abstract javax.xml.soap.SOAPHeaderElement addUpgradeHeaderElement(java.util.Iterator<java.lang.String>) throws javax.xml.soap.SOAPException
 
 CLSS public abstract interface javax.xml.soap.SOAPHeaderElement
 intf javax.xml.soap.SOAPElement
@@ -711,8 +661,8 @@ fld public final static java.lang.String WRITE_XML_DECLARATION = "javax.xml.soap
 meth public abstract boolean saveRequired()
 meth public abstract int countAttachments()
 meth public abstract java.lang.String getContentDescription()
-meth public abstract java.util.Iterator getAttachments()
-meth public abstract java.util.Iterator getAttachments(javax.xml.soap.MimeHeaders)
+meth public abstract java.util.Iterator<javax.xml.soap.AttachmentPart> getAttachments()
+meth public abstract java.util.Iterator<javax.xml.soap.AttachmentPart> getAttachments(javax.xml.soap.MimeHeaders)
 meth public abstract javax.xml.soap.AttachmentPart createAttachmentPart()
 meth public abstract javax.xml.soap.AttachmentPart getAttachment(javax.xml.soap.SOAPElement) throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.soap.MimeHeaders getMimeHeaders()
@@ -736,9 +686,9 @@ cons public init()
 intf javax.xml.soap.Node
 intf org.w3c.dom.Document
 meth public abstract java.lang.String[] getMimeHeader(java.lang.String)
-meth public abstract java.util.Iterator getAllMimeHeaders()
-meth public abstract java.util.Iterator getMatchingMimeHeaders(java.lang.String[])
-meth public abstract java.util.Iterator getNonMatchingMimeHeaders(java.lang.String[])
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getAllMimeHeaders()
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getMatchingMimeHeaders(java.lang.String[])
+meth public abstract java.util.Iterator<javax.xml.soap.MimeHeader> getNonMatchingMimeHeaders(java.lang.String[])
 meth public abstract javax.xml.soap.SOAPEnvelope getEnvelope() throws javax.xml.soap.SOAPException
 meth public abstract javax.xml.transform.Source getContent() throws javax.xml.soap.SOAPException
 meth public abstract void addMimeHeader(java.lang.String,java.lang.String)
@@ -778,6 +728,7 @@ meth public void setNextSibling(org.w3c.dom.Node)
 meth public void setNode(org.w3c.dom.Node)
 meth public void setSystemId(java.lang.String)
 supr java.lang.Object
+hfds nextSibling,node,systemId
 
 CLSS public abstract interface !annotation javax.xml.ws.Action
  anno 0 java.lang.annotation.Documented()
@@ -1046,6 +997,7 @@ meth public abstract !hasdefault java.lang.String wsdlLocation()
 
 CLSS public abstract interface !annotation javax.xml.ws.WebServiceRef
  anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Repeatable(java.lang.Class<? extends java.lang.annotation.Annotation> value=class javax.xml.ws.WebServiceRefs)
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD, FIELD])
 intf java.lang.annotation.Annotation
@@ -1216,7 +1168,6 @@ supr java.lang.Object
 
 CLSS public abstract javax.xml.ws.spi.Provider
 cons protected init()
-fld public final static java.lang.String JAXWSPROVIDER_PROPERTY = "javax.xml.ws.spi.Provider"
 meth public !varargs javax.xml.ws.Endpoint createAndPublishEndpoint(java.lang.String,java.lang.Object,javax.xml.ws.WebServiceFeature[])
 meth public !varargs javax.xml.ws.Endpoint createEndpoint(java.lang.String,java.lang.Class<?>,javax.xml.ws.spi.Invoker,javax.xml.ws.WebServiceFeature[])
 meth public !varargs javax.xml.ws.Endpoint createEndpoint(java.lang.String,java.lang.Object,javax.xml.ws.WebServiceFeature[])
@@ -1230,7 +1181,7 @@ meth public abstract javax.xml.ws.wsaddressing.W3CEndpointReference createW3CEnd
 meth public javax.xml.ws.wsaddressing.W3CEndpointReference createW3CEndpointReference(java.lang.String,javax.xml.namespace.QName,javax.xml.namespace.QName,javax.xml.namespace.QName,java.util.List<org.w3c.dom.Element>,java.lang.String,java.util.List<org.w3c.dom.Element>,java.util.List<org.w3c.dom.Element>,java.util.Map<javax.xml.namespace.QName,java.lang.String>)
 meth public static javax.xml.ws.spi.Provider provider()
 supr java.lang.Object
-hfds DEFAULT_JAXWSPROVIDER,iteratorMethod,loadMethod
+hfds DEFAULT_JAXWSPROVIDER
 
 CLSS public abstract javax.xml.ws.spi.ServiceDelegate
 cons protected init()
@@ -1262,6 +1213,49 @@ CLSS public abstract interface !annotation javax.xml.ws.spi.WebServiceFeatureAnn
 intf java.lang.annotation.Annotation
 meth public abstract java.lang.Class<? extends javax.xml.ws.WebServiceFeature> bean()
 meth public abstract java.lang.String id()
+
+CLSS public abstract javax.xml.ws.spi.http.HttpContext
+cons public init()
+fld protected javax.xml.ws.spi.http.HttpHandler handler
+meth public abstract java.lang.Object getAttribute(java.lang.String)
+meth public abstract java.lang.String getPath()
+meth public abstract java.util.Set<java.lang.String> getAttributeNames()
+meth public void setHandler(javax.xml.ws.spi.http.HttpHandler)
+supr java.lang.Object
+
+CLSS public abstract javax.xml.ws.spi.http.HttpExchange
+cons public init()
+fld public final static java.lang.String REQUEST_CIPHER_SUITE = "javax.xml.ws.spi.http.request.cipher.suite"
+fld public final static java.lang.String REQUEST_KEY_SIZE = "javax.xml.ws.spi.http.request.key.size"
+fld public final static java.lang.String REQUEST_X509CERTIFICATE = "javax.xml.ws.spi.http.request.cert.X509Certificate"
+meth public abstract boolean isUserInRole(java.lang.String)
+meth public abstract java.io.InputStream getRequestBody() throws java.io.IOException
+meth public abstract java.io.OutputStream getResponseBody() throws java.io.IOException
+meth public abstract java.lang.Object getAttribute(java.lang.String)
+meth public abstract java.lang.String getContextPath()
+meth public abstract java.lang.String getPathInfo()
+meth public abstract java.lang.String getProtocol()
+meth public abstract java.lang.String getQueryString()
+meth public abstract java.lang.String getRequestHeader(java.lang.String)
+meth public abstract java.lang.String getRequestMethod()
+meth public abstract java.lang.String getRequestURI()
+meth public abstract java.lang.String getScheme()
+meth public abstract java.net.InetSocketAddress getLocalAddress()
+meth public abstract java.net.InetSocketAddress getRemoteAddress()
+meth public abstract java.security.Principal getUserPrincipal()
+meth public abstract java.util.Map<java.lang.String,java.util.List<java.lang.String>> getRequestHeaders()
+meth public abstract java.util.Map<java.lang.String,java.util.List<java.lang.String>> getResponseHeaders()
+meth public abstract java.util.Set<java.lang.String> getAttributeNames()
+meth public abstract javax.xml.ws.spi.http.HttpContext getHttpContext()
+meth public abstract void addResponseHeader(java.lang.String,java.lang.String)
+meth public abstract void close() throws java.io.IOException
+meth public abstract void setStatus(int)
+supr java.lang.Object
+
+CLSS public abstract javax.xml.ws.spi.http.HttpHandler
+cons public init()
+meth public abstract void handle(javax.xml.ws.spi.http.HttpExchange) throws java.io.IOException
+supr java.lang.Object
 
 CLSS public final javax.xml.ws.wsaddressing.W3CEndpointReference
 cons protected init()

@@ -57,7 +57,7 @@ import org.openide.windows.TopComponent;
  */
 public final class DebuggingView {
     
-    private final static DebuggingView INSTANCE = new DebuggingView();
+    private static final DebuggingView INSTANCE = new DebuggingView();
     
     private Reference<DebuggingViewComponent> dvcRef = new WeakReference<DebuggingViewComponent>(null);
     
@@ -100,7 +100,7 @@ public final class DebuggingView {
      * Debugging view is created for the given debugger session only when an
      * implementation of this class is found in the current session engine lookup.
      */
-    public static abstract class DVSupport {
+    public abstract static class DVSupport {
         
         /** Property name constant. */
         public static final String          PROP_THREAD_STARTED = "threadStarted";      // NOI18N
@@ -267,7 +267,7 @@ public final class DebuggingView {
          * By marking the implementation class with this annotation,
          * you automatically register that implementation for use by the debugging view.
          * The class must be public and have a public constructor which takes
-         * no arguments or takes {@link ContextProvider} as an argument.
+         * no arguments or takes {@link org.netbeans.spi.debugger.ContextProvider} as an argument.
          *
          * @author Martin Entlicher
          */

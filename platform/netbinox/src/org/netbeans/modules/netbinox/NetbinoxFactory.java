@@ -19,7 +19,9 @@
 package org.netbeans.modules.netbinox;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,11 +49,11 @@ public class NetbinoxFactory implements FrameworkFactory {
     @Override
     @SuppressWarnings("unchecked")
     public Framework newFramework(Map map) {
-        Map<String,Object> configMap = new HashMap<String,Object>();
+        Map<String, Object> configMap = new HashMap<>(32);
         configMap.putAll(map);
 //        configMap.put("osgi.hook.configurators.exclude", // NOI18N
 //            "org.eclipse.core.runtime.internal.adaptor.EclipseLogHook" // NOI18N
-////            + ",org.eclipse.core.runtime.internal.adaptor.EclipseClassLoadingHook" // NOI18N
+// //            + ",org.eclipse.core.runtime.internal.adaptor.EclipseClassLoadingHook" // NOI18N
 //        );
         configMap.put("org.osgi.framework.bundle.parent", "ext"); // NOI18N
         configMap.put("osgi.hook.configurators.include", NetbinoxHooks.class.getName()); // NOI18N
@@ -72,6 +74,33 @@ public class NetbinoxFactory implements FrameworkFactory {
         ));
         if (System.getProperty("osgi.locking") == null) { // NOI18N
             configMap.put("osgi.locking", "none"); // NOI18N
+        }
+
+        // Ensure that the org.osgi.framework.executionenvironment holds all
+        // JavaSE entries that match till the current JDK. The dynamic approach
+        // will work also for newly released JDKs.
+        int javaSpecificationMajorVersion = Runtime.version().feature();
+
+        if (javaSpecificationMajorVersion > 8) {
+            List<String> values = new ArrayList<>();
+            values.add("OSGi/Minimum-1.0");
+            values.add("OSGi/Minimum-1.1");
+            values.add("OSGi/Minimum-1.2");
+            values.add("JavaSE/compact1-1.8");
+            values.add("JavaSE/compact2-1.8");
+            values.add("JavaSE/compact3-1.8");
+            values.add("JRE-1.1");
+            values.add("J2SE-1.2");
+            values.add("J2SE-1.3");
+            values.add("J2SE-1.4");
+            values.add("J2SE-1.5");
+            values.add("JavaSE-1.6");
+            values.add("JavaSE-1.7");
+            values.add("JavaSE-1.8");
+            for (int i = 9; i <= javaSpecificationMajorVersion; i++) {
+                values.add("JavaSE-" + i);
+            }
+            configMap.put("org.osgi.framework.executionenvironment", String.join(", ", values));
         }
 
         Object rawBundleMap = configMap.get("felix.bootdelegation.classloaders"); // NOI18N

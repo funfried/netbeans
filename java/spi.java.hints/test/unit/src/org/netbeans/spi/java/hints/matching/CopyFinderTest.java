@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.swing.text.Document;
@@ -1257,7 +1258,125 @@ public class CopyFinderTest extends NbTestCase {
                              false,
                              false);
     }
-    
+
+
+    public void testPatternMatchingInstanceOf() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_17");
+        } catch (IllegalArgumentException ex) {
+            System.err.println("Skipping testPatternMatchingInstanceOf," +
+                               "as SourceVersion.RELEASE_17 is not available.");
+            return ;
+        }
+        sourceLevel = "17";
+        performVariablesTest("package test;\n" +
+                             "public class Test {\n" +
+                             "    boolean test(Object o) {\n" +
+                             "      return o instanceof String s;\n" +
+                             "    }\n" +
+                             "}\n",
+                             "$expr instanceof $type $name",
+                             new Pair[] {
+                                 new Pair<String, int[]>("$expr", new int[] {76, 77}),
+                                 new Pair<String, int[]>("$type", new int[] {89, 95}),
+                                 new Pair<String, int[]>("$name", new int[] {89, 97}),
+                             },
+                             new Pair[0],
+                             new Pair[] {
+                                 new Pair<String, String >("$name", "s"),
+                             },
+                             false,
+                             false);
+    }
+
+    public void testNotPatternMatchingInstanceOf() throws Exception {
+        performVariablesTest("package test;\n" +
+                             "public class Test {\n" +
+                             "    boolean test(Object o) {\n" +
+                             "      return o instanceof String;\n" +
+                             "    }\n" +
+                             "}\n",
+                             "$expr instanceof $type",
+                             new Pair[] {
+                                 new Pair<String, int[]>("$expr", new int[] {76, 77}),
+                                 new Pair<String, int[]>("$type", new int[] {89, 95})
+                             },
+                             new Pair[0],
+                             new Pair[0],
+                             false,
+                             false);
+    }
+
+    public void testInsidePatternMatchingInstanceOf() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_17");
+        } catch (IllegalArgumentException ex) {
+            System.err.println("Skipping testPatternMatchingInstanceOf," +
+                               "as SourceVersion.RELEASE_17 is not available.");
+            return ;
+        }
+        sourceLevel = "17";
+        performVariablesTest("package test;\n" +
+                             "public class Test {\n" +
+                             "    boolean test(Object o) {\n" +
+                             "      return o.toString() instanceof String s;\n" +
+                             "    }\n" +
+                             "}\n",
+                             "$expr.toString()",
+                             new Pair[] {
+                                 new Pair<String, int[]>("$expr", new int[] {76, 77}),
+                             },
+                             new Pair[0],
+                             new Pair[0],
+                             false,
+                             false);
+    }
+
+    public void testTargetTyping1() throws Exception {
+        sourceLevel = "17";
+        performVariablesTest("""
+                             package test;
+                             public class Test {
+                                 boolean test() {
+                                     long l = "";
+                                 }
+                             }
+                             """,
+                             "long $var = $1{java.lang.String};",
+                             new Pair[] {
+                                 new Pair<String, int[]>("$1", new int[] {72, 74}),
+                                 new Pair<String, int[]>("$var", new int[] {63, 75}),
+                             },
+                             new Pair[0],
+                             new Pair[] {
+                                 new Pair<String, String>("$var", "l"),
+                             },
+                             false,
+                             false);
+    }
+
+    public void testTargetTyping2() throws Exception {
+        sourceLevel = "17";
+        performVariablesTest("""
+                             package test;
+                             public class Test {
+                                 boolean test() {
+                                     long l;
+                                     l = "";
+                                 }
+                             }
+                             """,
+                             "$0{long} = $1{java.lang.String};",
+                             new Pair[] {
+                                 new Pair<String, int[]>("$1", new int[] {83, 85}),
+                                 new Pair<String, int[]>("$0", new int[] {79, 80}),
+                             },
+                             new Pair[0],
+                             new Pair[0],
+                             false,
+                             false);
+    }
+
     public void testKeepImplicitThis() throws Exception {
         prepareTest("package test; public class Test { void t() { toString(); } }", -1);
 
@@ -1312,6 +1431,8 @@ public class CopyFinderTest extends NbTestCase {
 
         TestUtilities.copyStringToFile(data, code);
 
+        SourceUtilsTestUtil.setSourceLevel(data, sourceLevel);
+
         data.refresh();
 
         SourceUtilsTestUtil.prepareTest(sourceRoot, buildRoot, cache);
@@ -1363,6 +1484,7 @@ public class CopyFinderTest extends NbTestCase {
 
     protected CompilationInfo info;
     private Document doc;
+    private String sourceLevel;
 
     private void performTest(String code) throws Exception {
         performTest(code, true);
@@ -1504,8 +1626,9 @@ public class CopyFinderTest extends NbTestCase {
             }
             if (!actual.isEmpty()) {
                 Map<String, String> print = new HashMap<String, String>(actual.size());
-                for (String s : actual.keySet()) {
-                    int[] arr = actual.get(s);
+                for (Entry<String, int[]> entry : actual.entrySet()) {
+                    String s = entry.getKey();
+                    int[] arr = entry.getValue();
                     print.put(s, Arrays.toString(arr));
                 }
                 assertTrue("Extra duplicates found: " + print, actual.isEmpty());
@@ -1537,8 +1660,9 @@ public class CopyFinderTest extends NbTestCase {
             }
             if (!actualMulti.isEmpty()) {
                 Map<String, String> print = new HashMap<String, String>(actualMulti.size());
-                for (String s : actualMulti.keySet()) {
-                    int[] arr = actualMulti.get(s);
+                for (Entry<String, int[]> entry : actualMulti.entrySet()) {
+                    String s = entry.getKey();
+                    int[] arr = entry.getValue();
                     print.put(s, Arrays.toString(arr));
                 }
                 assertTrue("Extra multi duplicates found: " + print, actualMulti.isEmpty());

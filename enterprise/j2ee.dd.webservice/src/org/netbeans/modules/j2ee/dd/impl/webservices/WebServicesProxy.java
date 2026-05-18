@@ -24,15 +24,16 @@
 
 package org.netbeans.modules.j2ee.dd.impl.webservices;
 
-/**
- *
- * @author  Nitya Doraisamy
- */
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 import org.netbeans.modules.j2ee.dd.api.webservices.Webservices;
 
+
+/**
+ *
+ * @author  Nitya Doraisamy
+ */
 public class WebServicesProxy implements Webservices {
     private Webservices webSvc;
     private String version;
@@ -71,7 +72,7 @@ public class WebServicesProxy implements Webservices {
                 new java.beans.PropertyChangeEvent(this, PROPERTY_VERSION, version, value);
             version = value;
             for (int i=0;i<listeners.size();i++) {
-                ((java.beans.PropertyChangeListener)listeners.get(i)).propertyChange(evt);
+                listeners.get(i).propertyChange(evt);
             }
         }
     }
@@ -95,7 +96,7 @@ public class WebServicesProxy implements Webservices {
                         ddStatus, value);
             ddStatus = value;
             for (int i=0;i<listeners.size();i++) {
-                ((java.beans.PropertyChangeListener)listeners.get(i)).propertyChange(evt);
+                listeners.get(i).propertyChange(evt);
             }
         }
     }
@@ -405,7 +406,7 @@ public class WebServicesProxy implements Webservices {
             } catch (org.openide.filesystems.FileAlreadyLockedException ex) {
                 // trying to use OutputProvider for writing changes
                 org.openide.loaders.DataObject dobj = org.openide.loaders.DataObject.find(fo);
-                if (dobj != null && dobj instanceof WebServicesProxy.OutputProvider)
+                if (dobj instanceof OutputProvider)
                     ((WebServicesProxy.OutputProvider)dobj).write(this);
                 else 
                     throw ex;

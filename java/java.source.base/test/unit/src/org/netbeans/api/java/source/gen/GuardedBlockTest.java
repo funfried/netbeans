@@ -137,7 +137,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
                     if (type.equals(ClassPath.COMPILE))
                         return ClassPathSupport.createClassPath(new FileObject[0]);
                     if (type.equals(ClassPath.BOOT))
-                        return BootClassPathUtil.getBootClassPath();;
+                        return BootClassPathUtil.getBootClassPath();
                     return null;
             }
         };
@@ -938,7 +938,6 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         return "";
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // classes used for getting guarded section initialized
     public static class GuardedDataLoader extends MultiFileLoader {
 

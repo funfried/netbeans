@@ -97,7 +97,7 @@ public class SingleGroovySourceRunActionProvider implements ActionProvider {
         return isSingleSourceFile(getGroovyFile(context));
     }
 
-    static private boolean isSingleSourceFile(FileObject fileObject) {
+    private static boolean isSingleSourceFile(FileObject fileObject) {
         if (fileObject == null) {
             return false;
         }
@@ -105,15 +105,15 @@ public class SingleGroovySourceRunActionProvider implements ActionProvider {
         return p == null;
     }
     
-    static private FileObject getGroovyFile(Lookup lookup) {
+    private static FileObject getGroovyFile(Lookup lookup) {
         for (DataObject dObj : lookup.lookupAll(DataObject.class)) {
             FileObject fObj = dObj.getPrimaryFile();
-            if (GROOVY_EXTENSION.equals(fObj.getExt().toLowerCase())) {
+            if (GROOVY_EXTENSION.equalsIgnoreCase(fObj.getExt())) {
                 return fObj;
             }
         }
         for (FileObject fObj : lookup.lookupAll(FileObject.class)) {
-            if (GROOVY_EXTENSION.equals(fObj.getExt().toLowerCase())) {
+            if (GROOVY_EXTENSION.equalsIgnoreCase(fObj.getExt())) {
                 return fObj;
             }
         }

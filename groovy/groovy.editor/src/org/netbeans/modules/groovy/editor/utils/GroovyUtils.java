@@ -22,9 +22,11 @@ package org.netbeans.modules.groovy.editor.utils;
 import javax.swing.text.BadLocationException;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
-import org.codehaus.groovy.ast.GenericsType;
 import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.transform.stc.StaticTypesMarker;
+import org.netbeans.modules.groovy.editor.compiler.GroovyIndexingTask;
+import org.netbeans.modules.parsing.api.Task;
+import org.netbeans.modules.parsing.spi.indexing.support.IndexingSupport;
 
 /**
  *
@@ -54,7 +56,7 @@ public final class GroovyUtils {
             if (last > first) {
                 return stripPackage(fqn.substring(0, first)) + "<" +
                         stripPackageFromTypeParams(fqn.substring(first + 1, last)) + ">" +
-                        fqn.substring(last + 1, fqn.length());
+                        fqn.substring(last + 1);
             }
         }
         if (fqn.contains(".")) {
@@ -255,6 +257,11 @@ public final class GroovyUtils {
      */
     public static ClassNode findInferredType(ASTNode n) {
         Object o = n.getNodeMetaData(StaticTypesMarker.INFERRED_TYPE);
+        
+        if (o == null) {
+            o = n.getNodeMetaData(StaticTypesMarker.INFERRED_RETURN_TYPE);
+        }
+        
         ClassNode cn = null;
         if (n instanceof Expression) {
             cn = ((Expression)n).getType();
@@ -306,4 +313,7 @@ public final class GroovyUtils {
         return indexingEnabled;
     }
 
+    public static boolean isIndexingTask(Task t) {
+        return IndexingSupport.isIndexingTask(t) || t instanceof GroovyIndexingTask;
+    }
 }

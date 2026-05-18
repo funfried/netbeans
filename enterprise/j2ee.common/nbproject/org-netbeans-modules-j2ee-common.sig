@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.117
+#Version 1.134
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -638,11 +638,16 @@ meth public boolean hasDefaultPersistenceProvider()
 meth public boolean isCdi10Supported()
 meth public boolean isCdi11Supported()
 meth public boolean isCdi20Supported()
+meth public boolean isCdi30Supported()
+meth public boolean isCdi40Supported()
+meth public boolean isCdi41Supported()
 meth public boolean isEjb30Supported()
 meth public boolean isEjb31LiteSupported()
 meth public boolean isEjb31Supported()
 meth public boolean isEjb32LiteSupported()
 meth public boolean isEjb32Supported()
+meth public boolean isEjb40LiteSupported()
+meth public boolean isEjb40Supported()
 meth public boolean isEjbLiteIncluded()
  anno 0 java.lang.Deprecated()
 meth public static org.netbeans.modules.j2ee.common.J2eeProjectCapabilities forProject(org.netbeans.api.project.Project)
@@ -745,6 +750,7 @@ hfds BROKEN_ALERT_TIMEOUT,LOGGER,brokenAlertLastTime,brokenAlertShown
 CLSS public org.netbeans.modules.j2ee.common.ui.BrokenServerSupport
 meth public static boolean isBroken(java.lang.String)
 meth public static java.lang.String selectServer(java.lang.String,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static java.lang.String selectServer(org.netbeans.api.j2ee.core.Profile,org.netbeans.modules.j2ee.deployment.devmodules.api.J2eeModule$Type)
 meth public static void showAlert()
 supr java.lang.Object

@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.EnumMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
@@ -94,7 +95,6 @@ import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
-import org.openide.util.WeakSet;
 
 /**
  *
@@ -114,7 +114,7 @@ public class RemoteServices {
     
     private static final RequestProcessor AUTORESUME_AFTER_SUSPEND_RP = new RequestProcessor("Autoresume after suspend", 1);
     
-    private static final Set<PropertyChangeListener> serviceListeners = new WeakSet<PropertyChangeListener>();
+    private static final Set<PropertyChangeListener> serviceListeners = Collections.newSetFromMap(new WeakHashMap<>());
 
     private RemoteServices() {}
     
@@ -283,7 +283,7 @@ public class RemoteServices {
                 synchronized (remoteServiceClasses) {
                     Map<ServiceType, ClassObjectReference> basicClassesByType = remoteServiceClasses.get(t.getDebugger());
                     if (basicClassesByType == null) {
-                        basicClassesByType = new HashMap<>();
+                        basicClassesByType = new EnumMap<>(ServiceType.class);
                         remoteServiceClasses.put(t.getDebugger(), basicClassesByType);
                     }
                     basicClassesByType.put(sType, basicClass);

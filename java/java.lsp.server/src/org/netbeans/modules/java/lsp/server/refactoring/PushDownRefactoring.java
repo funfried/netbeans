@@ -36,12 +36,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Types;
-import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
+import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.ClassIndex;
 import org.netbeans.api.java.source.ClasspathInfo;
 import org.netbeans.api.java.source.CompilationController;
@@ -50,11 +50,12 @@ import org.netbeans.api.java.source.ElementHandle;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.TreePathHandle;
 import org.netbeans.api.java.source.TreeUtilities;
+import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
 import org.netbeans.modules.java.lsp.server.protocol.CodeActionsProvider;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
-import org.netbeans.modules.java.lsp.server.protocol.QuickPickItem;
-import org.netbeans.modules.java.lsp.server.protocol.ShowQuickPickParams;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.netbeans.modules.refactoring.java.api.JavaRefactoringUtils;
 import org.netbeans.modules.refactoring.java.api.MemberInfo;
@@ -70,26 +71,30 @@ import org.openide.util.lookup.ServiceProvider;
 public final class PushDownRefactoring extends CodeRefactoring {
 
     private static final String PUSH_DOWN_REFACTORING_KIND = "refactor.push.down";
-    private static final String PUSH_DOWN_REFACTORING_COMMAND =  "java.refactor.push.down";
+    private static final String PUSH_DOWN_REFACTORING_COMMAND =  "nbls.java.refactor.push.down";
 
-    private final Set<String> commands = Collections.singleton(PUSH_DOWN_REFACTORING_COMMAND);
     private final Gson gson = new Gson();
 
     @Override
     @NbBundle.Messages({
         "DN_PushDown=Push Down...",
     })
-    public List<CodeAction> getCodeActions(ResultIterator resultIterator, CodeActionParams params) throws Exception {
+    public List<CodeAction> getCodeActions(NbCodeLanguageClient client, ResultIterator resultIterator, CodeActionParams params) throws Exception {
         List<String> only = params.getContext().getOnly();
         if (only == null || !only.contains(CodeActionKind.Refactor)) {
             return Collections.emptyList();
         }
-        CompilationController info = CompilationController.get(resultIterator.getParserResult());
+        CompilationController info = resultIterator.getParserResult() != null ? CompilationController.get(resultIterator.getParserResult()) : null;
         if (info == null || !JavaRefactoringUtils.isRefactorable(info.getFileObject())) {
             return Collections.emptyList();
         }
         info.toPhase(JavaSource.Phase.ELEMENTS_RESOLVED);
         int offset = getOffset(info, params.getRange().getStart());
+        TokenSequence<JavaTokenId> ts = info.getTokenHierarchy().tokenSequence(JavaTokenId.language());
+        ts.move(offset);
+        if (ts.moveNext() && ts.token().id() != JavaTokenId.WHITESPACE && ts.offset() == offset) {
+            offset += 1;
+        }
         String uri = Utils.toUri(info.getFileObject());
         Trees trees = info.getTrees();
         SourcePositions sourcePositions = trees.getSourcePositions();
@@ -130,12 +135,12 @@ public final class PushDownRefactoring extends CodeRefactoring {
         }
         QuickPickItem elementItem = new QuickPickItem(createLabel(info, element));
         elementItem.setUserData(new ElementData(element));
-        return Collections.singletonList(createCodeAction(Bundle.DN_PushDown(), PUSH_DOWN_REFACTORING_KIND, null, PUSH_DOWN_REFACTORING_COMMAND, uri, elementItem, members));
+        return Collections.singletonList(createCodeAction(client, Bundle.DN_PushDown(), PUSH_DOWN_REFACTORING_KIND, null, PUSH_DOWN_REFACTORING_COMMAND, uri, elementItem, members));
     }
 
     @Override
     public Set<String> getCommands() {
-        return commands;
+        return Collections.singleton(PUSH_DOWN_REFACTORING_COMMAND);
     }
 
     @Override
@@ -148,7 +153,7 @@ public final class PushDownRefactoring extends CodeRefactoring {
                 String uri = gson.fromJson(gson.toJson(arguments.get(0)), String.class);
                 QuickPickItem sourceItem = gson.fromJson(gson.toJson(arguments.get(1)), QuickPickItem.class);
                 List<QuickPickItem> members = Arrays.asList(gson.fromJson(gson.toJson(arguments.get(2)), QuickPickItem[].class));
-                client.showQuickPick(new ShowQuickPickParams(Bundle.DN_SelectMembersToPushDown(), true, members)).thenAccept(selected -> {
+                client.showQuickPick(new ShowQuickPickParams(null, Bundle.DN_SelectMembersToPushDown(), true, members)).thenAccept(selected -> {
                     if (selected != null && !selected.isEmpty()) {
                         pushDown(client, uri, sourceItem, selected);
                     }
@@ -181,9 +186,9 @@ public final class PushDownRefactoring extends CodeRefactoring {
                 }
             }, true);
             org.netbeans.modules.refactoring.java.api.PushDownRefactoring refactoring = new org.netbeans.modules.refactoring.java.api.PushDownRefactoring(TreePathHandle.from(sourceHandle, info));
-            refactoring.setMembers(memberHandles.toArray(new MemberInfo[memberHandles.size()]));
+            refactoring.setMembers(memberHandles.toArray(new MemberInfo[0]));
             refactoring.getContext().add(JavaRefactoringUtils.getClasspathInfoFor(file));
-            client.applyEdit(new ApplyWorkspaceEditParams(perform(refactoring, "PushDown")));
+            sendRefactoringChanges(client, refactoring, "PushDown");
         } catch (Exception ex) {
             client.showMessage(new MessageParams(MessageType.Error, ex.getLocalizedMessage()));
         }

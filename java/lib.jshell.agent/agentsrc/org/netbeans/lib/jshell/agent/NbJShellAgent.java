@@ -69,7 +69,7 @@ public class NbJShellAgent implements Runnable, ClassFileTransformer {
      * This field will be initialized at startup. The IDE will grab the value
      * using JDI to associate a debugger Session with the appropriate incoming socket.
      */
-    public volatile static String debuggerKey = ""; // NOI18N
+    public static volatile String debuggerKey = ""; // NOI18N
     
     private static final Logger LOG = Logger.getLogger(NbJShellAgent.class.getName());
     
@@ -175,7 +175,7 @@ public class NbJShellAgent implements Runnable, ClassFileTransformer {
             }
         }
         ClassLoader agentClassLoader = new URLClassLoader(
-                urls.toArray(new URL[urls.size()]), 
+                urls.toArray(new URL[0]), 
                 getClass().getClassLoader());
         try {
             agentClassLoader.loadClass("org.netbeans.lib.jshell.agent.AgentWorker"); // NOI18N
@@ -321,7 +321,7 @@ public class NbJShellAgent implements Runnable, ClassFileTransformer {
         }
     }
     
-    ////////////////////// INSTRUMENTATION PART ///////////////////////////////////
+    // INSTRUMENTATION PART
     private static final String CLASS_INIT_NAME = "<clinit>"; // NOI18N
     private static final String CLASS_INIT_DESC = "()V"; // NOI18N
     private static final String JAVA_LANG_CLASS = "java/lang/Class"; // NOI18N

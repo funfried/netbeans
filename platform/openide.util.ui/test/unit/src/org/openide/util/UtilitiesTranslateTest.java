@@ -207,8 +207,8 @@ public class UtilitiesTranslateTest extends NbTestCase {
             super (java.lang.Object.class.getClassLoader());
             this.file = file;
         }
-     
-        
+
+        @Override
         protected Enumeration<java.net.URL> findResources (String res) throws IOException {
             if (file != null) {
                 return Enumerations.singleton (getClass ().getResource (file));
@@ -223,12 +223,12 @@ public class UtilitiesTranslateTest extends NbTestCase {
     /** A test to serialize and deserialize different class with same fields.
      */
     private static final class A implements Serializable {
-        final static long serialVersionUID = 1;
+        static final long serialVersionUID = 1;
         public String value;
     }
     
     private static final class Ahoj implements Serializable {
-        final static long serialVersionUID = 1;
+        static final long serialVersionUID = 1;
         public String value;
     }
     

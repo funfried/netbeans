@@ -9,6 +9,8 @@ class Example implements Iface1, Iface2, Iface3 {
 #[A1("param")]
 private ClassA|ClassB|null $unionType;
 
+private ClassA&ClassB $intersectionType;
+
     public function ifExample ($a, $b) {
         if (convert($a) > $b) {
             echo "a is bigger than b";
@@ -18,6 +20,10 @@ private ClassA|ClassB|null $unionType;
             $result = getText($this->property1, $this->property2) ;
         }
 	$result = $a < $b ? $a : $b;
+    }
+
+    public function coalescingOperatorExample(?string $a): string {
+        return $a ?? 'default value';
     }
 
 public function forExample() {
@@ -101,9 +107,28 @@ public function unionTypesExample(
     return null;
 }
 
+public function intersectionTypesExample(
+        ClassA&ClassB $object
+        ): ClassA&ClassB {
+    return $object;
+}
+
 public function nullsafeOperatorExample(object $object){
     $object?->nullsafe();
 }
+}
+
+enum EnumExample: string {
+
+    case FOO = 'F';
+    case BAR = 'B';
+
+    public function example(): string {
+        return match ($this) {
+            static::FOO => 'Foo',
+            static::BAR => 'Bar',
+        };
+    }
 }
 
 $anonymousFunc = function ($arg) use ($param):int {
@@ -125,4 +150,10 @@ $data=[
 'very_looong_key'=>100,
 ];
 
-?>
+$match = match ($type) {
+    "condition" => 1,
+    "loooooong condition" => 2,
+    default => 0,
+};
+
+new (trim(' Example '))()->field;

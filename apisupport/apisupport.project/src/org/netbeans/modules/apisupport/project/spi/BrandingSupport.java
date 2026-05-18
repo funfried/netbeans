@@ -277,21 +277,10 @@ public abstract class BrandingSupport {
         
         assert target.exists();
         FileObject fo = FileUtil.toFileObject(target);
-        InputStream is = null;
-        OutputStream os = null;
-        try {
-            is = bFile.getBrandingSource().openStream();
-            os = fo.getOutputStream();
-            FileUtil.copy(is, os);
+        try (InputStream is = bFile.getBrandingSource().openStream();
+             OutputStream os = fo.getOutputStream()) {
+            is.transferTo(os);
         } finally {
-            if (is != null) {
-                is.close();
-            }
-            
-            if (os != null) {
-                os.close();
-            }
-            
             brandedFiles.add(bFile);
             bFile.modified = false;
         }
@@ -506,10 +495,9 @@ public abstract class BrandingSupport {
     
     private void loadLocalizedBundlesFromPlatform(final BrandableModule moduleEntry, final Set<String> keys, final Set<BundleKey> bundleKeys) {
         Map<String,String> p = localizingBundle(moduleEntry);
-        for (String key : p.keySet()) {
-            if (keys.contains(key)) {
-                String value = p.get(key);
-                bundleKeys.add(new BundleKey(moduleEntry, key, value));
+        for (Map.Entry<String,String> entry : p.entrySet()) {
+            if (keys.contains(entry.getKey())) {
+                bundleKeys.add(new BundleKey(moduleEntry, entry.getKey(), entry.getValue()));
             }
         }
     }

@@ -22,7 +22,6 @@ import javax.net.ssl.SSLHandshakeException;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.netbeans.junit.MockServices;
 import org.openide.util.Lookup;
@@ -78,9 +77,9 @@ public class SecureURLResourceRetrieverTest {
     }
 
     @Test
-    @Ignore("Client certificate expired and administrator of badssl.com has not issued updated certificates")
     public void shouldUseKeyStoreFromSystemProperties() throws Exception {
         System.setProperty("javax.net.debug", "ssl,keystore");
+        // get from https://badssl.com/download/ (expires 04.2027)
         System.setProperty("javax.net.ssl.keyStore", SecureURLResourceRetrieverTest.class.getResource("badssl.com-client.p12").getPath());
         System.setProperty("javax.net.ssl.keyStorePassword", "badssl.com");
         System.setProperty("javax.net.ssl.keyStoreType", "pkcs12");

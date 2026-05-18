@@ -39,9 +39,9 @@ public class XSLT10PseudoDTDGrammarQueryProvider extends GrammarQueryManager {
 
     @Override
     public Enumeration enabled(GrammarEnvironment ctx) {
-        Enumeration en = ctx.getDocumentChildren();
+        Enumeration<Node> en = ctx.getDocumentChildren();
         while (en.hasMoreElements()) {
-            Node next = (Node) en.nextElement();
+            Node next = en.nextElement();
             if (next.getNodeType() == Node.ELEMENT_NODE) {
                 boolean xslt = false;
                 boolean version1x = false;

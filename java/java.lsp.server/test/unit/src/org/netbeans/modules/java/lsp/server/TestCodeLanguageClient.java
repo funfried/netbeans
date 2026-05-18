@@ -20,6 +20,7 @@ package org.netbeans.modules.java.lsp.server;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
@@ -31,17 +32,23 @@ import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.netbeans.modules.java.lsp.server.explorer.api.NodeChangedParams;
 import org.netbeans.modules.java.lsp.server.protocol.DecorationRenderOptions;
 import org.netbeans.modules.java.lsp.server.protocol.HtmlPageParams;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeClientCapabilities;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
-import org.netbeans.modules.java.lsp.server.protocol.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
 import org.netbeans.modules.java.lsp.server.protocol.SetTextEditorDecorationParams;
-import org.netbeans.modules.java.lsp.server.protocol.ShowInputBoxParams;
-import org.netbeans.modules.java.lsp.server.protocol.ShowQuickPickParams;
+import org.netbeans.modules.java.lsp.server.input.ShowInputBoxParams;
+import org.netbeans.modules.java.lsp.server.input.ShowMutliStepInputParams;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
+import org.netbeans.modules.java.lsp.server.protocol.ClientConfigurationManager;
+import org.netbeans.modules.java.lsp.server.protocol.OutputMessage;
+import org.netbeans.modules.java.lsp.server.protocol.SaveDocumentRequestParams;
 import org.netbeans.modules.java.lsp.server.protocol.ShowStatusMessageParams;
 import org.netbeans.modules.java.lsp.server.protocol.TestProgressParams;
+import org.netbeans.modules.java.lsp.server.protocol.UpdateConfigParams;
 
 public abstract class TestCodeLanguageClient implements NbCodeLanguageClient {
 
@@ -75,12 +82,22 @@ public abstract class TestCodeLanguageClient implements NbCodeLanguageClient {
     }
 
     @Override
+    public CompletableFuture<String> execInHtmlPage(HtmlPageParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public CompletableFuture<List<QuickPickItem>> showQuickPick(ShowQuickPickParams params) {
         return CompletableFuture.completedFuture(params.getItems().stream().filter(item -> item.isPicked()).collect(Collectors.toList()));
     }
 
     @Override
     public CompletableFuture<String> showInputBox(ShowInputBoxParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<Map<String, Either<List<QuickPickItem>, String>>> showMultiStepInput(ShowMutliStepInputParams params) {
         throw new UnsupportedOperationException();
     }
 
@@ -108,10 +125,14 @@ public abstract class TestCodeLanguageClient implements NbCodeLanguageClient {
     public NbCodeClientCapabilities getNbCodeCapabilities() {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public ClientConfigurationManager getClientConfigurationManager() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void telemetryEvent(Object params) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -124,7 +145,7 @@ public abstract class TestCodeLanguageClient implements NbCodeLanguageClient {
 
     @Override
     public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams params) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(new MessageActionItem(params.getActions().get(0).getTitle()));
     }
 
     @Override
@@ -135,5 +156,36 @@ public abstract class TestCodeLanguageClient implements NbCodeLanguageClient {
     @Override
     public void notifyNodeChange(NodeChangedParams params) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<Void> configurationUpdate(UpdateConfigParams params) {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public CompletableFuture<Boolean> requestDocumentSave(SaveDocumentRequestParams documentUris) {
+        return CompletableFuture.completedFuture(false);
+    }
+    
+    @Override
+    public CompletableFuture<Void> writeOutput(OutputMessage message) {
+        System.out.println(message);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> showOutput(String outputName) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> closeOutput(String outputName) {
+        return CompletableFuture.completedFuture(null);
+    }
+    
+    @Override
+    public CompletableFuture<Void> resetOutput(String outputName) {
+        return CompletableFuture.completedFuture(null);
     }
 }

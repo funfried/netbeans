@@ -25,6 +25,7 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -303,10 +304,12 @@ public final class EjbJarProvider extends J2eeModuleProvider
         // return a version based on the Java EE version
         Profile platformVersion = getJ2eeProfile();
         if (platformVersion == null) {
-            platformVersion = Profile.JAVA_EE_7_FULL;
+            platformVersion = Profile.JAKARTA_EE_8_FULL;
         }
 
-        if (platformVersion.isAtLeast(Profile.JAVA_EE_7_WEB)) {
+        if (platformVersion.isAtLeast(Profile.JAKARTA_EE_9_WEB)) {
+            return EjbJar.VERSION_4_0;
+        } else if (platformVersion.isAtLeast(Profile.JAVA_EE_7_WEB)) {
             return EjbJar.VERSION_3_2;
         } else if (platformVersion.isAtLeast(Profile.JAVA_EE_6_WEB)) {
             return EjbJar.VERSION_3_1;
@@ -506,7 +509,7 @@ public final class EjbJarProvider extends J2eeModuleProvider
             }
             files.add(FileUtil.toFile(FileUtil.getArchiveFile(fo)));
         }
-        return files.toArray(new File[files.size()]);
+        return files.toArray(new File[0]);
     }
 
     private class EjbJarResourceChangeReporter implements ResourceChangeReporterImplementation {
@@ -529,7 +532,7 @@ public final class EjbJarProvider extends J2eeModuleProvider
     }
 
     private static class IT implements Iterator<J2eeModule.RootedEntry> {
-        java.util.Enumeration ch;
+        Enumeration<? extends FileObject> ch;
         FileObject root;
         
         private IT(FileObject f) {

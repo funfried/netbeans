@@ -33,6 +33,7 @@ import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.csl.spi.ParserResult;
+import org.netbeans.modules.csl.spi.support.CancelSupport;
 import org.netbeans.modules.parsing.api.Source;
 import org.netbeans.modules.php.editor.lexer.LexUtilities;
 import org.netbeans.modules.php.editor.lexer.PHPTokenId;
@@ -50,6 +51,7 @@ import org.netbeans.modules.php.editor.parser.api.Utils;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTError;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation;
+import org.netbeans.modules.php.editor.parser.astnodes.Attribute;
 import org.netbeans.modules.php.editor.parser.astnodes.CatchClause;
 import org.netbeans.modules.php.editor.parser.astnodes.Comment;
 import org.netbeans.modules.php.editor.parser.astnodes.DoStatement;
@@ -61,6 +63,7 @@ import org.netbeans.modules.php.editor.parser.astnodes.ForStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.IfStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.MatchExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.Program;
+import org.netbeans.modules.php.editor.parser.astnodes.Quote;
 import org.netbeans.modules.php.editor.parser.astnodes.Statement;
 import org.netbeans.modules.php.editor.parser.astnodes.SwitchCase;
 import org.netbeans.modules.php.editor.parser.astnodes.SwitchStatement;
@@ -130,6 +133,19 @@ public final class FoldingScanner {
             new FoldTemplate(0, 0, "...") // NOI18N
     );
 
+    @NbBundle.Messages("FT_Attributes=Attributes")
+    public static final FoldType TYPE_ATTRIBUTES = FoldType.MEMBER.derive(
+            "attribute", // NOI18N
+            Bundle.FT_Attributes(),
+            new FoldTemplate(0, 0, "#[...]") // NOI18N
+    );
+
+    @NbBundle.Messages("FT_HEREDOC_NOWDOC=Heredoc/Nowdoc")
+    public static final FoldType TYPE_HEREDOC_NOWDOC = FoldType.MEMBER.derive(
+            "heredoc/nowdoc", // NOI18N
+            Bundle.FT_HEREDOC_NOWDOC(),
+            new FoldTemplate(0, 0, "<<<...") // NOI18N
+    );
     private static final String LAST_CORRECT_FOLDING_PROPERTY = "LAST_CORRECT_FOLDING_PROPERY"; //NOI18N
     private static final boolean FOLD_PHPTAG = !Boolean.getBoolean("nb.php.editor.doNotFoldPhptag"); // NOI18N NETBEANS-5480
 
@@ -170,10 +186,11 @@ public final class FoldingScanner {
             program.accept(new FoldingVisitor(folds));
             Source source = phpParseResult.getSnapshot().getSource();
             assert source != null : "source was null";
-            Document doc = source.getDocument(false);
+            Document doc = source.getDocument(true);
             if (FOLD_PHPTAG) {
                 processPHPTags(folds, doc);
             }
+            processNowdoc(folds, doc);
             setFoldingProperty(doc, folds);
             return folds;
         }
@@ -253,6 +270,37 @@ public final class FoldingScanner {
                                 break;
                             default:
                                 break;
+                        }
+                    }
+                }
+            } finally {
+                doc.readUnlock();
+            }
+        }
+    }
+
+    private void processNowdoc(Map<String, List<OffsetRange>> folds, Document document) {
+        if (document instanceof BaseDocument doc) {
+            doc.readLock();
+            try {
+                TokenSequence<PHPTokenId> ts = LexUtilities.getPHPTokenSequence(doc, 0);
+                if (ts == null) {
+                    return;
+                }
+                ts.move(0);
+                int startOffset = -1;
+                int endOffset = -1;
+                while (ts.moveNext()) {
+                    Token<PHPTokenId> token = ts.token();
+                    if (token != null) {
+                        PHPTokenId id = token.id();
+                        switch (id) {
+                            case PHP_NOWDOC_TAG_START -> startOffset = ts.offset();
+                            case PHP_NOWDOC_TAG_END -> {
+                                assert startOffset != -1;
+                                endOffset = ts.offset() + token.length();
+                                getRanges(folds, TYPE_HEREDOC_NOWDOC).add(new OffsetRange(startOffset, endOffset));
+                            }
                         }
                     }
                 }
@@ -352,6 +400,7 @@ public final class FoldingScanner {
     }
 
     private class FoldingVisitor extends DefaultVisitor {
+
         private final Map<String, List<OffsetRange>> folds;
 
         public FoldingVisitor(final Map<String, List<OffsetRange>> folds) {
@@ -360,6 +409,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(IfStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getTrueStatement() != null) {
                 addFold(node.getTrueStatement());
@@ -371,6 +423,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(UseTraitStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -379,6 +434,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ForEachStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getStatement() != null) {
                 addFold(node.getStatement());
@@ -387,6 +445,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ForStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -395,6 +456,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(WhileStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -403,6 +467,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(DoStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -411,6 +478,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(SwitchStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -419,6 +489,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(SwitchCase node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             List<Statement> actions = node.getActions();
             if (!actions.isEmpty()) {
@@ -437,6 +510,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(MatchExpression node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             // NETBEANS-4443 PHP 8.0
             super.visit(node);
             addFold(node.getBlockRange());
@@ -444,6 +520,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(TryStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -452,6 +531,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(CatchClause node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -460,6 +542,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(FinallyClause node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -468,12 +553,39 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ArrayCreation node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
+            if (node.getElements().isEmpty()) {
+                // GH-7187 don't fold an empty array
+                return;
+            }
             ArrayCreation.Type type = node.getType();
             if (type == ArrayCreation.Type.NEW) {
                 addFold(node, TYPE_ARRAY);
             } else {
                 addFold(new OffsetRange(node.getStartOffset() + "array".length(), node.getEndOffset()), TYPE_ARRAY); // NOI18N
+            }
+        }
+
+        @Override
+        public void visit(Attribute node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
+            if (node != null) {
+                addFold(node, TYPE_ATTRIBUTES);
+            }
+            super.visit(node);
+        }
+
+        public void visit(Quote node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
+            if (node.getQuoteType().equals(Quote.Type.HEREDOC)) {
+                addFold(node, TYPE_HEREDOC_NOWDOC);
             }
         }
 

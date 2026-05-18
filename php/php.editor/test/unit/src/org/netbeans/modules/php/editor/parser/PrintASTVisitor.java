@@ -30,8 +30,8 @@ import org.netbeans.modules.php.editor.parser.astnodes.*;
 public class PrintASTVisitor implements Visitor {
 
     private StringBuffer buffer;
-    private final static String NEW_LINE = "\n";
-    private final static String TAB = "    ";
+    private static final String NEW_LINE = "\n";
+    private static final String TAB = "    ";
     private int indent;
 
     private class XMLPrintNode {
@@ -295,6 +295,17 @@ public class PrintASTVisitor implements Visitor {
     }
 
     @Override
+    public void visit(CaseDeclaration node) {
+        XMLPrintNode printNode = new XMLPrintNode(node, "CaseDeclaration");
+        if (node.isAttributed()) {
+            printNode.addChildrenGroup("Attributes", node.getAttributes());
+        }
+        printNode.addChild("CaseName", node.getName());
+        printNode.addChild(node.getInitializer());
+        printNode.print(this);
+    }
+
+    @Override
     public void visit(ConstantDeclaration node) {
         XMLPrintNode printNode;
         if (node.isGlobal()) {
@@ -305,6 +316,9 @@ public class PrintASTVisitor implements Visitor {
         if (node.isAttributed()) {
             printNode.addChildrenGroup("Attributes", node.getAttributes());
         }
+        if (node.getConstType() != null) {
+            printNode.addChild("ConstType", node.getConstType());
+        }
         printNode.addChildrenGroup("Names", node.getNames());
         printNode.addChildrenGroup("Initializers", node.getInitializers());
         printNode.print(this);
@@ -312,14 +326,21 @@ public class PrintASTVisitor implements Visitor {
 
     @Override
     public void visit(ClassDeclaration classDeclaration) {
+        StringBuilder modifiers = new StringBuilder();
+        for (ClassDeclaration.Modifier modifier : classDeclaration.getModifiers().keySet()) {
+            if (modifiers.length() != 0) {
+                modifiers.append(" "); // NOI18N
+            }
+            modifiers.append(modifier.name());
+        }
         XMLPrintNode printNode = new XMLPrintNode(classDeclaration, "ClassDeclaration",
-                new String[]{"modifier", classDeclaration.getModifier().name()});
+                new String[]{"modifier", modifiers.toString()});
         if (classDeclaration.isAttributed()) {
             printNode.addChildrenGroup("Attributes", classDeclaration.getAttributes());
         }
         printNode.addChildrenGroup("ClassName", new ASTNode[]{classDeclaration.getName()});
         printNode.addChildrenGroup("SuperClassName", new ASTNode[]{classDeclaration.getSuperClass()});
-        printNode.addChildrenGroup("Interfaces", classDeclaration.getInterfaes());
+        printNode.addChildrenGroup("Interfaces", classDeclaration.getInterfaces());
         printNode.addChild(classDeclaration.getBody());
         printNode.print(this);
     }
@@ -339,6 +360,13 @@ public class PrintASTVisitor implements Visitor {
             printNode.addChildrenGroup("Interfaces", node.getInterfaces());
             printNode.addChild(node.getBody());
         }
+        printNode.print(this);
+    }
+
+    @Override
+    public void visit(ClassInstanceCreationVariable node) {
+        XMLPrintNode printNode = new XMLPrintNode(node, "ClassInstanceCreationVariable");
+        printNode.addChild(node.getName());
         printNode.print(this);
     }
 
@@ -363,11 +391,27 @@ public class PrintASTVisitor implements Visitor {
     }
 
     @Override
+    public void visit(CompositionExpression node) {
+        XMLPrintNode printNode = new XMLPrintNode(node, "CompositionExpression",
+                new String[]{"operator", node.getOperator().name()});
+        printNode.addChild(node.getLeft());
+        printNode.addChild(node.getRight());
+        printNode.print(this);
+    }
+    
+    @Override
     public void visit(ConditionalExpression node) {
         XMLPrintNode printNode = new XMLPrintNode(node, "ConditionalExpression");
         printNode.addChild("Condition", node.getCondition());
         printNode.addChild("Then", node.getIfTrue());
         printNode.addChild("Else", node.getIfFalse());
+        printNode.print(this);
+    }
+
+    @Override
+    public void visit(ConstantVariable node) {
+        XMLPrintNode printNode = new XMLPrintNode(node, "ConstantVariable");
+        printNode.addChild(node.getName());
         printNode.print(this);
     }
 
@@ -415,6 +459,19 @@ public class PrintASTVisitor implements Visitor {
     }
 
     @Override
+    public void visit(EnumDeclaration enumDeclaration) {
+        XMLPrintNode printNode = new XMLPrintNode(enumDeclaration, "EnumDeclaration");
+        if (enumDeclaration.isAttributed()) {
+            printNode.addChildrenGroup("Attributes", enumDeclaration.getAttributes());
+        }
+        printNode.addChildrenGroup("EnumName", new ASTNode[]{enumDeclaration.getName()});
+        printNode.addChildrenGroup("BackingType", new ASTNode[]{enumDeclaration.getBackingType()});
+        printNode.addChildrenGroup("Interfaces", enumDeclaration.getInterfaces());
+        printNode.addChild(enumDeclaration.getBody());
+        printNode.print(this);
+    }
+
+    @Override
     public void visit(ExpressionArrayAccess node) {
         XMLPrintNode printNode = new XMLPrintNode(node, "ExpressionArrayAccess");
         printNode.addChild(node.getExpression());
@@ -455,6 +512,11 @@ public class PrintASTVisitor implements Visitor {
         XMLPrintNode printNode = new XMLPrintNode(node, "FinallyClause");
         printNode.addChild(node.getBody());
         printNode.print(this);
+    }
+
+    @Override
+    public void visit(FirstClassCallableArg firstClassCallableArg) {
+        (new XMLPrintNode(firstClassCallableArg, "FirstClassCallableArg")).print(this);
     }
 
     @Override
@@ -702,6 +764,13 @@ public class PrintASTVisitor implements Visitor {
     }
 
     @Override
+    public void visit(IntersectionType node) {
+        XMLPrintNode printNode = new XMLPrintNode(node, "IntersectionType");
+        printNode.addChildren(node.getTypes());
+        printNode.print(this);
+    }
+
+    @Override
     public void visit(ListVariable node) {
         XMLPrintNode printNode = new XMLPrintNode(node, "ListVariable", new String[]{"type", node.getSyntaxType().name()});
         printNode.addChildren(node.getElements());
@@ -803,7 +872,8 @@ public class PrintASTVisitor implements Visitor {
 
     @Override
     public void visit(StaticConstantAccess node) {
-        XMLPrintNode printNode = new XMLPrintNode(node, "StaticConstantAccess");
+        XMLPrintNode printNode = new XMLPrintNode(node, "StaticConstantAccess",
+                new String[]{"isDynamicName", (node.isDynamicName() ? "true" : "false")});
         printNode.addChild(node.getDispatcher());
         printNode.addChild("Constant", node.getConstant());
         printNode.addChild("Member", node.getMember());

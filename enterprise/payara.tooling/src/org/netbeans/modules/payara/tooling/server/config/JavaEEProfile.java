@@ -28,10 +28,7 @@ import java.util.Map;
  */
 public enum JavaEEProfile {
 
-    ////////////////////////////////////////////////////////////////////////////
     // Enum values                                                            //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** JavaEE 1.2. */
     v1_2(Version.v1_2, Type.FULL, "1.2"),
 
@@ -66,12 +63,33 @@ public enum JavaEEProfile {
     v8_0_0_web(Version.v8_0_0, Type.WEB, "8.0.0-web"),
 
     /** JakartaEE 8 full profile. */
-    v8_0_0(Version.v8_0_0, Type.FULL, "8.0.0");
+    v8_0_0(Version.v8_0_0, Type.FULL, "8.0.0"),
 
-    ////////////////////////////////////////////////////////////////////////////
+    /** JakartaEE 9 web profile. */
+    v9_0_0_web(Version.v9_0_0, Type.WEB, "9.0.0-web"),
+
+    /** JakartaEE 9 full profile. */
+    v9_0_0(Version.v9_0_0, Type.FULL, "9.0.0"),
+    
+    /** JakartaEE 9.1 web profile. */
+    v9_1_0_web(Version.v9_1_0, Type.WEB, "9.1.0-web"),
+
+    /** JakartaEE 9.1 full profile. */
+    v9_1_0(Version.v9_1_0, Type.FULL, "9.1.0"),
+    
+    /** JakartaEE 10 web profile. */
+    v10_0_0_web(Version.v10_0_0, Type.WEB, "10.0.0-web"),
+
+    /** JakartaEE 10 full profile. */
+    v10_0_0(Version.v10_0_0, Type.FULL, "10.0.0"),
+    
+    /** JakartaEE 11 web profile. */
+    v11_0_0_web(Version.v11_0_0, Type.WEB, "11.0.0-web"),
+
+    /** JakartaEE 11 full profile. */
+    v11_0_0(Version.v11_0_0, Type.FULL, "11.0.0");
+
     // Inner enums                                                            //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** JavaEE profile type. */
     public enum Type {
         /** Web profile. */
@@ -119,9 +137,16 @@ public enum JavaEEProfile {
         v1_7("1.7"),
         /** JavaEE 1.8. */
         v1_8("1.8"),
-        /** Jakarta EE 8 */
-        v8_0_0("8.0.0");
-
+        /** JakartaEE 8.0. */
+        v8_0_0("8.0.0"),
+        /** JakartaEE 9.0. */
+        v9_0_0("9.0.0"),
+        /** JakartaEE 9.1. */
+        v9_1_0("9.1.0"),
+        /** JakartaEE 10.0 */
+        v10_0_0("10.0.0"),
+        /** JakartaEE 11.0 */
+        v11_0_0("11.0.0");
 
         /** JavaEE profile type name. */
         private final String name;
@@ -147,10 +172,7 @@ public enum JavaEEProfile {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Payara JavaEE profile enumeration length. */
     public static final int length = JavaEEProfile.values().length;
 
@@ -174,10 +196,7 @@ public enum JavaEEProfile {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Static methods                                                         //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Create JavaEE profile names to be recognized.
      * <p/>
@@ -264,10 +283,7 @@ public enum JavaEEProfile {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Instance attributes                                                    //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** JavaEE profile version. */
     private final Version version;
 
@@ -277,10 +293,7 @@ public enum JavaEEProfile {
     /** Name of JavaEE profile value. */
     private final String name;
 
-    ////////////////////////////////////////////////////////////////////////////
     // Constructors                                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Creates an instance of JavaEE profiles supported by Payara.
      * <p/>
@@ -295,10 +308,7 @@ public enum JavaEEProfile {
         this.name = name;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Methods                                                                //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Converts JavaEE profile version value to <code>String</code>.
      * <p/>

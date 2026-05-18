@@ -90,7 +90,7 @@
         <compatibility addition="yes" binary="compatible" source="compatible"/>
         <description>
             <p>
-                The <a onclick="target='_blank'" href="http://bits.netbeans.org/html+java/">
+                The <a href="https://bits.netbeans.org/html+java/dev">
                     HTML UI API for Java
                     </a> 
                 revision 1.1 supports technolgy identifiers. Now they can
@@ -111,7 +111,7 @@
         <compatibility addition="yes" binary="compatible" source="compatible"/>
         <description>
             <p>
-                The <a onclick="target='_blank'" href="http://bits.netbeans.org/html+java/">
+                The <a href="https://bits.netbeans.org/html+java/dev">
                     HTML UI API for Java
                     </a> 
                 and NetBeans has been included
@@ -124,11 +124,10 @@
 <htmlcontents>
 <head>
 <title>Change History for the HTML for Java and NetBeans API</title>
-<link rel="stylesheet" href="prose.css" type="text/css"/>
 </head>
 <body>
 <p class="overviewlink">
-<a href="overview-summary.html">Overview</a>
+<a href="index.html">Overview</a>
 </p>
 <standard-changelists module-code-name="$codebase"/>
 <hr/>

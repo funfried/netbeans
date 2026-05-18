@@ -31,6 +31,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -105,9 +106,7 @@ public class ExportZIP extends JPanel {
                     @Override public void run() {
                         try {
                             if (!build(root, zip)) {
-                                if (!zip.delete()) {
-                                    throw new IOException("Cannot delete " + zip);
-                                }
+                                Files.delete(zip.toPath());
                                 return;
                             }
                         } catch (IOException x) {
@@ -116,7 +115,7 @@ public class ExportZIP extends JPanel {
                         }
                         StatusDisplayer.getDefault().setStatusText(MSG_created(zip));
                         try {
-                            Desktop.getDesktop().open(zip);
+                            Desktop.getDesktop().open(zip.getParentFile());
                         } catch (Exception x) {
                             LOG.log(Level.FINE, null, x);
                         }
@@ -478,7 +477,11 @@ public class ExportZIP extends JPanel {
     private void zipButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_zipButtonActionPerformed
         JFileChooser fc = new JFileChooser();
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            zipField.setText(fc.getSelectedFile().getAbsolutePath());
+            String sf = fc.getSelectedFile().getAbsolutePath();
+            if (!"zip".equalsIgnoreCase(FileUtil.getExtension(sf))) {
+                sf += ".zip";
+            }
+            zipField.setText(sf);
         }
     }//GEN-LAST:event_zipButtonActionPerformed
 

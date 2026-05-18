@@ -40,25 +40,26 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.ClasspathInfo;
 import org.netbeans.api.java.source.CompilationController;
 import org.netbeans.api.java.source.ElementHandle;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.TreePathHandle;
 import org.netbeans.api.java.source.TreeUtilities;
+import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.ShowInputBoxParams;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
 import org.netbeans.modules.java.lsp.server.protocol.CodeActionsProvider;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
-import org.netbeans.modules.java.lsp.server.protocol.QuickPickItem;
-import org.netbeans.modules.java.lsp.server.protocol.ShowInputBoxParams;
-import org.netbeans.modules.java.lsp.server.protocol.ShowQuickPickParams;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.netbeans.modules.refactoring.api.AbstractRefactoring;
 import org.netbeans.modules.refactoring.java.api.ExtractInterfaceRefactoring;
@@ -77,8 +78,8 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service = CodeActionsProvider.class, position = 170)
 public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactoring {
 
-    private static final String EXTRACT_SUPERCLASS_REFACTORING_COMMAND =  "java.refactor.extract.superclass";
-    private static final String EXTRACT_INTERFACE_REFACTORING_COMMAND =  "java.refactor.extract.interface";
+    private static final String EXTRACT_SUPERCLASS_REFACTORING_COMMAND =  "nbls.java.refactor.extract.superclass";
+    private static final String EXTRACT_INTERFACE_REFACTORING_COMMAND =  "nbls.java.refactor.extract.interface";
     private static final ClassPath EMPTY_PATH = ClassPathSupport.createClassPath(new URL[0]);
 
     private final Set<String> commands = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(EXTRACT_INTERFACE_REFACTORING_COMMAND, EXTRACT_SUPERCLASS_REFACTORING_COMMAND)));
@@ -89,17 +90,22 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
         "DN_ExtractSuperclass=Extract Superclass...",
         "DN_ExtractInterface=Extract Interface...",
     })
-    public List<CodeAction> getCodeActions(ResultIterator resultIterator, CodeActionParams params) throws Exception {
+    public List<CodeAction> getCodeActions(NbCodeLanguageClient client, ResultIterator resultIterator, CodeActionParams params) throws Exception {
         List<String> only = params.getContext().getOnly();
         if (only == null || !only.contains(CodeActionKind.Refactor)) {
             return Collections.emptyList();
         }
-        CompilationController info = CompilationController.get(resultIterator.getParserResult());
+        CompilationController info = resultIterator.getParserResult() != null ? CompilationController.get(resultIterator.getParserResult()) : null;
         if (info == null || !JavaRefactoringUtils.isRefactorable(info.getFileObject())) {
             return Collections.emptyList();
         }
         info.toPhase(JavaSource.Phase.ELEMENTS_RESOLVED);
         int offset = getOffset(info, params.getRange().getStart());
+        TokenSequence<JavaTokenId> ts = info.getTokenHierarchy().tokenSequence(JavaTokenId.language());
+        ts.move(offset);
+        if (ts.moveNext() && ts.token().id() != JavaTokenId.WHITESPACE && ts.offset() == offset) {
+            offset += 1;
+        }
         String uri = Utils.toUri(info.getFileObject());
         Trees trees = info.getTrees();
         TreeUtilities treeUtilities = info.getTreeUtilities();
@@ -118,8 +124,8 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
             return Collections.emptyList();
         }
         SourcePositions sourcePositions = info.getTrees().getSourcePositions();
-        List<QuickPickItem> members = new ArrayList();
-        List<QuickPickItem> allMembers = new ArrayList();
+        List<QuickPickItem> members = new ArrayList<>();
+        List<QuickPickItem> allMembers = new ArrayList<>();
         ClassTree sourceTree = (ClassTree) path.getLeaf();
         for (Tree member : sourceTree.getMembers()) {
             TreePath memberTreePath = new TreePath(path, member);
@@ -151,10 +157,10 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
             QuickPickItem elementItem = new QuickPickItem(createLabel(info, type));
             elementItem.setUserData(new ElementData(type));
             if (!type.getKind().isInterface()) {
-                result.add(createCodeAction(Bundle.DN_ExtractSuperclass(), CodeActionKind.RefactorExtract, null, EXTRACT_SUPERCLASS_REFACTORING_COMMAND, uri, elementItem, allMembers));
+                result.add(createCodeAction(client, Bundle.DN_ExtractSuperclass(), CodeActionKind.RefactorExtract, null, EXTRACT_SUPERCLASS_REFACTORING_COMMAND, uri, elementItem, allMembers));
             }
             if (!members.isEmpty()) {
-                result.add(createCodeAction(Bundle.DN_ExtractInterface(), CodeActionKind.RefactorExtract, null, EXTRACT_INTERFACE_REFACTORING_COMMAND, uri, elementItem, members));
+                result.add(createCodeAction(client, Bundle.DN_ExtractInterface(), CodeActionKind.RefactorExtract, null, EXTRACT_INTERFACE_REFACTORING_COMMAND, uri, elementItem, members));
             }
         }
         return result;
@@ -176,7 +182,7 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
             String uri = gson.fromJson(gson.toJson(arguments.get(0)), String.class);
             QuickPickItem type = gson.fromJson(gson.toJson(arguments.get(1)), QuickPickItem.class);
             List<QuickPickItem> members = Arrays.asList(gson.fromJson(gson.toJson(arguments.get(2)), QuickPickItem[].class));
-            client.showQuickPick(new ShowQuickPickParams(Bundle.DN_SelectMembersToExtract(), true, members)).thenAccept(selected -> {
+            client.showQuickPick(new ShowQuickPickParams(null, Bundle.DN_SelectMembersToExtract(), true, members)).thenAccept(selected -> {
                 if (selected != null && !selected.isEmpty()) {
                     String label = EXTRACT_SUPERCLASS_REFACTORING_COMMAND.equals(command) ? Bundle.DN_SelectClassName() : Bundle.DN_SelectInterfaceName();
                     String value = EXTRACT_SUPERCLASS_REFACTORING_COMMAND.equals(command) ? "NewClass" : "NewInterface";
@@ -213,7 +219,7 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
                     }
                 }, true);
                 ExtractSuperclassRefactoring r = new ExtractSuperclassRefactoring(TreePathHandle.from(handle, info));
-                r.setMembers(memberHandles.toArray(new MemberInfo[memberHandles.size()]));
+                r.setMembers(memberHandles.toArray(new MemberInfo[0]));
                 r.setSuperClassName(name);
                 refactoring = r;
             } else {
@@ -237,7 +243,7 @@ public final class ExtractSuperclassOrInterfaceRefactoring extends CodeRefactori
                 refactoring = r;
             }
             refactoring.getContext().add(JavaRefactoringUtils.getClasspathInfoFor(file));
-            client.applyEdit(new ApplyWorkspaceEditParams(perform(refactoring, EXTRACT_SUPERCLASS_REFACTORING_COMMAND.equals(command) ? "Extract Superclass" : "Extract Interface")));
+            sendRefactoringChanges(client, refactoring, EXTRACT_SUPERCLASS_REFACTORING_COMMAND.equals(command) ? "Extract Superclass" : "Extract Interface");
         } catch (Exception ex) {
             client.showMessage(new MessageParams(MessageType.Error, ex.getLocalizedMessage()));
         }

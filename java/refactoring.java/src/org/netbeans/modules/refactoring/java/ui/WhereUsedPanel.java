@@ -145,7 +145,7 @@ public class WhereUsedPanel extends JPanel implements CustomRefactoringPanel {
                 final Element element = WhereUsedPanel.this.element.resolveElement(info);
                 panel.initialize(element, info);
 
-                if((element.getKind().equals(ElementKind.LOCAL_VARIABLE) || element.getKind().equals(ElementKind.PARAMETER))
+                if((element.getKind() == ElementKind.LOCAL_VARIABLE || element.getKind() == ElementKind.PARAMETER)
                         || element.getModifiers().contains(Modifier.PRIVATE)) {
                     enableScope = false;
                 } else {
@@ -171,7 +171,7 @@ public class WhereUsedPanel extends JPanel implements CustomRefactoringPanel {
             initialized = true;
     }
 
-    static abstract class WhereUsedInnerPanel extends JPanel {
+    abstract static class WhereUsedInnerPanel extends JPanel {
         abstract boolean isSearchInComments();
         abstract void initialize(Element element, CompilationController info);
     }

@@ -26,10 +26,11 @@ import org.netbeans.api.project.Project;
 import org.netbeans.modules.gradle.GradleProject;
 import org.netbeans.modules.gradle.GradleProjectLoader;
 import org.netbeans.modules.gradle.NbGradleProjectImpl;
-import org.netbeans.modules.gradle.api.NbGradleProject;
+import org.netbeans.modules.gradle.api.NbGradleProject.LoadOptions;
 import org.netbeans.modules.gradle.api.execute.GradleCommandLine;
 import org.netbeans.modules.gradle.api.execute.RunUtils;
 import org.netbeans.modules.gradle.options.GradleExperimentalSettings;
+import org.openide.util.NbBundle;
 
 /**
  *
@@ -45,13 +46,18 @@ public class GradleProjectLoaderImpl implements GradleProjectLoader {
     }
 
     @Override
-    public GradleProject loadProject(NbGradleProject.Quality aim, String descriptionOpt, boolean ignoreCache, boolean interactive, String... args) {
-        LOGGER.info("Load aiming " +aim + " for "+ project);
+    @NbBundle.Messages({
+        "ERR_ProjectNotTrusted=Gradle execution is not trusted on this project."
+    })
+    public GradleProject loadProject(LoadOptions options, String... args) {
+        LOGGER.info("Load aiming " +options.getAim() + " for "+ project);
         GradleCommandLine cmd = new GradleCommandLine(args);
-        AbstractProjectLoader.ReloadContext ctx = new AbstractProjectLoader.ReloadContext((NbGradleProjectImpl) project, aim, cmd, descriptionOpt);
+        AbstractProjectLoader.ReloadContext ctx = new AbstractProjectLoader.ReloadContext((NbGradleProjectImpl) project, options, cmd);
+        LOGGER.log(Level.FINER, "Load context: project = {0}, prev = {1}, aim = {2}, args = {3}", new Object[] { 
+            project, ctx.previous, options.getAim(), cmd});
         List<AbstractProjectLoader> loaders = new LinkedList<>();
 
-        if (!ignoreCache) loaders.add(new DiskCacheProjectLoader(ctx));
+        if (!options.isIgnoreCache()) loaders.add(new DiskCacheProjectLoader(ctx));
         if (GradleExperimentalSettings.getDefault().isBundledLoading()) {
             loaders.add(new BundleProjectLoader(ctx));
             loaders.add(new DiskCacheProjectLoader(ctx));
@@ -61,12 +67,13 @@ public class GradleProjectLoaderImpl implements GradleProjectLoader {
 
         Boolean trust = null;
 
+        GradleProject best = null;
         GradleProject ret = null;
         for (AbstractProjectLoader loader : loaders) {
             if (loader.isEnabled()) {
                 if (loader.needsTrust()) {
                     if (trust == null) {
-                        trust = RunUtils.isProjectTrusted(ctx.project, interactive);
+                        trust = RunUtils.isProjectTrusted(ctx.project, options.isInteractive());
                     }
                     if (trust) {
                         ret = loader.load();
@@ -74,7 +81,7 @@ public class GradleProjectLoaderImpl implements GradleProjectLoader {
                     } else {
                         ret = ctx.getPrevious();
                         if (ret != null) {
-                            ret = ret.invalidate("Gradle execution is not trusted on this project.");
+                            ret = ret.invalidate(Bundle.ERR_ProjectNotTrusted());
                         }
                         LOGGER.log(Level.FINER, "Execution not allowed, invalidated {0}", ret);
                     }
@@ -83,13 +90,18 @@ public class GradleProjectLoaderImpl implements GradleProjectLoader {
                     LOGGER.log(Level.FINER, "Loaded with loader {0} -> {1}", new Object[] { loader, ret });
                 }
                 if (ret != null) {
-                    break;
+                    if (ret.betterThan(best)) {
+                        best = ret;
+                    }
+                    if (ret.getQuality().atLeast(options.getAim())) {
+                        // We have the quality we are looking for, let's be happy with that
+                        break;
+                    }
                 }
+            } else {
+                LOGGER.log(Level.FINER, "Loaded disabled: {0}", loader);
             }
         }
-        if (ret == null) {
-            throw new NullPointerException("Could not load Gradle Project: " + project);
-        }
-        return ret;
+        return best;
     }
 }

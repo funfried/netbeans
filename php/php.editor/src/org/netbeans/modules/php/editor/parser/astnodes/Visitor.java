@@ -55,6 +55,8 @@ public interface Visitor {
     //public void endVisit(Block block);
     public void visit(BreakStatement breakStatement);
 
+    public void visit(CaseDeclaration caseDeclaration);
+
     //public void endVisit(BreakStatement breakStatement);
     public void visit(CastExpression castExpression);
 
@@ -70,6 +72,8 @@ public interface Visitor {
     //public void endVisit(ClassDeclaration classDeclaration);
     public void visit(ClassInstanceCreation classInstanceCreation);
 
+    public void visit(ClassInstanceCreationVariable classInstanceCreationVariable);
+
     //public void endVisit(ClassInstanceCreation classInstanceCreation);
     public void visit(ClassName className);
 
@@ -78,6 +82,10 @@ public interface Visitor {
 
     //public void endVisit(CloneExpression cloneExpression);
     public void visit(Comment comment);
+
+    public void visit(ConstantVariable constantVariable);
+    
+    public void visit(CompositionExpression conditionalExpression);
 
     //public void endVisit(Comment comment);
     public void visit(ConditionalExpression conditionalExpression);
@@ -99,6 +107,8 @@ public interface Visitor {
     //public void endVisit(EchoStatement echoStatement);
     public void visit(EmptyStatement emptyStatement);
 
+    public void visit(EnumDeclaration enumDeclaration);
+
     public void visit(ExpressionArrayAccess node);
 
     //public void endVisit(EmptyStatement emptyStatement);
@@ -111,6 +121,8 @@ public interface Visitor {
     public void visit(FieldsDeclaration fieldsDeclaration);
 
     public void visit(FinallyClause finallyClause);
+
+    public void visit(FirstClassCallableArg firstClassCallableArg);
 
     //public void endVisit(FieldsDeclaration fieldsDeclaration);
     public void visit(ForEachStatement forEachStatement);
@@ -180,6 +192,8 @@ public interface Visitor {
 
     //public void endVisit(InstanceOfExpression instanceOfExpression);
     public void visit(InterfaceDeclaration interfaceDeclaration);
+
+    public void visit(IntersectionType intersectionType);
 
     //public void endVisit(InterfaceDeclaration interfaceDeclaration);
     public void visit(ListVariable listVariable);
@@ -284,16 +298,16 @@ public interface Visitor {
 
     public void visit(Variadic variadic);
 
-    ////public void endVisit(Variable variable);
+    //public void endVisit(Variable variable);
     public void visit(WhileStatement whileStatement);
 
     public void visit(YieldExpression node);
 
     public void visit(YieldFromExpression node);
 
-    ////public void endVisit(WhileStatement whileStatement);
+    //public void endVisit(WhileStatement whileStatement);
     public void visit(ASTNode node);
-    ////public void endVisit(ASTNode node);
+    //public void endVisit(ASTNode node);
 
     public void visit(AnonymousObjectVariable node);
 

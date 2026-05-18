@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.9
+#Version 2.26
 
 CLSS public abstract interface com.sun.jna.AltCallingConvention
 
@@ -52,6 +52,7 @@ fld public final static java.lang.String OPTION_INVOCATION_MAPPER = "invocation-
 fld public final static java.lang.String OPTION_OPEN_FLAGS = "open-flags"
 fld public final static java.lang.String OPTION_STRING_ENCODING = "string-encoding"
 fld public final static java.lang.String OPTION_STRUCTURE_ALIGNMENT = "structure-alignment"
+fld public final static java.lang.String OPTION_SYMBOL_PROVIDER = "symbol-provider"
 fld public final static java.lang.String OPTION_TYPE_MAPPER = "type-mapper"
 innr public static Handler
 
@@ -154,7 +155,7 @@ meth public void write()
 meth public void writeField(java.lang.String)
 meth public void writeField(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds LOG,PLACEHOLDER_MEMORY,actualAlignType,alignType,array,autoRead,autoWrite,busy,encoding,fieldOrder,layoutInfo,memory,nativeStrings,readCalled,reads,size,structAlignment,structFields,typeInfo,typeMapper
+hfds LOG,PLACEHOLDER_MEMORY,actualAlignType,alignType,array,autoRead,autoWrite,busy,encoding,fieldList,fieldListLock,fieldOrder,fieldOrderLock,layoutInfo,layoutInfoLock,memory,nativeStrings,readCalled,reads,size,structAlignment,structFields,typeInfo,typeMapper,validationLock,validationMap
 hcls AutoAllocated,FFIType,LayoutInfo,NativeStringTracking,StructureSet
 
 CLSS public abstract interface static com.sun.jna.Structure$ByReference
@@ -593,10 +594,24 @@ fld public final static int EXDEV = 18
 fld public final static int EXFULL = 54
 
 CLSS public abstract interface com.sun.jna.platform.linux.Fcntl
+fld public final static int O_APPEND = 1024
+fld public final static int O_CLOEXEC = 524288
 fld public final static int O_CREAT = 64
+fld public final static int O_DIRECT = 16384
+fld public final static int O_DIRECTORY = 65536
+fld public final static int O_DSYNC = 4096
 fld public final static int O_EXCL = 128
+fld public final static int O_FASYNC = 8192
+fld public final static int O_LARGEFILE = 32768
+fld public final static int O_NDELAY = 2048
+fld public final static int O_NOATIME = 262144
+fld public final static int O_NOFOLLOW = 131072
+fld public final static int O_NONBLOCK = 2048
+fld public final static int O_PATH = 2097152
 fld public final static int O_RDONLY = 0
 fld public final static int O_RDWR = 2
+fld public final static int O_SYNC = 1052672
+fld public final static int O_TMPFILE = 4259840
 fld public final static int O_TRUNC = 512
 fld public final static int O_WRONLY = 1
 fld public final static int S_IRGRP = 32
@@ -614,6 +629,8 @@ fld public final static int S_IWUSR = 128
 fld public final static int S_IXGRP = 8
 fld public final static int S_IXOTH = 1
 fld public final static int S_IXUSR = 64
+fld public final static int __O_SYNC = 1048576
+fld public final static int __O_TMPFILE = 4194304
 
 CLSS public abstract interface com.sun.jna.platform.linux.LibC
 fld public final static com.sun.jna.platform.linux.LibC INSTANCE
@@ -936,6 +953,7 @@ innr public static CFStringRef
 innr public static CFTypeID
 innr public static CFTypeRef
 intf com.sun.jna.Library
+meth public abstract boolean CFEqual(com.sun.jna.platform.mac.CoreFoundation$CFTypeRef,com.sun.jna.platform.mac.CoreFoundation$CFTypeRef)
 meth public abstract byte CFBooleanGetValue(com.sun.jna.platform.mac.CoreFoundation$CFBooleanRef)
 meth public abstract byte CFDictionaryGetValueIfPresent(com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef,com.sun.jna.PointerType,com.sun.jna.ptr.PointerByReference)
 meth public abstract byte CFNumberGetValue(com.sun.jna.platform.mac.CoreFoundation$CFNumberRef,com.sun.jna.platform.mac.CoreFoundation$CFIndex,com.sun.jna.ptr.ByReference)
@@ -948,6 +966,7 @@ meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFArrayRef CFArrayC
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFDataRef CFDataCreate(com.sun.jna.platform.mac.CoreFoundation$CFAllocatorRef,com.sun.jna.Pointer,com.sun.jna.platform.mac.CoreFoundation$CFIndex)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFArrayGetCount(com.sun.jna.platform.mac.CoreFoundation$CFArrayRef)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFDataGetLength(com.sun.jna.platform.mac.CoreFoundation$CFDataRef)
+meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFDictionaryGetCount(com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFGetRetainCount(com.sun.jna.platform.mac.CoreFoundation$CFTypeRef)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFNumberGetType(com.sun.jna.platform.mac.CoreFoundation$CFNumberRef)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFIndex CFStringGetLength(com.sun.jna.platform.mac.CoreFoundation$CFStringRef)
@@ -961,6 +980,7 @@ meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFBooleanG
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFDataGetTypeID()
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFDateGetTypeID()
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFDictionaryGetTypeID()
+meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFGetTypeID(com.sun.jna.Pointer)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFGetTypeID(com.sun.jna.platform.mac.CoreFoundation$CFTypeRef)
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFNumberGetTypeID()
 meth public abstract com.sun.jna.platform.mac.CoreFoundation$CFTypeID CFStringGetTypeID()
@@ -1000,9 +1020,19 @@ CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef
  outer com.sun.jna.platform.mac.CoreFoundation
 cons public init()
 cons public init(com.sun.jna.Pointer)
+innr public static ByReference
 meth public boolean getValueIfPresent(com.sun.jna.PointerType,com.sun.jna.ptr.PointerByReference)
 meth public com.sun.jna.Pointer getValue(com.sun.jna.PointerType)
+meth public long getCount()
 supr com.sun.jna.platform.mac.CoreFoundation$CFTypeRef
+
+CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef$ByReference
+ outer com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef
+cons public init()
+cons public init(com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef)
+meth public com.sun.jna.platform.mac.CoreFoundation$CFDictionaryRef getDictionaryRefValue()
+meth public void setValue(com.sun.jna.Pointer)
+supr com.sun.jna.ptr.PointerByReference
 
 CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFIndex
  outer com.sun.jna.platform.mac.CoreFoundation
@@ -1059,9 +1089,18 @@ CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFStringRef
  outer com.sun.jna.platform.mac.CoreFoundation
 cons public init()
 cons public init(com.sun.jna.Pointer)
+innr public static ByReference
 meth public java.lang.String stringValue()
 meth public static com.sun.jna.platform.mac.CoreFoundation$CFStringRef createCFString(java.lang.String)
 supr com.sun.jna.platform.mac.CoreFoundation$CFTypeRef
+
+CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFStringRef$ByReference
+ outer com.sun.jna.platform.mac.CoreFoundation$CFStringRef
+cons public init()
+cons public init(com.sun.jna.platform.mac.CoreFoundation$CFStringRef)
+meth public com.sun.jna.platform.mac.CoreFoundation$CFStringRef getStringRefValue()
+meth public void setValue(com.sun.jna.Pointer)
+supr com.sun.jna.ptr.PointerByReference
 
 CLSS public static com.sun.jna.platform.mac.CoreFoundation$CFTypeID
  outer com.sun.jna.platform.mac.CoreFoundation
@@ -1310,13 +1349,13 @@ meth public abstract int proc_pidinfo(int,int,long,com.sun.jna.Structure,int)
 meth public abstract int proc_pidpath(int,com.sun.jna.Pointer,int)
 meth public abstract int sysctl(int[],int,com.sun.jna.Pointer,com.sun.jna.platform.unix.LibCAPI$size_t$ByReference,com.sun.jna.Pointer,com.sun.jna.platform.unix.LibCAPI$size_t)
 meth public abstract int sysctl(int[],int,com.sun.jna.Pointer,com.sun.jna.ptr.IntByReference,com.sun.jna.Pointer,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract int sysctlbyname(java.lang.String,com.sun.jna.Pointer,com.sun.jna.platform.unix.LibCAPI$size_t$ByReference,com.sun.jna.Pointer,com.sun.jna.platform.unix.LibCAPI$size_t)
 meth public abstract int sysctlbyname(java.lang.String,com.sun.jna.Pointer,com.sun.jna.ptr.IntByReference,com.sun.jna.Pointer,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract int sysctlnametomib(java.lang.String,com.sun.jna.Pointer,com.sun.jna.platform.unix.LibCAPI$size_t$ByReference)
 meth public abstract int sysctlnametomib(java.lang.String,com.sun.jna.Pointer,com.sun.jna.ptr.IntByReference)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 
 CLSS public static com.sun.jna.platform.mac.SystemB$Group
  outer com.sun.jna.platform.mac.SystemB
@@ -1698,6 +1737,23 @@ fld public long xsu_avail
 fld public long xsu_total
 fld public long xsu_used
 supr com.sun.jna.Structure
+
+CLSS public abstract interface com.sun.jna.platform.mac.XAttr
+fld public final static com.sun.jna.platform.mac.XAttr INSTANCE
+fld public final static int XATTR_CREATE = 2
+fld public final static int XATTR_MAXNAMELEN = 127
+fld public final static int XATTR_NODEFAULT = 16
+fld public final static int XATTR_NOFOLLOW = 1
+fld public final static int XATTR_NOSECURITY = 8
+fld public final static int XATTR_REPLACE = 4
+fld public final static int XATTR_SHOWCOMPRESSION = 32
+fld public final static java.lang.String XATTR_FINDERINFO_NAME = "com.apple.FinderInfo"
+fld public final static java.lang.String XATTR_RESOURCEFORK_NAME = "com.apple.ResourceFork"
+intf com.sun.jna.Library
+meth public abstract int removexattr(java.lang.String,java.lang.String,int)
+meth public abstract int setxattr(java.lang.String,java.lang.String,com.sun.jna.Pointer,long,int,int)
+meth public abstract long getxattr(java.lang.String,java.lang.String,com.sun.jna.Pointer,long,int,int)
+meth public abstract long listxattr(java.lang.String,com.sun.jna.Pointer,long,int)
 
 CLSS public com.sun.jna.platform.mac.XAttrUtil
 cons public init()
@@ -2251,7 +2307,7 @@ fld public final static int XK_Meta_L = 65511
 fld public final static int XK_Meta_R = 65512
 fld public final static int XK_ShiftLock = 65510
 fld public final static int XK_Shift_L = 65505
-fld public final static int XK_Shift_R = 65505
+fld public final static int XK_Shift_R = 65506
 fld public final static int XK_Z = 90
 fld public final static int XK_a = 97
 fld public final static int XK_z = 122
@@ -2413,16 +2469,21 @@ meth public abstract int XGetWindowAttributes(com.sun.jna.platform.unix.X11$Disp
 meth public abstract int XGetWindowProperty(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,com.sun.jna.platform.unix.X11$Atom,com.sun.jna.NativeLong,com.sun.jna.NativeLong,boolean,com.sun.jna.platform.unix.X11$Atom,com.sun.jna.platform.unix.X11$AtomByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.NativeLongByReference,com.sun.jna.ptr.NativeLongByReference,com.sun.jna.ptr.PointerByReference)
 meth public abstract int XGrabKey(com.sun.jna.platform.unix.X11$Display,int,int,com.sun.jna.platform.unix.X11$Window,int,int,int)
 meth public abstract int XGrabKeyboard(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,int,int,int,com.sun.jna.NativeLong)
+meth public abstract int XLowerWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window)
 meth public abstract int XMapRaised(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window)
 meth public abstract int XMapSubwindows(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window)
 meth public abstract int XMapWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window)
 meth public abstract int XMaskEvent(com.sun.jna.platform.unix.X11$Display,com.sun.jna.NativeLong,com.sun.jna.platform.unix.X11$XEvent)
+meth public abstract int XMoveResizeWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,int,int,int,int)
+meth public abstract int XMoveWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,int,int)
 meth public abstract int XNextEvent(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$XEvent)
 meth public abstract int XPeekEvent(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$XEvent)
 meth public abstract int XPending(com.sun.jna.platform.unix.X11$Display)
 meth public abstract int XPutImage(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Drawable,com.sun.jna.platform.unix.X11$GC,com.sun.jna.platform.unix.X11$XImage,int,int,int,int,int,int)
 meth public abstract int XQueryKeymap(com.sun.jna.platform.unix.X11$Display,byte[])
 meth public abstract int XQueryTree(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,com.sun.jna.platform.unix.X11$WindowByReference,com.sun.jna.platform.unix.X11$WindowByReference,com.sun.jna.ptr.PointerByReference,com.sun.jna.ptr.IntByReference)
+meth public abstract int XRaiseWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window)
+meth public abstract int XResizeWindow(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,int,int)
 meth public abstract int XSelectInput(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,com.sun.jna.NativeLong)
 meth public abstract int XSendEvent(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$Window,int,com.sun.jna.NativeLong,com.sun.jna.platform.unix.X11$XEvent)
 meth public abstract int XSetBackground(com.sun.jna.platform.unix.X11$Display,com.sun.jna.platform.unix.X11$GC,com.sun.jna.NativeLong)
@@ -3477,6 +3538,122 @@ fld public int depth
 fld public int type
 supr com.sun.jna.Structure
 
+CLSS public abstract interface com.sun.jna.platform.unix.solaris.Kstat2
+fld public final static byte KSTAT2_NVK_ALL = 7
+fld public final static byte KSTAT2_NVK_MAP = 4
+fld public final static byte KSTAT2_NVK_SYS = 1
+fld public final static byte KSTAT2_NVK_USR = 2
+fld public final static byte KSTAT2_NVVT_INT = 1
+fld public final static byte KSTAT2_NVVT_INTS = 2
+fld public final static byte KSTAT2_NVVT_MAP = 0
+fld public final static byte KSTAT2_NVVT_STR = 3
+fld public final static byte KSTAT2_NVVT_STRS = 4
+fld public final static com.sun.jna.platform.unix.solaris.Kstat2 INSTANCE
+fld public final static int KSTAT2_M_GLOB = 1
+fld public final static int KSTAT2_M_RE = 2
+fld public final static int KSTAT2_M_STRING = 0
+fld public final static int KSTAT2_S_CONC_MOD = 8
+fld public final static int KSTAT2_S_DEL_MAP = 9
+fld public final static int KSTAT2_S_INVAL_ARG = 4
+fld public final static int KSTAT2_S_INVAL_STATE = 5
+fld public final static int KSTAT2_S_INVAL_TYPE = 6
+fld public final static int KSTAT2_S_NOT_FOUND = 7
+fld public final static int KSTAT2_S_NO_MEM = 2
+fld public final static int KSTAT2_S_NO_PERM = 1
+fld public final static int KSTAT2_S_NO_SPACE = 3
+fld public final static int KSTAT2_S_OK = 0
+fld public final static int KSTAT2_S_SYS_FAIL = 10
+fld public final static short KSTAT2_NVF_INVAL = 1
+fld public final static short KSTAT2_NVF_NONE = 0
+innr public static Kstat2Handle
+innr public static Kstat2Map
+innr public static Kstat2MatcherList
+innr public static Kstat2NV
+intf com.sun.jna.Library
+meth public abstract int kstat2_add_matcher(int,java.lang.String,com.sun.jna.platform.unix.solaris.Kstat2$Kstat2MatcherList)
+meth public abstract int kstat2_alloc_matcher_list(com.sun.jna.ptr.PointerByReference)
+meth public abstract int kstat2_close(com.sun.jna.ptr.PointerByReference)
+meth public abstract int kstat2_free_matcher_list(com.sun.jna.ptr.PointerByReference)
+meth public abstract int kstat2_lookup_map(com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Handle,java.lang.String,com.sun.jna.ptr.PointerByReference)
+meth public abstract int kstat2_map_get(com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Map,java.lang.String,com.sun.jna.ptr.PointerByReference)
+meth public abstract int kstat2_open(com.sun.jna.ptr.PointerByReference,com.sun.jna.platform.unix.solaris.Kstat2$Kstat2MatcherList)
+meth public abstract int kstat2_update(com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Handle)
+meth public abstract java.lang.String kstat2_status_string(int)
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Handle
+ outer com.sun.jna.platform.unix.solaris.Kstat2
+cons public init()
+cons public init(com.sun.jna.platform.unix.solaris.Kstat2$Kstat2MatcherList)
+meth public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Map lookupMap(java.lang.String)
+meth public int close()
+meth public int update()
+supr com.sun.jna.PointerType
+hfds ref
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Map
+ outer com.sun.jna.platform.unix.solaris.Kstat2
+cons public init()
+cons public init(com.sun.jna.Pointer)
+meth public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV mapGet(java.lang.String)
+meth public java.lang.Object getValue(java.lang.String)
+supr com.sun.jna.PointerType
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2MatcherList
+ outer com.sun.jna.platform.unix.solaris.Kstat2
+cons public init()
+meth public int addMatcher(int,java.lang.String)
+meth public int free()
+supr com.sun.jna.PointerType
+hfds ref
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV
+ outer com.sun.jna.platform.unix.solaris.Kstat2
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["name", "type", "kind", "flags", "data"])
+cons public init()
+cons public init(com.sun.jna.Pointer)
+fld public byte kind
+fld public byte type
+fld public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION data
+fld public java.lang.String name
+fld public short flags
+innr public static UNION
+meth public void read()
+supr com.sun.jna.Structure
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION
+ outer com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV
+cons public init()
+fld public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2Map map
+fld public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION$IntegersArr integers
+fld public com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION$StringsArr strings
+fld public long integerVal
+innr public static IntegersArr
+innr public static StringsArr
+supr com.sun.jna.Union
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION$IntegersArr
+ outer com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["addr", "len"])
+cons public init()
+fld public com.sun.jna.Pointer addr
+fld public int len
+supr com.sun.jna.Structure
+
+CLSS public static com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION$StringsArr
+ outer com.sun.jna.platform.unix.solaris.Kstat2$Kstat2NV$UNION
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["addr", "len"])
+cons public init()
+fld public com.sun.jna.Pointer addr
+fld public int len
+supr com.sun.jna.Structure
+
+CLSS public com.sun.jna.platform.unix.solaris.Kstat2StatusException
+cons protected init(int,java.lang.String)
+cons public init(int)
+meth public int getKstat2Status()
+supr java.lang.RuntimeException
+hfds kstat2Status,serialVersionUID
+
 CLSS public abstract interface com.sun.jna.platform.unix.solaris.LibKstat
 fld public final static byte KSTAT_DATA_CHAR = 0
 fld public final static byte KSTAT_DATA_INT32 = 1
@@ -3649,6 +3826,7 @@ fld public final static int LOGON_NETCREDENTIALS_ONLY = 2
 fld public final static int LOGON_WITH_PROFILE = 1
 fld public final static int MAX_KEY_LENGTH = 255
 fld public final static int MAX_VALUE_NAME = 16383
+fld public final static int REG_PROCESS_APPKEY = 1
 fld public final static int RRF_RT_ANY = 65535
 fld public final static int RRF_RT_DWORD = 24
 fld public final static int RRF_RT_QWORD = 72
@@ -3753,6 +3931,7 @@ meth public abstract int RegEnumValue(com.sun.jna.platform.win32.WinReg$HKEY,int
 meth public abstract int RegEnumValue(com.sun.jna.platform.win32.WinReg$HKEY,int,char[],com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.Pointer,com.sun.jna.ptr.IntByReference)
 meth public abstract int RegGetValue(com.sun.jna.platform.win32.WinReg$HKEY,java.lang.String,java.lang.String,int,com.sun.jna.ptr.IntByReference,byte[],com.sun.jna.ptr.IntByReference)
 meth public abstract int RegGetValue(com.sun.jna.platform.win32.WinReg$HKEY,java.lang.String,java.lang.String,int,com.sun.jna.ptr.IntByReference,com.sun.jna.Pointer,com.sun.jna.ptr.IntByReference)
+meth public abstract int RegLoadAppKey(java.lang.String,com.sun.jna.platform.win32.WinReg$HKEYByReference,int,int,int)
 meth public abstract int RegNotifyChangeKeyValue(com.sun.jna.platform.win32.WinReg$HKEY,boolean,int,com.sun.jna.platform.win32.WinNT$HANDLE,boolean)
 meth public abstract int RegOpenKeyEx(com.sun.jna.platform.win32.WinReg$HKEY,java.lang.String,int,int,com.sun.jna.platform.win32.WinReg$HKEYByReference)
 meth public abstract int RegQueryInfoKey(com.sun.jna.platform.win32.WinReg$HKEY,char[],com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.platform.win32.WinBase$FILETIME)
@@ -3781,6 +3960,7 @@ innr public static EventLogRecord
 innr public static InfoKey
 innr public static Privilege
 meth public static boolean accessCheck(java.io.File,com.sun.jna.platform.win32.Advapi32Util$AccessCheckPermission)
+meth public static boolean isCurrentProcessElevated()
 meth public static boolean isWellKnownSid(byte[],int)
 meth public static boolean isWellKnownSid(java.lang.String,int)
 meth public static boolean registryCreateKey(com.sun.jna.platform.win32.WinReg$HKEY,java.lang.String)
@@ -3811,6 +3991,7 @@ meth public static com.sun.jna.platform.win32.Advapi32Util$InfoKey registryQuery
 meth public static com.sun.jna.platform.win32.WinNT$ACE_HEADER[] getFileSecurity(java.lang.String,boolean)
 meth public static com.sun.jna.platform.win32.WinNT$SECURITY_DESCRIPTOR_RELATIVE getFileSecurityDescriptor(java.io.File,boolean)
 meth public static com.sun.jna.platform.win32.WinReg$HKEYByReference registryGetKey(com.sun.jna.platform.win32.WinReg$HKEY,java.lang.String,int)
+meth public static com.sun.jna.platform.win32.WinReg$HKEYByReference registryLoadAppKey(java.lang.String,int,int)
 meth public static int alignOnDWORD(int)
 meth public static int fileEncryptionStatus(java.io.File)
 meth public static int getAceSize(int)
@@ -3928,7 +4109,7 @@ meth public byte[] getData()
 meth public com.sun.jna.platform.win32.Advapi32Util$EventLogType getType()
 meth public com.sun.jna.platform.win32.WinNT$EVENTLOGRECORD getRecord()
 meth public int getEventId()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public int getInstanceId()
 meth public int getLength()
 meth public int getRecordNumber()
@@ -4033,17 +4214,17 @@ cons public init(java.lang.String,boolean,int)
 fld public final static com.sun.jna.platform.win32.WinDef$LCID LOCALE_SYSTEM_DEFAULT
 fld public final static com.sun.jna.platform.win32.WinDef$LCID LOCALE_USER_DEFAULT
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT[])
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT[])
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT[])
@@ -4051,7 +4232,7 @@ meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jn
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT[])
 meth protected void checkFailed(com.sun.jna.platform.win32.WinNT$HRESULT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public com.sun.jna.platform.win32.COM.IDispatch getIDispatch()
 meth public com.sun.jna.platform.win32.COM.IUnknown getIUnknown()
 meth public com.sun.jna.ptr.PointerByReference getIDispatchPointer()
@@ -4115,11 +4296,11 @@ cons public init(java.lang.String,boolean)
 meth protected boolean getBooleanProperty(java.lang.String)
 meth protected com.sun.jna.platform.win32.COM.IDispatch getAutomationProperty(java.lang.String)
 meth protected com.sun.jna.platform.win32.COM.IDispatch getAutomationProperty(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.COM.IDispatch getAutomationProperty(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.COM.IDispatch getAutomationProperty(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.COM.IDispatch getAutomationProperty(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected com.sun.jna.platform.win32.Variant$VARIANT invoke(java.lang.String)
 meth protected com.sun.jna.platform.win32.Variant$VARIANT invoke(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
@@ -4133,19 +4314,19 @@ meth protected java.util.Date getDateProperty(java.lang.String)
 meth protected short getShortProperty(java.lang.String)
 meth protected void invokeNoReply(java.lang.String)
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject,com.sun.jna.platform.win32.Variant$VARIANT,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.Variant$VARIANT,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.Variant$VARIANT[])
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT,com.sun.jna.platform.win32.Variant$VARIANT,com.sun.jna.platform.win32.Variant$VARIANT)
@@ -4153,12 +4334,12 @@ meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.Va
 meth protected void invokeNoReply(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT[])
 meth protected void setProperty(java.lang.String,boolean)
 meth protected void setProperty(java.lang.String,com.sun.jna.platform.win32.COM.COMLateBindingObject,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void setProperty(java.lang.String,com.sun.jna.platform.win32.COM.Dispatch)
 meth protected void setProperty(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void setProperty(java.lang.String,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected void setProperty(java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected void setProperty(java.lang.String,int)
 meth protected void setProperty(java.lang.String,java.lang.String)
@@ -4878,9 +5059,17 @@ fld public final static int CIM_UINT8 = 17
 fld public final static int WBEM_E_INVALID_CLASS = -2147217392
 fld public final static int WBEM_E_INVALID_NAMESPACE = -2147217394
 fld public final static int WBEM_E_INVALID_QUERY = -2147217385
+fld public final static int WBEM_FLAG_DIRECT_READ = 512
+fld public final static int WBEM_FLAG_ENSURE_LOCATABLE = 256
 fld public final static int WBEM_FLAG_FORWARD_ONLY = 32
+fld public final static int WBEM_FLAG_NO_ERROR_OBJECT = 64
 fld public final static int WBEM_FLAG_RETURN_IMMEDIATELY = 16
+fld public final static int WBEM_FLAG_RETURN_WBEM_COMPLETE = 0
+fld public final static int WBEM_FLAG_SEND_STATUS = 128
+fld public final static int WBEM_FLAG_STRONG_VALIDATION = 1048576
+fld public final static int WBEM_FLAG_USE_AMENDED_QUALIFIERS = 131072
 fld public final static int WBEM_INFINITE = -1
+fld public final static int WBEM_MASK_RESERVED_FLAGS = 126976
 fld public final static int WBEM_S_FALSE = 1
 fld public final static int WBEM_S_NO_ERROR = 0
 fld public final static int WBEM_S_NO_MORE_DATA = 262149
@@ -4890,6 +5079,7 @@ innr public static IEnumWbemClassObject
 innr public static IWbemClassObject
 innr public static IWbemContext
 innr public static IWbemLocator
+innr public static IWbemQualifierSet
 innr public static IWbemServices
 
 CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IEnumWbemClassObject
@@ -4904,17 +5094,35 @@ CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject
  outer com.sun.jna.platform.win32.COM.Wbemcli
 cons public init()
 cons public init(com.sun.jna.Pointer)
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject GetMethod(java.lang.String)
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject SpawnInstance()
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemQualifierSet GetPropertyQualifierSet(java.lang.String)
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemQualifierSet GetQualifierSet()
 meth public com.sun.jna.platform.win32.WinNT$HRESULT Get(com.sun.jna.WString,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference)
 meth public com.sun.jna.platform.win32.WinNT$HRESULT Get(java.lang.String,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetMethod(com.sun.jna.WString,int,com.sun.jna.ptr.PointerByReference,com.sun.jna.ptr.PointerByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetMethod(java.lang.String,int,com.sun.jna.ptr.PointerByReference,com.sun.jna.ptr.PointerByReference)
 meth public com.sun.jna.platform.win32.WinNT$HRESULT GetNames(com.sun.jna.WString,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.ptr.PointerByReference)
 meth public com.sun.jna.platform.win32.WinNT$HRESULT GetNames(java.lang.String,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.ptr.PointerByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetPropertyQualifierSet(com.sun.jna.WString,com.sun.jna.ptr.PointerByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetQualifierSet(com.sun.jna.ptr.PointerByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT Put(com.sun.jna.WString,int,com.sun.jna.platform.win32.Variant$VARIANT,int)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT Put(java.lang.String,int,com.sun.jna.platform.win32.Variant$VARIANT,int)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT SpawnInstance(int,com.sun.jna.ptr.PointerByReference)
 meth public java.lang.String[] GetNames(java.lang.String,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference)
+meth public void Put(java.lang.String,java.lang.String)
 supr com.sun.jna.platform.win32.COM.Unknown
 
 CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext
  outer com.sun.jna.platform.win32.COM.Wbemcli
 cons public init()
 cons public init(com.sun.jna.Pointer)
+fld public final static com.sun.jna.platform.win32.Guid$CLSID CLSID_WbemContext
+fld public final static com.sun.jna.platform.win32.Guid$GUID IID_IWbemContext
+meth public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext create()
+meth public void SetValue(java.lang.String,int,boolean)
+meth public void SetValue(java.lang.String,int,com.sun.jna.platform.win32.Variant$VARIANT)
+meth public void SetValue(java.lang.String,int,java.lang.String)
 supr com.sun.jna.platform.win32.COM.Unknown
 
 CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemLocator
@@ -4927,12 +5135,25 @@ meth public com.sun.jna.platform.win32.WinNT$HRESULT ConnectServer(com.sun.jna.p
 meth public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemLocator create()
 supr com.sun.jna.platform.win32.COM.Unknown
 
+CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemQualifierSet
+ outer com.sun.jna.platform.win32.COM.Wbemcli
+cons public init(com.sun.jna.Pointer)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT Get(com.sun.jna.WString,int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.ptr.IntByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetNames(int,com.sun.jna.ptr.PointerByReference)
+meth public java.lang.String Get(java.lang.String)
+meth public java.lang.String[] GetNames()
+supr com.sun.jna.platform.win32.COM.Unknown
+
 CLSS public static com.sun.jna.platform.win32.COM.Wbemcli$IWbemServices
  outer com.sun.jna.platform.win32.COM.Wbemcli
 cons public init()
 cons public init(com.sun.jna.Pointer)
 meth public com.sun.jna.platform.win32.COM.Wbemcli$IEnumWbemClassObject ExecQuery(java.lang.String,java.lang.String,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext)
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject ExecMethod(java.lang.String,java.lang.String,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext,com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject)
+meth public com.sun.jna.platform.win32.COM.Wbemcli$IWbemClassObject GetObject(java.lang.String,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT ExecMethod(com.sun.jna.platform.win32.WTypes$BSTR,com.sun.jna.platform.win32.WTypes$BSTR,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext,com.sun.jna.Pointer,com.sun.jna.ptr.PointerByReference,com.sun.jna.ptr.PointerByReference)
 meth public com.sun.jna.platform.win32.WinNT$HRESULT ExecQuery(com.sun.jna.platform.win32.WTypes$BSTR,com.sun.jna.platform.win32.WTypes$BSTR,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext,com.sun.jna.ptr.PointerByReference)
+meth public com.sun.jna.platform.win32.WinNT$HRESULT GetObject(com.sun.jna.platform.win32.WTypes$BSTR,int,com.sun.jna.platform.win32.COM.Wbemcli$IWbemContext,com.sun.jna.ptr.PointerByReference,com.sun.jna.ptr.PointerByReference)
 supr com.sun.jna.platform.win32.COM.Unknown
 
 CLSS public abstract interface static com.sun.jna.platform.win32.COM.Wbemcli$WBEM_CONDITION_FLAG_TYPE
@@ -5103,20 +5324,20 @@ intf com.sun.jna.platform.win32.COM.util.IDispatch
 intf com.sun.jna.platform.win32.COM.util.IRawDispatchHandle
 intf java.lang.reflect.InvocationHandler
 meth protected com.sun.jna.platform.win32.OaIdl$DISPID resolveDispId(com.sun.jna.platform.win32.COM.IDispatch,java.lang.String)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.OaIdl$DISPID resolveDispId(java.lang.String)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT[])
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.COM.IDispatch,java.lang.String,com.sun.jna.platform.win32.Variant$VARIANT[])
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT)
 meth protected com.sun.jna.platform.win32.WinNT$HRESULT oleMethod(int,com.sun.jna.platform.win32.Variant$VARIANT$ByReference,com.sun.jna.platform.win32.OaIdl$DISPID,com.sun.jna.platform.win32.Variant$VARIANT[])
@@ -5151,7 +5372,7 @@ supr java.lang.Object
 hfds factory,raw
 
 CLSS public abstract interface !annotation com.sun.jna.platform.win32.COM.util.annotation.ComEventCallback
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
  anno 0 java.lang.annotation.Inherited()
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[METHOD])
@@ -5337,6 +5558,8 @@ meth public abstract com.sun.jna.platform.win32.WinCrypt$CERT_CONTEXT$ByReferenc
 meth public abstract com.sun.jna.platform.win32.WinCrypt$CERT_CONTEXT$ByReference CertFindCertificateInStore(com.sun.jna.platform.win32.WinCrypt$HCERTSTORE,int,int,int,com.sun.jna.Pointer,com.sun.jna.platform.win32.WinCrypt$CERT_CONTEXT)
 meth public abstract com.sun.jna.platform.win32.WinCrypt$CRL_CONTEXT$ByReference CertEnumCRLsInStore(com.sun.jna.platform.win32.WinCrypt$HCERTSTORE,com.sun.jna.Pointer)
 meth public abstract com.sun.jna.platform.win32.WinCrypt$CTL_CONTEXT$ByReference CertEnumCTLsInStore(com.sun.jna.platform.win32.WinCrypt$HCERTSTORE,com.sun.jna.Pointer)
+meth public abstract com.sun.jna.platform.win32.WinCrypt$HCERTSTORE CertOpenStore(com.sun.jna.platform.win32.WinCrypt$CertStoreProviderName,int,com.sun.jna.platform.win32.WinCrypt$HCRYPTPROV_LEGACY,int,com.sun.jna.Pointer)
+meth public abstract com.sun.jna.platform.win32.WinCrypt$HCERTSTORE CertOpenStore(com.sun.jna.platform.win32.WinCrypt$CertStoreProviderName,int,com.sun.jna.platform.win32.WinCrypt$HCRYPTPROV_LEGACY,int,com.sun.jna.platform.win32.WTypes$LPWSTR)
 meth public abstract com.sun.jna.platform.win32.WinCrypt$HCERTSTORE CertOpenSystemStore(com.sun.jna.Pointer,java.lang.String)
 meth public abstract com.sun.jna.platform.win32.WinCrypt$HCERTSTORE PFXImportCertStore(com.sun.jna.platform.win32.WinCrypt$DATA_BLOB,com.sun.jna.platform.win32.WTypes$LPWSTR,int)
 meth public abstract int CertNameToStr(int,com.sun.jna.platform.win32.WinCrypt$DATA_BLOB,int,com.sun.jna.Pointer,int)
@@ -6932,8 +7155,70 @@ fld public final static int UDP_TABLE_OWNER_PID = 1
 
 CLSS public abstract interface com.sun.jna.platform.win32.Kernel32
 fld public final static com.sun.jna.platform.win32.Kernel32 INSTANCE
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD ABOVE_NORMAL_PRIORITY_CLASS
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD BELOW_NORMAL_PRIORITY_CLASS
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD HIGH_PRIORITY_CLASS
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD IDLE_PRIORITY_CLASS
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD NORMAL_PRIORITY_CLASS
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD PROCESS_MODE_BACKGROUND_BEGIN
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD PROCESS_MODE_BACKGROUND_END
+fld public final static com.sun.jna.platform.win32.WinDef$DWORD REALTIME_PRIORITY_CLASS
 fld public final static int LOAD_LIBRARY_AS_DATAFILE = 2
 fld public final static int MAX_PIPE_NAME_LENGTH = 256
+fld public final static int PF_3DNOW_INSTRUCTIONS_AVAILABLE = 7
+fld public final static int PF_ALPHA_BYTE_INSTRUCTIONS = 5
+fld public final static int PF_ARM_64BIT_LOADSTORE_ATOMIC = 25
+fld public final static int PF_ARM_DIVIDE_INSTRUCTION_AVAILABLE = 24
+fld public final static int PF_ARM_EXTERNAL_CACHE_AVAILABLE = 26
+fld public final static int PF_ARM_FMAC_INSTRUCTIONS_AVAILABLE = 27
+fld public final static int PF_ARM_NEON_INSTRUCTIONS_AVAILABLE = 19
+fld public final static int PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE = 34
+fld public final static int PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE = 43
+fld public final static int PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE = 44
+fld public final static int PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE = 45
+fld public final static int PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE = 31
+fld public final static int PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE = 30
+fld public final static int PF_ARM_V8_INSTRUCTIONS_AVAILABLE = 29
+fld public final static int PF_ARM_VFP_32_REGISTERS_AVAILABLE = 18
+fld public final static int PF_AVX2_INSTRUCTIONS_AVAILABLE = 40
+fld public final static int PF_AVX512F_INSTRUCTIONS_AVAILABLE = 41
+fld public final static int PF_AVX_INSTRUCTIONS_AVAILABLE = 39
+fld public final static int PF_CHANNELS_ENABLED = 16
+fld public final static int PF_COMPARE64_EXCHANGE128 = 15
+fld public final static int PF_COMPARE_EXCHANGE128 = 14
+fld public final static int PF_COMPARE_EXCHANGE_DOUBLE = 2
+fld public final static int PF_FASTFAIL_AVAILABLE = 23
+fld public final static int PF_FLOATING_POINT_EMULATED = 1
+fld public final static int PF_FLOATING_POINT_PRECISION_ERRATA = 0
+fld public final static int PF_MMX_INSTRUCTIONS_AVAILABLE = 3
+fld public final static int PF_NX_ENABLED = 12
+fld public final static int PF_PAE_ENABLED = 9
+fld public final static int PF_PPC_MOVEMEM_64BIT_OK = 4
+fld public final static int PF_RDPID_INSTRUCTION_AVAILABLE = 33
+fld public final static int PF_RDRAND_INSTRUCTION_AVAILABLE = 28
+fld public final static int PF_RDTSCP_INSTRUCTION_AVAILABLE = 32
+fld public final static int PF_RDTSC_INSTRUCTION_AVAILABLE = 8
+fld public final static int PF_RDWRFSGSBASE_AVAILABLE = 22
+fld public final static int PF_SECOND_LEVEL_ADDRESS_TRANSLATION = 20
+fld public final static int PF_SSE3_INSTRUCTIONS_AVAILABLE = 13
+fld public final static int PF_SSE4_1_INSTRUCTIONS_AVAILABLE = 37
+fld public final static int PF_SSE4_2_INSTRUCTIONS_AVAILABLE = 38
+fld public final static int PF_SSE_DAZ_MODE_AVAILABLE = 11
+fld public final static int PF_SSSE3_INSTRUCTIONS_AVAILABLE = 36
+fld public final static int PF_VIRT_FIRMWARE_ENABLED = 21
+fld public final static int PF_XMMI64_INSTRUCTIONS_AVAILABLE = 10
+fld public final static int PF_XMMI_INSTRUCTIONS_AVAILABLE = 6
+fld public final static int PF_XSAVE_ENABLED = 17
+fld public final static int THREAD_MODE_BACKGROUND_BEGIN = 65536
+fld public final static int THREAD_MODE_BACKGROUND_END = 131072
+fld public final static int THREAD_PRIORITY_ABOVE_NORMAL = 1
+fld public final static int THREAD_PRIORITY_BELOW_NORMAL = -1
+fld public final static int THREAD_PRIORITY_ERROR_RETURN = 2147483647
+fld public final static int THREAD_PRIORITY_HIGHEST = 2
+fld public final static int THREAD_PRIORITY_IDLE = -15
+fld public final static int THREAD_PRIORITY_LOWEST = -2
+fld public final static int THREAD_PRIORITY_NORMAL = 0
+fld public final static int THREAD_PRIORITY_TIME_CRITICAL = 15
 intf com.sun.jna.platform.win32.WinNT
 intf com.sun.jna.platform.win32.Wincon
 intf com.sun.jna.win32.StdCallLibrary
@@ -6995,6 +7280,7 @@ meth public abstract boolean GetVolumeNameForVolumeMountPoint(java.lang.String,c
 meth public abstract boolean GetVolumePathName(java.lang.String,char[],int)
 meth public abstract boolean GetVolumePathNamesForVolumeName(java.lang.String,char[],int,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean GlobalMemoryStatusEx(com.sun.jna.platform.win32.WinBase$MEMORYSTATUSEX)
+meth public abstract boolean IsProcessorFeaturePresent(int)
 meth public abstract boolean IsWow64Process(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean Module32FirstW(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.Tlhelp32$MODULEENTRY32W)
 meth public abstract boolean Module32NextW(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.Tlhelp32$MODULEENTRY32W)
@@ -7021,8 +7307,10 @@ meth public abstract boolean SetFileInformationByHandle(com.sun.jna.platform.win
 meth public abstract boolean SetHandleInformation(com.sun.jna.platform.win32.WinNT$HANDLE,int,int)
 meth public abstract boolean SetLocalTime(com.sun.jna.platform.win32.WinBase$SYSTEMTIME)
 meth public abstract boolean SetNamedPipeHandleState(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference)
+meth public abstract boolean SetPriorityClass(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinDef$DWORD)
 meth public abstract boolean SetProcessAffinityMask(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.BaseTSD$ULONG_PTR)
 meth public abstract boolean SetSystemTime(com.sun.jna.platform.win32.WinBase$SYSTEMTIME)
+meth public abstract boolean SetThreadPriority(com.sun.jna.platform.win32.WinNT$HANDLE,int)
 meth public abstract boolean SetVolumeLabel(java.lang.String,java.lang.String)
 meth public abstract boolean SetVolumeMountPoint(java.lang.String,java.lang.String)
 meth public abstract boolean SystemTimeToFileTime(com.sun.jna.platform.win32.WinBase$SYSTEMTIME,com.sun.jna.platform.win32.WinBase$FILETIME)
@@ -7034,6 +7322,8 @@ meth public abstract boolean TransactNamedPipe(com.sun.jna.platform.win32.WinNT$
 meth public abstract boolean UnmapViewOfFile(com.sun.jna.Pointer)
 meth public abstract boolean VerifyVersionInfoW(com.sun.jna.platform.win32.WinNT$OSVERSIONINFOEX,int,long)
 meth public abstract boolean VirtualFreeEx(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.Pointer,com.sun.jna.platform.win32.BaseTSD$SIZE_T,int)
+meth public abstract boolean VirtualLock(com.sun.jna.Pointer,com.sun.jna.platform.win32.BaseTSD$SIZE_T)
+meth public abstract boolean VirtualUnlock(com.sun.jna.Pointer,com.sun.jna.platform.win32.BaseTSD$SIZE_T)
 meth public abstract boolean WaitNamedPipe(java.lang.String,int)
 meth public abstract boolean WriteFile(com.sun.jna.platform.win32.WinNT$HANDLE,byte[],int,com.sun.jna.ptr.IntByReference,com.sun.jna.platform.win32.WinBase$OVERLAPPED)
 meth public abstract boolean WritePrivateProfileSection(java.lang.String,java.lang.String,java.lang.String)
@@ -7049,6 +7339,7 @@ meth public abstract com.sun.jna.Pointer MapViewOfFile(com.sun.jna.platform.win3
 meth public abstract com.sun.jna.Pointer VirtualAllocEx(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.Pointer,com.sun.jna.platform.win32.BaseTSD$SIZE_T,int,int)
 meth public abstract com.sun.jna.platform.win32.BaseTSD$SIZE_T VirtualQueryEx(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.Pointer,com.sun.jna.platform.win32.WinNT$MEMORY_BASIC_INFORMATION,com.sun.jna.platform.win32.BaseTSD$SIZE_T)
 meth public abstract com.sun.jna.platform.win32.WinDef$DWORD GetLogicalDriveStrings(com.sun.jna.platform.win32.WinDef$DWORD,char[])
+meth public abstract com.sun.jna.platform.win32.WinDef$DWORD GetPriorityClass(com.sun.jna.platform.win32.WinNT$HANDLE)
 meth public abstract com.sun.jna.platform.win32.WinDef$DWORD GetPrivateProfileSection(java.lang.String,char[],com.sun.jna.platform.win32.WinDef$DWORD,java.lang.String)
 meth public abstract com.sun.jna.platform.win32.WinDef$DWORD GetPrivateProfileSectionNames(char[],com.sun.jna.platform.win32.WinDef$DWORD,java.lang.String)
 meth public abstract com.sun.jna.platform.win32.WinDef$DWORD GetPrivateProfileString(java.lang.String,java.lang.String,java.lang.String,char[],com.sun.jna.platform.win32.WinDef$DWORD,java.lang.String)
@@ -7067,7 +7358,7 @@ meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE CreateMutex(com.sun
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE CreateNamedPipe(java.lang.String,int,int,int,int,int,int,com.sun.jna.platform.win32.WinBase$SECURITY_ATTRIBUTES)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE CreateRemoteThread(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinBase$SECURITY_ATTRIBUTES,int,com.sun.jna.Pointer,com.sun.jna.Pointer,int,com.sun.jna.platform.win32.WinDef$DWORDByReference)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE CreateRemoteThread(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinBase$SECURITY_ATTRIBUTES,int,com.sun.jna.platform.win32.WinBase$FOREIGN_THREAD_START_ROUTINE,com.sun.jna.Pointer,com.sun.jna.platform.win32.WinDef$DWORD,com.sun.jna.Pointer)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE CreateToolhelp32Snapshot(com.sun.jna.platform.win32.WinDef$DWORD,com.sun.jna.platform.win32.WinDef$DWORD)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE FindFirstFile(java.lang.String,com.sun.jna.Pointer)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE FindFirstFileEx(java.lang.String,int,com.sun.jna.Pointer,int,com.sun.jna.Pointer,com.sun.jna.platform.win32.WinDef$DWORD)
@@ -7077,6 +7368,7 @@ meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE GetCurrentProcess()
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE GetCurrentThread()
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE LoadResource(com.sun.jna.platform.win32.WinDef$HMODULE,com.sun.jna.platform.win32.WinDef$HRSRC)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE OpenEvent(int,boolean,java.lang.String)
+meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE OpenFileMapping(int,boolean,java.lang.String)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE OpenMutex(int,boolean,java.lang.String)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE OpenProcess(int,boolean,int)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE OpenThread(int,boolean,int)
@@ -7096,6 +7388,7 @@ meth public abstract int GetPrivateProfileInt(java.lang.String,java.lang.String,
 meth public abstract int GetProcessId(com.sun.jna.platform.win32.WinNT$HANDLE)
 meth public abstract int GetProcessVersion(int)
 meth public abstract int GetShortPathName(java.lang.String,char[],int)
+meth public abstract int GetThreadPriority(com.sun.jna.platform.win32.WinNT$HANDLE)
 meth public abstract int GetTickCount()
 meth public abstract int QueryDosDevice(java.lang.String,char[],int)
 meth public abstract int SetErrorMode(int)
@@ -7133,18 +7426,28 @@ meth public final static java.util.List<java.lang.String> getVolumePathNamesForV
 meth public final static java.util.List<java.lang.String> queryDosDevice(java.lang.String,int)
 meth public final static void writePrivateProfileSection(java.lang.String,java.lang.String[],java.lang.String)
 meth public final static void writePrivateProfileString(java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+meth public static boolean isValidPriorityClass(com.sun.jna.platform.win32.WinDef$DWORD)
+meth public static boolean isValidThreadPriority(int)
 meth public static boolean isWideCharEnvironmentStringBlock(com.sun.jna.Pointer,long)
 meth public static byte[] getResource(java.lang.String,java.lang.String,java.lang.String)
+meth public static com.sun.jna.platform.win32.WinDef$DWORD getCurrentProcessPriority()
+meth public static com.sun.jna.platform.win32.WinDef$DWORD getProcessPriority(int)
+meth public static int getCurrentThreadPriority()
 meth public static int getDriveType(java.lang.String)
 meth public static int getFileAttributes(java.lang.String)
 meth public static int getFileType(java.lang.String) throws java.io.FileNotFoundException
+meth public static int getThreadPriority(int)
 meth public static java.lang.String expandEnvironmentStrings(java.lang.String)
 meth public static java.lang.String formatMessage(com.sun.jna.platform.win32.WinNT$HRESULT)
+meth public static java.lang.String formatMessage(com.sun.jna.platform.win32.WinNT$HRESULT,int,int)
 meth public static java.lang.String formatMessage(int)
+meth public static java.lang.String formatMessage(int,int,int)
 meth public static java.lang.String formatMessageFromLastErrorCode(int)
+meth public static java.lang.String formatMessageFromLastErrorCode(int,int,int)
 meth public static java.lang.String getComputerName()
 meth public static java.lang.String getEnvironmentVariable(java.lang.String)
 meth public static java.lang.String getLastErrorMessage()
+meth public static java.lang.String getLastErrorMessage(int,int)
 meth public static java.lang.String getTempPath()
 meth public static java.lang.String readEnvironmentStringBlockEntry(com.sun.jna.Pointer,long,boolean)
 meth public static java.util.List<com.sun.jna.platform.win32.Tlhelp32$MODULEENTRY32W> getModules(int)
@@ -7158,7 +7461,14 @@ meth public static void closeHandleRef(com.sun.jna.platform.win32.WinNT$HANDLEBy
 meth public static void deleteFile(java.lang.String)
 meth public static void freeGlobalMemory(com.sun.jna.Pointer)
 meth public static void freeLocalMemory(com.sun.jna.Pointer)
+meth public static void setCurrentProcessBackgroundMode(boolean)
+meth public static void setCurrentProcessPriority(com.sun.jna.platform.win32.WinDef$DWORD)
+meth public static void setCurrentThreadBackgroundMode(boolean)
+meth public static void setCurrentThreadPriority(int)
+meth public static void setProcessPriority(int,com.sun.jna.platform.win32.WinDef$DWORD)
+meth public static void setThreadPriority(int,int)
 supr java.lang.Object
+hfds EMPTY_STRING_ARRAY
 
 CLSS public com.sun.jna.platform.win32.KnownFolders
 cons public init()
@@ -8411,7 +8721,7 @@ innr public static ByReference
 meth public java.util.Date getAsJavaDate()
 meth public void setFromJavaDate(java.util.Date)
 supr com.sun.jna.Structure
-hfds MICRO_SECONDS_PER_DAY
+hfds MILLISECONDS_PER_DAY
 
 CLSS public static com.sun.jna.platform.win32.OaIdl$DATE$ByReference
  outer com.sun.jna.platform.win32.OaIdl$DATE
@@ -9172,6 +9482,7 @@ meth public abstract com.sun.jna.platform.win32.WinNT$HRESULT VariantCopy(com.su
 meth public abstract int SysStringByteLen(com.sun.jna.platform.win32.WTypes$BSTR)
 meth public abstract int SysStringLen(com.sun.jna.platform.win32.WTypes$BSTR)
 meth public abstract int SystemTimeToVariantTime(com.sun.jna.platform.win32.WinBase$SYSTEMTIME,com.sun.jna.ptr.DoubleByReference)
+meth public abstract int VariantTimeToSystemTime(double,com.sun.jna.platform.win32.WinBase$SYSTEMTIME)
 meth public abstract void SysFreeString(com.sun.jna.platform.win32.WTypes$BSTR)
 meth public abstract void VariantInit(com.sun.jna.platform.win32.Variant$VARIANT$ByReference)
 meth public abstract void VariantInit(com.sun.jna.platform.win32.Variant$VARIANT)
@@ -9446,11 +9757,13 @@ CLSS public abstract interface com.sun.jna.platform.win32.Psapi
 fld public final static com.sun.jna.platform.win32.Psapi INSTANCE
 innr public static MODULEINFO
 innr public static PERFORMANCE_INFORMATION
+innr public static PSAPI_WORKING_SET_EX_INFORMATION
 intf com.sun.jna.win32.StdCallLibrary
 meth public abstract boolean EnumProcessModules(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinDef$HMODULE[],int,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean EnumProcesses(int[],int,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean GetModuleInformation(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinDef$HMODULE,com.sun.jna.platform.win32.Psapi$MODULEINFO,int)
 meth public abstract boolean GetPerformanceInfo(com.sun.jna.platform.win32.Psapi$PERFORMANCE_INFORMATION,int)
+meth public abstract boolean QueryWorkingSetEx(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.Pointer,int)
 meth public abstract int GetModuleFileNameEx(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.Pointer,int)
 meth public abstract int GetModuleFileNameExA(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinNT$HANDLE,byte[],int)
 meth public abstract int GetModuleFileNameExW(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinNT$HANDLE,char[],int)
@@ -9483,6 +9796,22 @@ fld public com.sun.jna.platform.win32.WinDef$DWORD HandleCount
 fld public com.sun.jna.platform.win32.WinDef$DWORD ProcessCount
 fld public com.sun.jna.platform.win32.WinDef$DWORD ThreadCount
 fld public com.sun.jna.platform.win32.WinDef$DWORD cb
+supr com.sun.jna.Structure
+
+CLSS public static com.sun.jna.platform.win32.Psapi$PSAPI_WORKING_SET_EX_INFORMATION
+ outer com.sun.jna.platform.win32.Psapi
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["VirtualAddress", "VirtualAttributes"])
+cons public init()
+fld public com.sun.jna.Pointer VirtualAddress
+fld public com.sun.jna.platform.win32.BaseTSD$ULONG_PTR VirtualAttributes
+meth public boolean isBad()
+meth public boolean isLargePage()
+meth public boolean isLocked()
+meth public boolean isShared()
+meth public boolean isValid()
+meth public int getNode()
+meth public int getShareCount()
+meth public int getWin32Protection()
 supr com.sun.jna.Structure
 
 CLSS public abstract com.sun.jna.platform.win32.PsapiUtil
@@ -9918,7 +10247,7 @@ fld public final static int ISC_REQ_MUTUAL_AUTH = 2
 fld public final static int ISC_REQ_REPLAY_DETECT = 4
 fld public final static int ISC_REQ_SEQUENCE_DETECT = 8
 fld public final static int ISC_REQ_STREAM = 32768
-fld public final static int MAX_TOKEN_SIZE = 12288
+fld public final static int MAX_TOKEN_SIZE
 fld public final static int SECBUFFER_DATA = 1
 fld public final static int SECBUFFER_EMPTY = 0
 fld public final static int SECBUFFER_TOKEN = 2
@@ -10593,7 +10922,7 @@ cons public init(char)
 cons public init(com.sun.jna.Pointer)
 cons public init(com.sun.jna.platform.win32.COM.Dispatch)
 cons public init(com.sun.jna.platform.win32.COM.IDispatch)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 cons public init(com.sun.jna.platform.win32.OaIdl$DATE)
 cons public init(com.sun.jna.platform.win32.OaIdl$SAFEARRAY)
 cons public init(com.sun.jna.platform.win32.OaIdl$SAFEARRAYByReference)
@@ -10929,11 +11258,11 @@ CLSS public static com.sun.jna.platform.win32.WTypes$BSTR
 cons public init()
 cons public init(com.sun.jna.Pointer)
 cons public init(java.lang.String)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.lang.String getValue()
 meth public java.lang.String toString()
 meth public void setValue(java.lang.String)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 supr com.sun.jna.PointerType
 
 CLSS public static com.sun.jna.platform.win32.WTypes$BSTRByReference
@@ -11419,6 +11748,11 @@ fld public final static int EXTENDED_STARTUPINFO_PRESENT = 524288
 fld public final static int FILE_DIR_DISALOWED = 9
 fld public final static int FILE_ENCRYPTABLE = 0
 fld public final static int FILE_IS_ENCRYPTED = 1
+fld public final static int FILE_MAP_ALL_ACCESS = 983071
+fld public final static int FILE_MAP_COPY = 1
+fld public final static int FILE_MAP_EXECUTE = 32
+fld public final static int FILE_MAP_READ = 4
+fld public final static int FILE_MAP_WRITE = 2
 fld public final static int FILE_READ_ONLY = 8
 fld public final static int FILE_ROOT_DIR = 3
 fld public final static int FILE_SYSTEM_ATTR = 2
@@ -12081,6 +12415,53 @@ fld public final static int CERT_QUERY_FORMAT_FLAG_BINARY = 2
 fld public final static int CERT_QUERY_OBJECT_BLOB = 2
 fld public final static int CERT_QUERY_OBJECT_FILE = 1
 fld public final static int CERT_SIMPLE_NAME_STR = 1
+fld public final static int CERT_STORE_BACKUP_RESTORE_FLAG = 2048
+fld public final static int CERT_STORE_CREATE_NEW_FLAG = 8192
+fld public final static int CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG = 4
+fld public final static int CERT_STORE_DELETE_FLAG = 16
+fld public final static int CERT_STORE_ENUM_ARCHIVED_FLAG = 512
+fld public final static int CERT_STORE_MANIFOLD_FLAG = 256
+fld public final static int CERT_STORE_MAXIMUM_ALLOWED_FLAG = 4096
+fld public final static int CERT_STORE_NO_CRYPT_RELEASE_FLAG = 1
+fld public final static int CERT_STORE_OPEN_EXISTING_FLAG = 16384
+fld public final static int CERT_STORE_PROV_COLLECTION = 11
+fld public final static int CERT_STORE_PROV_FILE = 3
+fld public final static int CERT_STORE_PROV_FILENAME = 8
+fld public final static int CERT_STORE_PROV_FILENAME_A = 7
+fld public final static int CERT_STORE_PROV_FILENAME_W = 8
+fld public final static int CERT_STORE_PROV_LDAP = 16
+fld public final static int CERT_STORE_PROV_LDAP_W = 16
+fld public final static int CERT_STORE_PROV_MEMORY = 2
+fld public final static int CERT_STORE_PROV_MSG = 1
+fld public final static int CERT_STORE_PROV_PHYSICAL = 14
+fld public final static int CERT_STORE_PROV_PHYSICAL_W = 14
+fld public final static int CERT_STORE_PROV_PKCS7 = 5
+fld public final static int CERT_STORE_PROV_REG = 4
+fld public final static int CERT_STORE_PROV_SERIALIZED = 6
+fld public final static int CERT_STORE_PROV_SMART_CARD = 15
+fld public final static int CERT_STORE_PROV_SMART_CARD_W = 15
+fld public final static int CERT_STORE_PROV_SYSTEM = 10
+fld public final static int CERT_STORE_PROV_SYSTEM_A = 9
+fld public final static int CERT_STORE_PROV_SYSTEM_REGISTRY = 13
+fld public final static int CERT_STORE_PROV_SYSTEM_REGISTRY_A = 12
+fld public final static int CERT_STORE_PROV_SYSTEM_REGISTRY_W = 13
+fld public final static int CERT_STORE_PROV_SYSTEM_W = 10
+fld public final static int CERT_STORE_READONLY_FLAG = 32768
+fld public final static int CERT_STORE_SET_LOCALIZED_NAME_FLAG = 2
+fld public final static int CERT_STORE_SHARE_CONTEXT_FLAG = 128
+fld public final static int CERT_STORE_SHARE_STORE_FLAG = 64
+fld public final static int CERT_STORE_UNSAFE_PHYSICAL_FLAG = 32
+fld public final static int CERT_STORE_UPDATE_KEYID_FLAG = 1024
+fld public final static int CERT_SYSTEM_STORE_CURRENT_SERVICE = 262144
+fld public final static int CERT_SYSTEM_STORE_CURRENT_USER = 65536
+fld public final static int CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY = 458752
+fld public final static int CERT_SYSTEM_STORE_LOCAL_MACHINE = 131072
+fld public final static int CERT_SYSTEM_STORE_LOCAL_MACHINE_ENTERPRISE = 589824
+fld public final static int CERT_SYSTEM_STORE_LOCAL_MACHINE_GROUP_POLICY = 524288
+fld public final static int CERT_SYSTEM_STORE_RELOCATE_FLAG = -2147483648
+fld public final static int CERT_SYSTEM_STORE_SERVICES = 327680
+fld public final static int CERT_SYSTEM_STORE_UNPROTECTED_FLAG = 1073741824
+fld public final static int CERT_SYSTEM_STORE_USERS = 393216
 fld public final static int CERT_X500_NAME_STR = 3
 fld public final static int CERT_XML_NAME_STR = 4
 fld public final static int CRYPTPROTECT_AUDIT = 16
@@ -12167,6 +12548,7 @@ innr public static CTL_CONTEXT
 innr public static CTL_ENTRY
 innr public static CTL_INFO
 innr public static CTL_USAGE
+innr public static CertStoreProviderName
 innr public static DATA_BLOB
 innr public static HCERTCHAINENGINE
 innr public static HCERTSTORE
@@ -12801,6 +13183,18 @@ CLSS public static com.sun.jna.platform.win32.WinCrypt$CTL_USAGE$ByReference
 cons public init()
 intf com.sun.jna.Structure$ByReference
 supr com.sun.jna.platform.win32.WinCrypt$CTL_USAGE
+
+CLSS public static com.sun.jna.platform.win32.WinCrypt$CertStoreProviderName
+ outer com.sun.jna.platform.win32.WinCrypt
+cons public init()
+cons public init(int)
+cons public init(java.lang.String)
+intf com.sun.jna.NativeMapped
+meth public java.lang.Class<?> nativeType()
+meth public java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+meth public java.lang.Object toNative()
+supr java.lang.Object
+hfds pointer
 
 CLSS public abstract interface static com.sun.jna.platform.win32.WinCrypt$CryptGetSignerCertificateCallback
  outer com.sun.jna.platform.win32.WinCrypt
@@ -17918,6 +18312,7 @@ fld public final static byte SYSTEM_AUDIT_CALLBACK_OBJECT_ACE_TYPE = 15
 fld public final static byte SYSTEM_AUDIT_OBJECT_ACE_TYPE = 7
 fld public final static byte SYSTEM_MANDATORY_LABEL_ACE_TYPE = 17
 fld public final static byte VALID_INHERIT_FLAGS = 31
+fld public final static com.sun.jna.platform.win32.Guid$GUID GUID_CONSOLE_DISPLAY_STATE
 fld public final static com.sun.jna.platform.win32.WinDef$LCID LOCALE_INVARIANT
 fld public final static com.sun.jna.platform.win32.WinDef$LCID LOCALE_NEUTRAL
 fld public final static com.sun.jna.platform.win32.WinDef$LCID LOCALE_SYSTEM_DEFAULT
@@ -18253,8 +18648,10 @@ fld public final static int REG_START_JOURNAL = 64
 fld public final static int REG_SZ = 1
 fld public final static int REG_WHOLE_HIVE_VOLATILE = 1
 fld public final static int SACL_SECURITY_INFORMATION = 8
+fld public final static int SECTION_ALL_ACCESS = 983071
 fld public final static int SECTION_EXTEND_SIZE = 16
 fld public final static int SECTION_MAP_EXECUTE = 8
+fld public final static int SECTION_MAP_EXECUTE_EXPLICIT = 32
 fld public final static int SECTION_MAP_READ = 4
 fld public final static int SECTION_MAP_WRITE = 2
 fld public final static int SECTION_QUERY = 1
@@ -18567,6 +18964,7 @@ innr public static SYSTEM_POWER_CAPABILITIES
 innr public static SYSTEM_POWER_INFORMATION
 innr public static SYSTEM_POWER_LEVEL
 innr public static SYSTEM_POWER_POLICY
+innr public static TOKEN_ELEVATION
 innr public static TOKEN_GROUPS
 innr public static TOKEN_OWNER
 innr public static TOKEN_PRIMARY_GROUP
@@ -19312,6 +19710,13 @@ fld public final static int PowerSystemSleeping2 = 3
 fld public final static int PowerSystemSleeping3 = 4
 fld public final static int PowerSystemUnspecified = 0
 fld public final static int PowerSystemWorking = 1
+
+CLSS public static com.sun.jna.platform.win32.WinNT$TOKEN_ELEVATION
+ outer com.sun.jna.platform.win32.WinNT
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["TokenIsElevated"])
+cons public init()
+fld public int TokenIsElevated
+supr com.sun.jna.Structure
 
 CLSS public static com.sun.jna.platform.win32.WinNT$TOKEN_GROUPS
  outer com.sun.jna.platform.win32.WinNT
@@ -20181,6 +20586,20 @@ fld public final static int MONITORINFOF_PRIMARY = 1
 fld public final static int MONITOR_DEFAULTTONEAREST = 2
 fld public final static int MONITOR_DEFAULTTONULL = 0
 fld public final static int MONITOR_DEFAULTTOPRIMARY = 1
+fld public final static int PBT_APMBATTERYLOW = 9
+fld public final static int PBT_APMOEMEVENT = 11
+fld public final static int PBT_APMPOWERSTATUSCHANGE = 10
+fld public final static int PBT_APMQUERYSTANDBY = 1
+fld public final static int PBT_APMQUERYSTANDBYFAILED = 3
+fld public final static int PBT_APMQUERYSUSPEND = 0
+fld public final static int PBT_APMQUERYSUSPENDFAILED = 2
+fld public final static int PBT_APMRESUMEAUTOMATIC = 18
+fld public final static int PBT_APMRESUMECRITICAL = 6
+fld public final static int PBT_APMRESUMESTANDBY = 8
+fld public final static int PBT_APMRESUMESUSPEND = 7
+fld public final static int PBT_APMSTANDBY = 5
+fld public final static int PBT_APMSUSPEND = 4
+fld public final static int PBT_POWERSETTINGCHANGE = 32787
 fld public final static int RDW_ALLCHILDREN = 128
 fld public final static int RDW_ERASE = 4
 fld public final static int RDW_ERASENOW = 512
@@ -20359,6 +20778,7 @@ fld public final static int WM_KEYDOWN = 256
 fld public final static int WM_KEYUP = 257
 fld public final static int WM_MDIMAXIMIZE = 549
 fld public final static int WM_PAINT = 15
+fld public final static int WM_POWERBROADCAST = 536
 fld public final static int WM_QUIT = 18
 fld public final static int WM_SESSION_CHANGE = 689
 fld public final static int WM_SHOWWINDOW = 24
@@ -20413,6 +20833,7 @@ innr public static HARDWAREINPUT
 innr public static HDEVNOTIFY
 innr public static HHOOK
 innr public static HMONITOR
+innr public static HPOWERNOTIFY
 innr public static INPUT
 innr public static KBDLLHOOKSTRUCT
 innr public static KEYBDINPUT
@@ -20422,12 +20843,15 @@ innr public static MONITORINFOEX
 innr public static MOUSEINPUT
 innr public static MSG
 innr public static MSLLHOOKSTRUCT
+innr public static POWERBROADCAST_SETTING
 innr public static RAWINPUTDEVICELIST
 innr public static SIZE
 innr public static WINDOWINFO
 innr public static WINDOWPLACEMENT
 innr public static WNDCLASSEX
 intf com.sun.jna.platform.win32.WinDef
+meth public abstract com.sun.jna.platform.win32.WinDef$BOOL UnregisterPowerSettingNotification(com.sun.jna.platform.win32.WinUser$HPOWERNOTIFY)
+meth public abstract com.sun.jna.platform.win32.WinUser$HPOWERNOTIFY RegisterPowerSettingNotification(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.Guid$GUID,int)
 
 CLSS public static com.sun.jna.platform.win32.WinUser$BLENDFUNCTION
  outer com.sun.jna.platform.win32.WinUser
@@ -20524,6 +20948,12 @@ supr com.sun.jna.platform.win32.WinNT$HANDLE
 CLSS public abstract interface static com.sun.jna.platform.win32.WinUser$HOOKPROC
  outer com.sun.jna.platform.win32.WinUser
 intf com.sun.jna.win32.StdCallLibrary$StdCallCallback
+
+CLSS public static com.sun.jna.platform.win32.WinUser$HPOWERNOTIFY
+ outer com.sun.jna.platform.win32.WinUser
+cons public init()
+cons public init(com.sun.jna.Pointer)
+supr com.sun.jna.platform.win32.WinDef$PVOID
 
 CLSS public static com.sun.jna.platform.win32.WinUser$INPUT
  outer com.sun.jna.platform.win32.WinUser
@@ -20676,6 +21106,16 @@ fld public com.sun.jna.platform.win32.WinDef$POINT pt
 fld public int flags
 fld public int mouseData
 fld public int time
+supr com.sun.jna.Structure
+
+CLSS public static com.sun.jna.platform.win32.WinUser$POWERBROADCAST_SETTING
+ outer com.sun.jna.platform.win32.WinUser
+ anno 0 com.sun.jna.Structure$FieldOrder(java.lang.String[] value=["PowerSetting", "DataLength", "Data"])
+cons public init(com.sun.jna.Pointer)
+fld public byte[] Data
+fld public com.sun.jna.platform.win32.Guid$GUID PowerSetting
+fld public int DataLength
+meth public final void read()
 supr com.sun.jna.Structure
 
 CLSS public static com.sun.jna.platform.win32.WinUser$RAWINPUTDEVICELIST
@@ -21584,6 +22024,15 @@ meth public abstract int gethostname(byte[],int)
 CLSS public abstract interface com.sun.jna.platform.win32.Winspool
 fld public final static com.sun.jna.platform.win32.Winspool INSTANCE
 fld public final static int CCHDEVICENAME = 32
+fld public final static int JOB_CONTROL_CANCEL = 3
+fld public final static int JOB_CONTROL_DELETE = 5
+fld public final static int JOB_CONTROL_LAST_PAGE_EJECTED = 7
+fld public final static int JOB_CONTROL_PAUSE = 1
+fld public final static int JOB_CONTROL_RELEASE = 9
+fld public final static int JOB_CONTROL_RESTART = 4
+fld public final static int JOB_CONTROL_RESUME = 2
+fld public final static int JOB_CONTROL_RETAIN = 8
+fld public final static int JOB_CONTROL_SENT_TO_PRINTER = 6
 fld public final static int JOB_NOTIFY_TYPE = 1
 fld public final static int PRINTER_ATTRIBUTE_DEFAULT = 4
 fld public final static int PRINTER_ATTRIBUTE_DIRECT = 2
@@ -21635,6 +22084,10 @@ fld public final static int PRINTER_CHANGE_SET_PRINTER = 2
 fld public final static int PRINTER_CHANGE_SET_PRINTER_DRIVER = 536870912
 fld public final static int PRINTER_CHANGE_TIMEOUT = -2147483648
 fld public final static int PRINTER_CHANGE_WRITE_JOB = 2048
+fld public final static int PRINTER_CONTROL_PAUSE = 1
+fld public final static int PRINTER_CONTROL_PURGE = 2
+fld public final static int PRINTER_CONTROL_RESUME = 3
+fld public final static int PRINTER_CONTROL_SET_STATUS = 4
 fld public final static int PRINTER_ENUM_CONNECTIONS = 4
 fld public final static int PRINTER_ENUM_CONTAINER = 32768
 fld public final static int PRINTER_ENUM_DEFAULT = 1
@@ -21756,13 +22209,15 @@ meth public abstract boolean EnumJobs(com.sun.jna.platform.win32.WinNT$HANDLE,in
 meth public abstract boolean EnumPrinters(int,java.lang.String,int,com.sun.jna.Pointer,int,com.sun.jna.ptr.IntByReference,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean FindClosePrinterChangeNotification(com.sun.jna.platform.win32.WinNT$HANDLE)
 meth public abstract boolean FindNextPrinterChangeNotification(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinDef$DWORDByReference,com.sun.jna.platform.win32.WinDef$LPVOID,com.sun.jna.platform.win32.WinDef$LPVOID)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract boolean FindNextPrinterChangeNotification(com.sun.jna.platform.win32.WinNT$HANDLE,com.sun.jna.platform.win32.WinDef$DWORDByReference,com.sun.jna.platform.win32.Winspool$PRINTER_NOTIFY_OPTIONS,com.sun.jna.ptr.PointerByReference)
 meth public abstract boolean FreePrinterNotifyInfo(com.sun.jna.Pointer)
 meth public abstract boolean GetPrinter(com.sun.jna.platform.win32.WinNT$HANDLE,int,com.sun.jna.Pointer,int,com.sun.jna.ptr.IntByReference)
 meth public abstract boolean OpenPrinter(java.lang.String,com.sun.jna.platform.win32.WinNT$HANDLEByReference,com.sun.jna.platform.win32.Winspool$LPPRINTER_DEFAULTS)
+meth public abstract boolean SetJob(com.sun.jna.platform.win32.WinNT$HANDLE,int,int,com.sun.jna.Pointer,int)
+meth public abstract boolean SetPrinter(com.sun.jna.platform.win32.WinNT$HANDLE,int,com.sun.jna.Pointer,int)
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE FindFirstPrinterChangeNotification(com.sun.jna.platform.win32.WinNT$HANDLE,int,int,com.sun.jna.platform.win32.WinDef$LPVOID)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract com.sun.jna.platform.win32.WinNT$HANDLE FindFirstPrinterChangeNotification(com.sun.jna.platform.win32.WinNT$HANDLE,int,int,com.sun.jna.platform.win32.Winspool$PRINTER_NOTIFY_OPTIONS)
 
 CLSS public static com.sun.jna.platform.win32.Winspool$JOB_INFO_1
@@ -22312,6 +22767,13 @@ cons protected init(int)
 meth public java.lang.String toString()
 supr com.sun.jna.PointerType
 
+CLSS public com.sun.jna.ptr.PointerByReference
+cons public init()
+cons public init(com.sun.jna.Pointer)
+meth public com.sun.jna.Pointer getValue()
+meth public void setValue(com.sun.jna.Pointer)
+supr com.sun.jna.ptr.ByReference
+
 CLSS public abstract interface com.sun.jna.win32.StdCall
 intf com.sun.jna.AltCallingConvention
 
@@ -22343,6 +22805,7 @@ intf java.awt.MenuContainer
 intf java.awt.image.ImageObserver
 intf java.io.Serializable
 meth protected boolean requestFocus(boolean)
+meth protected boolean requestFocus(boolean,java.awt.event.FocusEvent$Cause)
 meth protected boolean requestFocusInWindow(boolean)
 meth protected final void disableEvents(long)
 meth protected final void enableEvents(long)
@@ -22363,20 +22826,20 @@ meth protected void processMouseMotionEvent(java.awt.event.MouseEvent)
 meth protected void processMouseWheelEvent(java.awt.event.MouseWheelEvent)
 meth public <%0 extends java.util.EventListener> {%%0}[] getListeners(java.lang.Class<{%%0}>)
 meth public boolean action(java.awt.Event,java.lang.Object)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean areFocusTraversalKeysSet(int)
 meth public boolean contains(int,int)
 meth public boolean contains(java.awt.Point)
 meth public boolean getFocusTraversalKeysEnabled()
 meth public boolean getIgnoreRepaint()
 meth public boolean gotFocus(java.awt.Event,java.lang.Object)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean handleEvent(java.awt.Event)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean hasFocus()
 meth public boolean imageUpdate(java.awt.Image,int,int,int,int,int)
 meth public boolean inside(int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean isBackgroundSet()
 meth public boolean isCursorSet()
 meth public boolean isDisplayable()
@@ -22385,7 +22848,7 @@ meth public boolean isEnabled()
 meth public boolean isFocusCycleRoot(java.awt.Container)
 meth public boolean isFocusOwner()
 meth public boolean isFocusTraversable()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean isFocusable()
 meth public boolean isFontSet()
 meth public boolean isForegroundSet()
@@ -22398,28 +22861,29 @@ meth public boolean isShowing()
 meth public boolean isValid()
 meth public boolean isVisible()
 meth public boolean keyDown(java.awt.Event,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean keyUp(java.awt.Event,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean lostFocus(java.awt.Event,java.lang.Object)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseDown(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseDrag(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseEnter(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseExit(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseMove(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean mouseUp(java.awt.Event,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean postEvent(java.awt.Event)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean prepareImage(java.awt.Image,int,int,java.awt.image.ImageObserver)
 meth public boolean prepareImage(java.awt.Image,java.awt.image.ImageObserver)
 meth public boolean requestFocusInWindow()
+meth public boolean requestFocusInWindow(java.awt.event.FocusEvent$Cause)
 meth public final java.lang.Object getTreeLock()
 meth public final void dispatchEvent(java.awt.AWTEvent)
 meth public float getAlignmentX()
@@ -22436,7 +22900,7 @@ meth public java.awt.Color getForeground()
 meth public java.awt.Component getComponentAt(int,int)
 meth public java.awt.Component getComponentAt(java.awt.Point)
 meth public java.awt.Component locate(int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Component$BaselineResizeBehavior getBaselineResizeBehavior()
 meth public java.awt.ComponentOrientation getComponentOrientation()
 meth public java.awt.Container getFocusCycleRootAncestor()
@@ -22448,11 +22912,11 @@ meth public java.awt.Dimension getPreferredSize()
 meth public java.awt.Dimension getSize()
 meth public java.awt.Dimension getSize(java.awt.Dimension)
 meth public java.awt.Dimension minimumSize()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Dimension preferredSize()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Dimension size()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Font getFont()
 meth public java.awt.FontMetrics getFontMetrics(java.awt.Font)
 meth public java.awt.Graphics getGraphics()
@@ -22464,9 +22928,9 @@ meth public java.awt.Point getLocation(java.awt.Point)
 meth public java.awt.Point getLocationOnScreen()
 meth public java.awt.Point getMousePosition()
 meth public java.awt.Point location()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Rectangle bounds()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Rectangle getBounds()
 meth public java.awt.Rectangle getBounds(java.awt.Rectangle)
 meth public java.awt.Toolkit getToolkit()
@@ -22507,14 +22971,14 @@ meth public void addPropertyChangeListener(java.beans.PropertyChangeListener)
 meth public void addPropertyChangeListener(java.lang.String,java.beans.PropertyChangeListener)
 meth public void applyComponentOrientation(java.awt.ComponentOrientation)
 meth public void deliverEvent(java.awt.Event)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void disable()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void doLayout()
 meth public void enable()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void enable(boolean)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void enableInputMethods(boolean)
 meth public void firePropertyChange(java.lang.String,byte,byte)
 meth public void firePropertyChange(java.lang.String,char,char)
@@ -22523,19 +22987,19 @@ meth public void firePropertyChange(java.lang.String,float,float)
 meth public void firePropertyChange(java.lang.String,long,long)
 meth public void firePropertyChange(java.lang.String,short,short)
 meth public void hide()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void invalidate()
 meth public void layout()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void list()
 meth public void list(java.io.PrintStream)
 meth public void list(java.io.PrintStream,int)
 meth public void list(java.io.PrintWriter)
 meth public void list(java.io.PrintWriter,int)
 meth public void move(int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void nextFocus()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void paint(java.awt.Graphics)
 meth public void paintAll(java.awt.Graphics)
 meth public void print(java.awt.Graphics)
@@ -22558,12 +23022,13 @@ meth public void repaint(int,int,int,int)
 meth public void repaint(long)
 meth public void repaint(long,int,int,int,int)
 meth public void requestFocus()
+meth public void requestFocus(java.awt.event.FocusEvent$Cause)
 meth public void reshape(int,int,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void resize(int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void resize(java.awt.Dimension)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void revalidate()
 meth public void setBackground(java.awt.Color)
 meth public void setBounds(int,int,int,int)
@@ -22583,21 +23048,24 @@ meth public void setLocation(int,int)
 meth public void setLocation(java.awt.Point)
 meth public void setMaximumSize(java.awt.Dimension)
 meth public void setMinimumSize(java.awt.Dimension)
+meth public void setMixingCutoutShape(java.awt.Shape)
 meth public void setName(java.lang.String)
 meth public void setPreferredSize(java.awt.Dimension)
 meth public void setSize(int,int)
 meth public void setSize(java.awt.Dimension)
 meth public void setVisible(boolean)
 meth public void show()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void show(boolean)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void transferFocus()
 meth public void transferFocusBackward()
 meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
+hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
+hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -22619,7 +23087,7 @@ meth public final void setFocusTraversalPolicyProvider(boolean)
 meth public float getAlignmentX()
 meth public float getAlignmentY()
 meth public int countComponents()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public int getComponentCount()
 meth public int getComponentZOrder(java.awt.Component)
 meth public java.awt.Component add(java.awt.Component)
@@ -22631,19 +23099,19 @@ meth public java.awt.Component getComponent(int)
 meth public java.awt.Component getComponentAt(int,int)
 meth public java.awt.Component getComponentAt(java.awt.Point)
 meth public java.awt.Component locate(int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Component[] getComponents()
 meth public java.awt.Dimension getMaximumSize()
 meth public java.awt.Dimension getMinimumSize()
 meth public java.awt.Dimension getPreferredSize()
 meth public java.awt.Dimension minimumSize()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Dimension preferredSize()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.FocusTraversalPolicy getFocusTraversalPolicy()
 meth public java.awt.Insets getInsets()
 meth public java.awt.Insets insets()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.LayoutManager getLayout()
 meth public java.awt.Point getMousePosition(boolean)
 meth public java.awt.event.ContainerListener[] getContainerListeners()
@@ -22656,11 +23124,11 @@ meth public void addPropertyChangeListener(java.beans.PropertyChangeListener)
 meth public void addPropertyChangeListener(java.lang.String,java.beans.PropertyChangeListener)
 meth public void applyComponentOrientation(java.awt.ComponentOrientation)
 meth public void deliverEvent(java.awt.Event)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void doLayout()
 meth public void invalidate()
 meth public void layout()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void list(java.io.PrintStream,int)
 meth public void list(java.io.PrintWriter,int)
 meth public void paint(java.awt.Graphics)
@@ -22682,10 +23150,12 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
+hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
+hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public abstract java.awt.Font getFont()
 meth public abstract void remove(java.awt.MenuComponent)
 
@@ -22729,7 +23199,7 @@ intf java.util.EventListener
 meth public abstract void hierarchyChanged(java.awt.event.HierarchyEvent)
 
 CLSS public abstract java.awt.event.WindowAdapter
-cons public init()
+cons protected init()
 intf java.awt.event.WindowFocusListener
 intf java.awt.event.WindowListener
 intf java.awt.event.WindowStateListener
@@ -22775,6 +23245,15 @@ fld public final static int SOMEBITS = 8
 fld public final static int WIDTH = 1
 meth public abstract boolean imageUpdate(java.awt.Image,int,int,int,int,int)
 
+CLSS public abstract interface !annotation java.beans.JavaBean
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
+intf java.lang.annotation.Annotation
+meth public abstract !hasdefault java.lang.String defaultEventSet()
+meth public abstract !hasdefault java.lang.String defaultProperty()
+meth public abstract !hasdefault java.lang.String description()
+
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
 meth public abstract void close() throws java.io.IOException
@@ -22790,13 +23269,17 @@ meth public abstract int compareTo({java.lang.Comparable%0})
 CLSS public abstract interface !annotation java.lang.Deprecated
  anno 0 java.lang.annotation.Documented()
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
- anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE])
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, MODULE, PARAMETER, TYPE])
 intf java.lang.annotation.Annotation
+meth public abstract !hasdefault boolean forRemoval()
+meth public abstract !hasdefault java.lang.String since()
 
 CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
 cons protected init(java.lang.String,int)
+innr public final static EnumDesc
 intf java.io.Serializable
 intf java.lang.Comparable<{java.lang.Enum%0}>
+intf java.lang.constant.Constable
 meth protected final java.lang.Object clone() throws java.lang.CloneNotSupportedException
 meth protected final void finalize()
 meth public final boolean equals(java.lang.Object)
@@ -22805,9 +23288,11 @@ meth public final int hashCode()
 meth public final int ordinal()
 meth public final java.lang.Class<{java.lang.Enum%0}> getDeclaringClass()
 meth public final java.lang.String name()
+meth public final java.util.Optional<java.lang.Enum$EnumDesc<{java.lang.Enum%0}>> describeConstable()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
+hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -22816,6 +23301,7 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
+hfds serialVersionUID
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -22838,11 +23324,13 @@ meth public abstract long longValue()
 meth public byte byteValue()
 meth public short shortValue()
 supr java.lang.Object
+hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
 meth protected java.lang.Object clone() throws java.lang.CloneNotSupportedException
 meth protected void finalize() throws java.lang.Throwable
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="9")
 meth public boolean equals(java.lang.Object)
 meth public final java.lang.Class<?> getClass()
 meth public final void notify()
@@ -22864,6 +23352,7 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
+hfds serialVersionUID
 
 CLSS public java.lang.Thread
 cons public init()
@@ -22873,6 +23362,7 @@ cons public init(java.lang.String)
 cons public init(java.lang.ThreadGroup,java.lang.Runnable)
 cons public init(java.lang.ThreadGroup,java.lang.Runnable,java.lang.String)
 cons public init(java.lang.ThreadGroup,java.lang.Runnable,java.lang.String,long)
+cons public init(java.lang.ThreadGroup,java.lang.Runnable,java.lang.String,long,boolean)
 cons public init(java.lang.ThreadGroup,java.lang.String)
 fld public final static int MAX_PRIORITY = 10
 fld public final static int MIN_PRIORITY = 1
@@ -22888,22 +23378,21 @@ meth public final int getPriority()
 meth public final java.lang.String getName()
 meth public final java.lang.ThreadGroup getThreadGroup()
 meth public final void checkAccess()
+ anno 0 java.lang.Deprecated(boolean forRemoval=true, java.lang.String since="17")
 meth public final void join() throws java.lang.InterruptedException
 meth public final void join(long) throws java.lang.InterruptedException
 meth public final void join(long,int) throws java.lang.InterruptedException
 meth public final void resume()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=true, java.lang.String since="1.2")
 meth public final void setDaemon(boolean)
 meth public final void setName(java.lang.String)
 meth public final void setPriority(int)
 meth public final void stop()
- anno 0 java.lang.Deprecated()
-meth public final void stop(java.lang.Throwable)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="1.2")
 meth public final void suspend()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=true, java.lang.String since="1.2")
 meth public int countStackFrames()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=true, java.lang.String since="1.2")
 meth public java.lang.ClassLoader getContextClassLoader()
 meth public java.lang.StackTraceElement[] getStackTrace()
 meth public java.lang.String toString()
@@ -22918,18 +23407,19 @@ meth public static java.lang.Thread currentThread()
 meth public static java.lang.Thread$UncaughtExceptionHandler getDefaultUncaughtExceptionHandler()
 meth public static java.util.Map<java.lang.Thread,java.lang.StackTraceElement[]> getAllStackTraces()
 meth public static void dumpStack()
+meth public static void onSpinWait()
 meth public static void setDefaultUncaughtExceptionHandler(java.lang.Thread$UncaughtExceptionHandler)
 meth public static void sleep(long) throws java.lang.InterruptedException
 meth public static void sleep(long,int) throws java.lang.InterruptedException
 meth public static void yield()
-meth public void destroy()
- anno 0 java.lang.Deprecated()
 meth public void interrupt()
 meth public void run()
 meth public void setContextClassLoader(java.lang.ClassLoader)
 meth public void setUncaughtExceptionHandler(java.lang.Thread$UncaughtExceptionHandler)
 meth public void start()
 supr java.lang.Object
+hfds EMPTY_STACK_TRACE,blocker,blockerLock,contextClassLoader,daemon,defaultUncaughtExceptionHandler,eetop,group,inheritableThreadLocals,inheritedAccessControlContext,interrupted,name,parkBlocker,priority,stackSize,stillborn,target,threadInitNumber,threadLocalRandomProbe,threadLocalRandomSecondarySeed,threadLocalRandomSeed,threadLocals,threadSeqNumber,threadStatus,tid,uncaughtExceptionHandler
+hcls Caches,WeakClassKey
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -22952,6 +23442,8 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
+hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,depth,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
+hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -22985,7 +23477,11 @@ CLSS public abstract interface !annotation java.lang.annotation.Target
 intf java.lang.annotation.Annotation
 meth public abstract java.lang.annotation.ElementType[] value()
 
+CLSS public abstract interface java.lang.constant.Constable
+meth public abstract java.util.Optional<? extends java.lang.constant.ConstantDesc> describeConstable()
+
 CLSS public abstract interface java.lang.reflect.InvocationHandler
+meth public !varargs static java.lang.Object invokeDefault(java.lang.Object,java.lang.reflect.Method,java.lang.Object[]) throws java.lang.Throwable
 meth public abstract java.lang.Object invoke(java.lang.Object,java.lang.reflect.Method,java.lang.Object[]) throws java.lang.Throwable
 
 CLSS public abstract interface java.util.EventListener
@@ -22997,6 +23493,7 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
+hfds serialVersionUID
 
 CLSS public abstract interface java.util.Iterator<%0 extends java.lang.Object>
 meth public abstract boolean hasNext()
@@ -23008,6 +23505,7 @@ CLSS public abstract interface javax.accessibility.Accessible
 meth public abstract javax.accessibility.AccessibleContext getAccessibleContext()
 
 CLSS public abstract javax.swing.JComponent
+ anno 0 java.beans.JavaBean(java.lang.String defaultEventSet="", java.lang.String defaultProperty="UIClassID", java.lang.String description="")
 cons public init()
 fld protected javax.swing.event.EventListenerList listenerList
 fld protected javax.swing.plaf.ComponentUI ui
@@ -23035,6 +23533,7 @@ meth protected void processKeyEvent(java.awt.event.KeyEvent)
 meth protected void processMouseEvent(java.awt.event.MouseEvent)
 meth protected void processMouseMotionEvent(java.awt.event.MouseEvent)
 meth protected void setUI(javax.swing.plaf.ComponentUI)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=true, boolean preferred=false, boolean required=false, boolean visualUpdate=true, java.lang.String description="The component's look and feel delegate.", java.lang.String[] enumerationValues=[])
 meth public <%0 extends java.util.EventListener> {%%0}[] getListeners(java.lang.Class<{%%0}>)
 meth public boolean contains(int,int)
 meth public boolean getAutoscrolls()
@@ -23042,17 +23541,21 @@ meth public boolean getInheritsPopupMenu()
 meth public boolean getVerifyInputWhenFocusTarget()
 meth public boolean isDoubleBuffered()
 meth public boolean isManagingFocus()
- anno 0 java.lang.Deprecated()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean isOpaque()
 meth public boolean isOptimizedDrawingEnabled()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public boolean isPaintingTile()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public boolean isRequestFocusEnabled()
 meth public boolean isValidateRoot()
 meth public boolean requestDefaultFocus()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public boolean requestFocus(boolean)
 meth public boolean requestFocusInWindow()
 meth public final boolean isPaintingForPrint()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public final java.lang.Object getClientProperty(java.lang.Object)
 meth public final javax.swing.ActionMap getActionMap()
 meth public final javax.swing.InputMap getInputMap()
@@ -23066,39 +23569,54 @@ meth public int getBaseline(int,int)
 meth public int getConditionForKeyStroke(javax.swing.KeyStroke)
 meth public int getDebugGraphicsOptions()
 meth public int getHeight()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public int getWidth()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public int getX()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public int getY()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.Component getNextFocusableComponent()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public java.awt.Component$BaselineResizeBehavior getBaselineResizeBehavior()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.Container getTopLevelAncestor()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.Dimension getMaximumSize()
 meth public java.awt.Dimension getMinimumSize()
 meth public java.awt.Dimension getPreferredSize()
 meth public java.awt.Dimension getSize(java.awt.Dimension)
 meth public java.awt.FontMetrics getFontMetrics(java.awt.Font)
 meth public java.awt.Graphics getGraphics()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.Insets getInsets()
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=true, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.Insets getInsets(java.awt.Insets)
 meth public java.awt.Point getLocation(java.awt.Point)
 meth public java.awt.Point getPopupLocation(java.awt.event.MouseEvent)
 meth public java.awt.Point getToolTipLocation(java.awt.event.MouseEvent)
 meth public java.awt.Rectangle getBounds(java.awt.Rectangle)
 meth public java.awt.Rectangle getVisibleRect()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.awt.event.ActionListener getActionForKeyStroke(javax.swing.KeyStroke)
 meth public java.beans.VetoableChangeListener[] getVetoableChangeListeners()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public java.lang.String getToolTipText()
 meth public java.lang.String getToolTipText(java.awt.event.MouseEvent)
 meth public java.lang.String getUIClassID()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=true, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="UIClassID", java.lang.String[] enumerationValues=[])
 meth public javax.swing.InputVerifier getInputVerifier()
 meth public javax.swing.JPopupMenu getComponentPopupMenu()
 meth public javax.swing.JRootPane getRootPane()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public javax.swing.JToolTip createToolTip()
 meth public javax.swing.KeyStroke[] getRegisteredKeyStrokes()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public javax.swing.TransferHandler getTransferHandler()
 meth public javax.swing.border.Border getBorder()
 meth public javax.swing.event.AncestorListener[] getAncestorListeners()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
+meth public javax.swing.plaf.ComponentUI getUI()
 meth public static boolean isLightweightComponent(java.awt.Component)
 meth public static java.util.Locale getDefaultLocale()
 meth public static void setDefaultLocale(java.util.Locale)
@@ -23107,15 +23625,15 @@ meth public void addNotify()
 meth public void addVetoableChangeListener(java.beans.VetoableChangeListener)
 meth public void computeVisibleRect(java.awt.Rectangle)
 meth public void disable()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void enable()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void firePropertyChange(java.lang.String,boolean,boolean)
 meth public void firePropertyChange(java.lang.String,char,char)
 meth public void firePropertyChange(java.lang.String,int,int)
 meth public void grabFocus()
 meth public void hide()
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void paint(java.awt.Graphics)
 meth public void paintImmediately(int,int,int,int)
 meth public void paintImmediately(java.awt.Rectangle)
@@ -23131,40 +23649,63 @@ meth public void repaint(long,int,int,int,int)
 meth public void requestFocus()
 meth public void resetKeyboardActions()
 meth public void reshape(int,int,int,int)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void revalidate()
 meth public void scrollRectToVisible(java.awt.Rectangle)
 meth public void setAlignmentX(float)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The preferred horizontal alignment of the component.", java.lang.String[] enumerationValues=[])
 meth public void setAlignmentY(float)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The preferred vertical alignment of the component.", java.lang.String[] enumerationValues=[])
 meth public void setAutoscrolls(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=true, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="Determines if this component automatically scrolls its contents when dragged.", java.lang.String[] enumerationValues=[])
 meth public void setBackground(java.awt.Color)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=true, java.lang.String description="The background color of the component.", java.lang.String[] enumerationValues=[])
 meth public void setBorder(javax.swing.border.Border)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=true, java.lang.String description="The component's border.", java.lang.String[] enumerationValues=[])
 meth public void setComponentPopupMenu(javax.swing.JPopupMenu)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=false, java.lang.String description="Popup to show", java.lang.String[] enumerationValues=[])
 meth public void setDebugGraphicsOptions(int)
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=false, java.lang.String description="Diagnostic options for graphics operations.", java.lang.String[] enumerationValues=["DebugGraphics.NONE_OPTION", "DebugGraphics.LOG_OPTION", "DebugGraphics.FLASH_OPTION", "DebugGraphics.BUFFERED_OPTION"])
 meth public void setDoubleBuffered(boolean)
 meth public void setEnabled(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=true, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=true, java.lang.String description="The enabled state of the component.", java.lang.String[] enumerationValues=[])
 meth public void setFocusTraversalKeys(int,java.util.Set<? extends java.awt.AWTKeyStroke>)
 meth public void setFont(java.awt.Font)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=true, java.lang.String description="The font for the component.", java.lang.String[] enumerationValues=[])
 meth public void setForeground(java.awt.Color)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=true, java.lang.String description="The foreground color of the component.", java.lang.String[] enumerationValues=[])
 meth public void setInheritsPopupMenu(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="Whether or not the JPopupMenu is inherited", java.lang.String[] enumerationValues=[])
 meth public void setInputVerifier(javax.swing.InputVerifier)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The component's input verifier.", java.lang.String[] enumerationValues=[])
 meth public void setMaximumSize(java.awt.Dimension)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The maximum size of the component.", java.lang.String[] enumerationValues=[])
 meth public void setMinimumSize(java.awt.Dimension)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The minimum size of the component.", java.lang.String[] enumerationValues=[])
 meth public void setNextFocusableComponent(java.awt.Component)
- anno 0 java.lang.Deprecated()
+ anno 0 java.lang.Deprecated(boolean forRemoval=false, java.lang.String since="")
 meth public void setOpaque(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=true, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="The component's opacity", java.lang.String[] enumerationValues=[])
 meth public void setPreferredSize(java.awt.Dimension)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=false, java.lang.String description="The preferred size of the component.", java.lang.String[] enumerationValues=[])
 meth public void setRequestFocusEnabled(boolean)
 meth public void setToolTipText(java.lang.String)
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=true, boolean required=false, boolean visualUpdate=false, java.lang.String description="The text to display in a tool tip.", java.lang.String[] enumerationValues=[])
 meth public void setTransferHandler(javax.swing.TransferHandler)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=true, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="Mechanism for transfer of data to and from the component", java.lang.String[] enumerationValues=[])
 meth public void setVerifyInputWhenFocusTarget(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="Whether the Component verifies input before accepting focus.", java.lang.String[] enumerationValues=[])
 meth public void setVisible(boolean)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=true, boolean preferred=false, boolean required=false, boolean visualUpdate=true, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
+hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaHint,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,lcdRenderingHint,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
+hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JPanel
+ anno 0 java.beans.JavaBean(java.lang.String defaultEventSet="", java.lang.String defaultProperty="UI", java.lang.String description="A generic lightweight container.")
 cons public init()
 cons public init(boolean)
 cons public init(java.awt.LayoutManager)
@@ -23173,9 +23714,13 @@ innr protected AccessibleJPanel
 intf javax.accessibility.Accessible
 meth protected java.lang.String paramString()
 meth public java.lang.String getUIClassID()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=true, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="A string that specifies the name of the L&F class.", java.lang.String[] enumerationValues=[])
 meth public javax.accessibility.AccessibleContext getAccessibleContext()
+ anno 0 java.beans.BeanProperty(boolean bound=false, boolean expert=false, boolean hidden=false, boolean preferred=false, boolean required=false, boolean visualUpdate=false, java.lang.String description="", java.lang.String[] enumerationValues=[])
 meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
+ anno 0 java.beans.BeanProperty(boolean bound=true, boolean expert=false, boolean hidden=true, boolean preferred=false, boolean required=false, boolean visualUpdate=true, java.lang.String description="The UI object that implements the Component's LookAndFeel.", java.lang.String[] enumerationValues=[])
 meth public void updateUI()
 supr javax.swing.JComponent
+hfds uiClassID
 

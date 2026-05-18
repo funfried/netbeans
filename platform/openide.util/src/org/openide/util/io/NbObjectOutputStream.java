@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Logger;
-import org.openide.util.WeakSet;
 
 // note: keep method NbObjectInputStream.resolveObject
 // consistent with replaceObject method
@@ -43,7 +43,7 @@ import org.openide.util.WeakSet;
 */
 public class NbObjectOutputStream extends ObjectOutputStream {
     private static final String SVUID = "serialVersionUID"; // NOI18N
-    private static final Set<String> alreadyReported = new WeakSet<String>();
+    private static final Set<String> alreadyReported = Collections.newSetFromMap(new WeakHashMap<>());
 
     static {
         // See below.
@@ -73,6 +73,7 @@ public class NbObjectOutputStream extends ObjectOutputStream {
     /*
     * @param obj is an Object to be checked for replace
     */
+    @Override
     public Object replaceObject(Object obj) throws IOException {
         if (obj instanceof Image) {
             return null;
@@ -111,6 +112,7 @@ public class NbObjectOutputStream extends ObjectOutputStream {
         oo.write(bos.toByteArray());
     }
 
+    @Override
     protected void annotateClass(Class cl) throws IOException {
         super.annotateClass(cl);
 

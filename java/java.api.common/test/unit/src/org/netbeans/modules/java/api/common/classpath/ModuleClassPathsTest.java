@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import javax.lang.model.element.ModuleElement;
 import javax.swing.event.ChangeListener;
-import org.junit.Assume;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -64,9 +63,7 @@ import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.java.api.common.TestJavaPlatform;
 import org.netbeans.modules.java.api.common.TestProject;
 import org.netbeans.modules.java.api.common.project.ProjectProperties;
-import org.netbeans.modules.java.classpath.SimpleClassPathImplementation;
 import org.netbeans.modules.java.j2seplatform.platformdefinition.Util;
-import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.parsing.api.indexing.IndexingManager;
 import org.netbeans.spi.java.classpath.ClassPathFactory;
 import org.netbeans.spi.java.classpath.ClassPathImplementation;
@@ -727,7 +724,7 @@ public class ModuleClassPathsTest extends NbTestCase {
                 final FileLock lck = res[0].lock();
                 try (OutputStream out = res[0].getOutputStream(lck);
                         InputStream in = new ByteArrayInputStream(module.toString().getBytes(FileEncodingQuery.getEncoding(res[0])))) {
-                    FileUtil.copy(in, out);
+                    in.transferTo(out);
                 } finally {
                     lck.releaseLock();
                 }
@@ -745,7 +742,7 @@ public class ModuleClassPathsTest extends NbTestCase {
         for (ClassPath.Entry e : cp.entries()) {
             res.add(e.getURL());
         }
-        Collections.sort(res, LEX_COMPARATOR);
+        res.sort(LEX_COMPARATOR);
         return res;
     }
 
@@ -782,7 +779,7 @@ public class ModuleClassPathsTest extends NbTestCase {
         Arrays.stream(additionalRoots)
                 .map((fo) -> fo.toURL())
                 .forEach(l::add);
-        Collections.sort(l, LEX_COMPARATOR);
+        l.sort(LEX_COMPARATOR);
         return l;
     }
     
@@ -843,7 +840,7 @@ public class ModuleClassPathsTest extends NbTestCase {
                 path = f.getNameExt();
             }
             out.putNextEntry(new ZipEntry(path));
-            FileUtil.copy(f.getInputStream(), out);
+            f.getInputStream().transferTo(out);
             out.closeEntry();
         }
     }

@@ -783,14 +783,14 @@ public class PathFinderVisitor extends ClassCodeVisitorSupport {
                 code = ((ClosureExpression) node).getCode();
             }
 
-            if (code != null && code instanceof BlockStatement
-                    && ((code.getLineNumber() < 0 && code.getColumnNumber() < 0)
+            if (code instanceof BlockStatement
+                && ((code.getLineNumber() < 0 && code.getColumnNumber() < 0)
                     || (code.getLastLineNumber() < 0 && code.getLastColumnNumber() < 0))) {
                 BlockStatement block = (BlockStatement) code;
                 List<Statement> statements = block.getStatements();
                 if (statements != null && !statements.isEmpty()) {
                     if (code.getLineNumber() < 0 && code.getColumnNumber() < 0) {
-                        Statement first = (Statement) statements.get(0);
+                        Statement first = statements.get(0);
                         code.setLineNumber(first.getLineNumber());
                         code.setColumnNumber(first.getColumnNumber());
                     }

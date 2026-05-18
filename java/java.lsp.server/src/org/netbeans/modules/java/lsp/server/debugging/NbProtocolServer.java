@@ -57,6 +57,7 @@ import org.eclipse.lsp4j.debug.ScopesResponse;
 import org.eclipse.lsp4j.debug.SetBreakpointsArguments;
 import org.eclipse.lsp4j.debug.SetBreakpointsResponse;
 import org.eclipse.lsp4j.debug.SetExceptionBreakpointsArguments;
+import org.eclipse.lsp4j.debug.SetExceptionBreakpointsResponse;
 import org.eclipse.lsp4j.debug.SetVariableArguments;
 import org.eclipse.lsp4j.debug.SetVariableResponse;
 import org.eclipse.lsp4j.debug.Source;
@@ -80,7 +81,9 @@ import org.netbeans.api.debugger.jpda.InvalidExpressionException;
 import org.netbeans.api.debugger.jpda.JPDADebugger;
 import org.netbeans.api.debugger.jpda.ObjectVariable;
 import org.netbeans.api.debugger.jpda.Variable;
+import org.netbeans.api.project.Project;
 import org.netbeans.modules.debugger.jpda.truffle.vars.TruffleVariable;
+import org.netbeans.modules.java.lsp.server.LspServerState;
 import org.netbeans.modules.java.lsp.server.LspSession;
 import org.netbeans.modules.java.lsp.server.URITranslator;
 import org.netbeans.modules.java.lsp.server.debugging.breakpoints.NbBreakpointsRequestHandler;
@@ -96,6 +99,7 @@ import org.netbeans.modules.nativeimage.api.debug.NIVariable;
 import org.netbeans.spi.debugger.ui.DebuggingView;
 import org.netbeans.spi.debugger.ui.DebuggingView.DVFrame;
 import org.netbeans.spi.debugger.ui.DebuggingView.DVThread;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 
@@ -163,6 +167,20 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
         caught.setLabel("Caught Exceptions");
         caps.setExceptionBreakpointFilters(new ExceptionBreakpointsFilter[]{uncaught, caught});
         caps.setSupportsExceptionInfoRequest(true);
+        
+        LspServerState lspServerState = context.getLspSession().getLookup().lookup(LspServerState.class);
+        if (lspServerState != null) {
+            CompletableFuture<Project[]> initDone = lspServerState.openedProjects();
+            if (!initDone.isDone()) {
+                LOGGER.log(Level.INFO, "Waiting on LS protocol server {0} to finish initialization", lspServerState);
+                return lspServerState.openedProjects().thenApply(prjs -> {
+                    LOGGER.log(Level.FINE, "LS protocol server {0} initialized, DAP init complete", lspServerState);
+                    return caps;
+                });
+            } else {
+                LOGGER.log(Level.FINE, "LS protocol server {0} ready", lspServerState);
+            }
+        }
         return CompletableFuture.completedFuture(caps);
     }
 
@@ -172,10 +190,10 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
         NbDebugSession debugSession = context.getDebugSession();
         if (debugSession != null) {
             // Breakpoints were submitted, we can resume the debugger
-            context.getConfigurationSemaphore().notifyCongigurationDone();;
+            context.getConfigurationSemaphore().notifyCongigurationDone();
             future.complete(null);
         } else {
-            ErrorUtilities.completeExceptionally(future, "Failed to launch debug session, the debugger will exit.", ResponseErrorCode.serverErrorStart);
+            ErrorUtilities.completeExceptionally(future, "Failed to launch debug session, the debugger will exit.", ResponseErrorCode.ServerNotInitialized);
         }
         return future;
     }
@@ -201,7 +219,7 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
     }
 
     @Override
-    public CompletableFuture<Void> setExceptionBreakpoints(SetExceptionBreakpointsArguments args) {
+    public CompletableFuture<SetExceptionBreakpointsResponse> setExceptionBreakpoints(SetExceptionBreakpointsArguments args) {
         return breakpointsRequestHandler.setExceptionBreakpoints(args, context);
     }
 
@@ -373,7 +391,7 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
                     }
                 }
                 StackTraceResponse response = new StackTraceResponse();
-                response.setStackFrames(result.toArray(new StackFrame[result.size()]));
+                response.setStackFrames(result.toArray(new StackFrame[0]));
                 response.setTotalFrames(cnt);
                 long t2 = System.nanoTime();
                 LOGGER.log(LOGLEVEL, "stackTrace() END after {0} ns", (t2 - t1));
@@ -424,7 +442,7 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
             result.add(scope);
         }
         ScopesResponse response = new ScopesResponse();
-        response.setScopes(result.toArray(new Scope[result.size()]));
+        response.setScopes(result.toArray(new Scope[0]));
         return CompletableFuture.completedFuture(response);
     }
 
@@ -473,7 +491,7 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
                     result.add(thread);
                 });
                 ThreadsResponse response = new ThreadsResponse();
-                response.setThreads(result.toArray(new org.eclipse.lsp4j.debug.Thread[result.size()]));
+                response.setThreads(result.toArray(new org.eclipse.lsp4j.debug.Thread[0]));
                 long t2 = System.nanoTime();
                 LOGGER.log(LOGLEVEL, "threads() END after {0} ns", (t2 - t1));
                 return response;
@@ -523,6 +541,11 @@ public final class NbProtocolServer implements IDebugProtocolServer, LspSession.
                 evaluateJPDA(debugger, expression, threadId, response);
             } else {
                 NIDebugger niDebugger = context.getDebugSession().getNIDebugger();
+                if (niDebugger == null) {
+                    throw ErrorUtilities.createResponseErrorException(
+                        "No active debugger is found.",
+                        ResponseErrorCode.RequestCancelled);
+                }
                 evaluateNative(niDebugger, expression, threadId, response);
             }
             return response;

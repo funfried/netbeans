@@ -55,7 +55,7 @@ public final class ServerUtilities {
     public static final String GFV3_LIB_DIR_NAME = "lib"; // NOI18N
     public static final String GFV3_VERSION_MATCHER = "(?:-[0-9bSNAPHOT]+(?:\\.[0-9]+(?:_[0-9]+|)|).*|).jar"; // NOI18N
     public static final String GFV3_JAR_MATCHER = "glassfish" + GFV3_VERSION_MATCHER; // NOI18N
-    static public final String PROP_FIRST_RUN = "first_run";
+    public static final String PROP_FIRST_RUN = "first_run";
     private GlassfishInstanceProvider gip;
     private GlassfishWizardProvider gwp;
 
@@ -105,6 +105,18 @@ public final class ServerUtilities {
         GlassfishInstanceProvider gip = GlassfishInstanceProvider.getProvider();
         return null == gip ? null : new ServerUtilities(gip,
                 GlassfishWizardProvider.createJakartaEe91());
+    }
+
+    public static ServerUtilities getJakartaEe10Utilities() {
+        GlassfishInstanceProvider gip = GlassfishInstanceProvider.getProvider();
+        return null == gip ? null : new ServerUtilities(gip,
+                GlassfishWizardProvider.createJakartaEe10());
+    }
+    
+    public static ServerUtilities getJakartaEe11Utilities() {
+        GlassfishInstanceProvider gip = GlassfishInstanceProvider.getProvider();
+        return null == gip ? null : new ServerUtilities(gip,
+                GlassfishWizardProvider.createJakartaEe11());
     }
 
 //    public static ServerUtilities getEe6WCUtilities() {
@@ -284,7 +296,7 @@ public final class ServerUtilities {
      * @param gfRoot the name of the directory to check against.
      * @return true if the directory appears to be the root of a TP2 installation.
      */
-    static public boolean isTP2(String gfRoot) {
+    public static boolean isTP2(String gfRoot) {
         return ServerUtilities.getJarName(gfRoot, ServerUtilities.GFV3_JAR_MATCHER).getName().indexOf("-tp-2-") > -1; // NOI18N
     }
 
@@ -321,9 +333,8 @@ public final class ServerUtilities {
                 } else if(!candidate.getNameExt().endsWith(".jar")) {
                     continue;
                 }
-                JarFile jarFile = null;
-                try {
-                    jarFile = new JarFile(FileUtil.toFile(candidate), false);
+                
+                try (JarFile jarFile = new JarFile(FileUtil.toFile(candidate), false)) {
                     Manifest manifest = jarFile.getManifest();
                     if(manifest != null) {
                         Attributes attrs = manifest.getMainAttributes();
@@ -342,18 +353,7 @@ public final class ServerUtilities {
                 } catch (IOException ex) {
                     Logger.getLogger(ServerUtilities.class.getName()).log(Level.INFO,
                             candidate.getPath(), ex);
-                } finally {
-                    if (null != jarFile) {
-                        try {
-                            jarFile.close();
-                        } catch (IOException ex) {
-                            Logger.getLogger(ServerUtilities.class.getName()).log(Level.INFO,
-                                    candidate.getPath(), ex);
-                        }
-                        jarFile = null;
-                    }
                 }
-
             }
         } else {
            Logger.getLogger(ServerUtilities.class.getName()).log(Level.FINER,

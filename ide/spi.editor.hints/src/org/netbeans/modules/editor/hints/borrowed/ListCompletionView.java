@@ -70,8 +70,8 @@ public class ListCompletionView extends JList {
     private static final Logger LOG = Logger.getLogger(ListCompletionView.class.getName());
     public static final int COMPLETION_ITEM_HEIGHT = 16;
     private static final int DARKER_COLOR_COMPONENT = 5;
-    private final static Icon icon = ImageUtilities.loadImageIcon("org/netbeans/modules/editor/hints/resources/suggestion.gif", false); // NOI18N
-    private final static Icon subMenuIcon;
+    private static final Icon icon = ImageUtilities.loadImageIcon("org/netbeans/modules/editor/hints/resources/suggestion.gif", false); // NOI18N
+    private static final Icon subMenuIcon;
     private final int fixedItemHeight;
     private final HtmlRenderer.Renderer defaultRenderer = HtmlRenderer.createRenderer();
     private Font font;
@@ -358,9 +358,7 @@ public class ListCompletionView extends JList {
     private void renderHtml(Fix f, Graphics g, Font defaultFont, Color defaultColor,
     int width, int height, boolean selected) {
         if (icon != null) {
-            // The image of the ImageIcon should already be loaded
-            // so no ImageObserver should be necessary
-            g.drawImage(ImageUtilities.icon2Image(icon), BEFORE_ICON_GAP, (height - icon.getIconHeight()) /2, this);
+            icon.paintIcon(null, g, BEFORE_ICON_GAP, (height - icon.getIconHeight()) /2);
         }
         int iconWidth = BEFORE_ICON_GAP + icon.getIconWidth() + AFTER_ICON_GAP;
         int textEnd = width - AFTER_ICON_GAP - subMenuIcon.getIconWidth() - AFTER_TEXT_GAP;

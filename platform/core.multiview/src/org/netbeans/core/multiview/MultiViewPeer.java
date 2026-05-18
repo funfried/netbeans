@@ -217,7 +217,7 @@ public final class MultiViewPeer implements PropertyChangeListener {
         input = peer.getInputMap(JComponent.WHEN_FOCUSED);
         input.put(stroke, "accesstoggles"); //NOI18N
         
-        peer.putClientProperty("MultiViewBorderHack.topOffset", new Integer(tabs.getPreferredSize().height - 1));
+        peer.putClientProperty("MultiViewBorderHack.topOffset", tabs.getPreferredSize().height - 1);
     }
 
     private void assignLookup(MultiViewElement el, MultiViewTopComponentLookup lkp) {
@@ -622,7 +622,7 @@ public final class MultiViewPeer implements PropertyChangeListener {
             if (descs[i].getPersistenceType() != TopComponent.PERSISTENCE_NEVER) {
                 // only those requeTopsted and previously created elements are serialized.
                 MultiViewElement elem = model.getElementForDescription(descs[i], false);
-                if (elem != null && elem instanceof Serializable) {
+                if (elem instanceof Serializable) {
                     out.writeObject(elem);
                 }
             }
@@ -633,9 +633,9 @@ public final class MultiViewPeer implements PropertyChangeListener {
                 currIndexSplit = i;
             }
         }
-        out.writeObject(new Integer(currIndex));
-        out.writeObject(new Integer(currIndexSplit));
-	out.writeObject(new Integer(splitOrientation));
+        out.writeObject(currIndex);
+        out.writeObject(currIndexSplit);
+	out.writeObject(splitOrientation);
         String htmlDisplayName = peer.getHtmlDisplayName();
         if( null != htmlDisplayName )
             out.writeObject(htmlDisplayName);
@@ -813,14 +813,14 @@ public final class MultiViewPeer implements PropertyChangeListener {
         }
         if (badOnes.size() > 0) {
             CloseOperationState[] states = new CloseOperationState[badOnes.size()];
-            states = (CloseOperationState[])badOnes.toArray(states);
+            states = badOnes.toArray(states);
             boolean res = closeHandler.resolveCloseOperation(states);
             if( res && SpiAccessor.DEFAULT.shouldCheckCanCloseAgain(closeHandler) ) {
                 //#236369 - check if everything saved ok
                 col = model.getCreatedElements();
                 it = col.iterator();
                 while (it.hasNext()) {
-                   MultiViewElement el = (MultiViewElement)it.next();
+                   MultiViewElement el = it.next();
                    CloseOperationState state = el.canCloseElement();
                    if (!state.canClose()) {
                        res = false;

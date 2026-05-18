@@ -151,7 +151,7 @@ public final class CustomizerSupport {
      * @return A tokenization of the specified path into the list of URLs.
      */
     public static List<URL> tokenizePath(String path) {
-            List<URL> l = new ArrayList();
+            List<URL> l = new ArrayList<>();
             StringTokenizer tok = new StringTokenizer(path, ":;", true); // NOI18N
             char dosHack = '\0';
             char lastDelim = '\0';
@@ -606,7 +606,6 @@ public final class CustomizerSupport {
 
         private void addPathElement () {
             JFileChooser chooser = new JFileChooser();
-            chooser.setCurrentDirectory(null);
             chooser.setMultiSelectionEnabled (true);
             String title = null;
             String message = null;

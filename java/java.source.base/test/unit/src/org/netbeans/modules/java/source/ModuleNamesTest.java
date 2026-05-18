@@ -38,6 +38,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -519,7 +520,7 @@ public class ModuleNamesTest extends NbTestCase {
         return () -> {
             try {
                 final FileObject file = FileUtil.createData(folder, name);
-                try (PrintWriter out = new PrintWriter(new OutputStreamWriter(file.getOutputStream(), "UTF-8"))) {  //NOI18N
+                try (PrintWriter out = new PrintWriter(new OutputStreamWriter(file.getOutputStream(), StandardCharsets.UTF_8))) {
                     out.println(content.get());
                 }
                 return file;
@@ -626,10 +627,7 @@ public class ModuleNamesTest extends NbTestCase {
                         null;
                 if (fo != null) {
                     try (InputStream in = fo.openInputStream()) {
-                        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        FileUtil.copy(in, out);
-                        out.close();
-                        return out.toByteArray();
+                        return in.readAllBytes();
                     }
                 } else {
                     return null;

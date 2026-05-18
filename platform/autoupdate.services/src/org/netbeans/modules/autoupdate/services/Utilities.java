@@ -63,7 +63,6 @@ import org.netbeans.updater.ModuleDeactivator;
 import org.netbeans.updater.ModuleUpdater;
 import org.netbeans.updater.UpdateTracking;
 import org.netbeans.updater.UpdaterDispatcher;
-import org.openide.filesystems.FileUtil;
 import org.openide.modules.*;
 import org.openide.util.*;
 import org.openide.xml.XMLUtil;
@@ -229,10 +228,6 @@ public class Utilities {
      * <li>{@link #SIGNATURE_VERIFIED}</li>
      * <li>{@link #TRUSTED}</li>
      * </ul>
-     *
-     * @param verificationResult1
-     * @param verificationResult2
-     * @return
      */
     public static final Comparator<String> VERIFICATION_RESULT_COMPARATOR = new Comparator<String>() {
         @Override
@@ -308,7 +303,7 @@ public class Utilities {
     /**
      * Get the certpaths that were used to sign the NBM content.
      *
-     * @param nbmFile
+     * @param nbmFile file of nbm
      * @return collection of CodeSigners, that were used to sign the non-signature
      * entries of the NBM
      * @throws IOException
@@ -380,7 +375,7 @@ public class Utilities {
         }
     }
     
-    static private class KeyStoreProviderListener implements LookupListener {
+    private static class KeyStoreProviderListener implements LookupListener {
         private KeyStoreProviderListener () {
         }
         
@@ -444,8 +439,9 @@ public class Utilities {
         }
         
         boolean isEmpty = true;
-        for (UpdateElementImpl elementImpl : updates.keySet ()) {
-            File c = updates.get(elementImpl);
+        for (Map.Entry<UpdateElementImpl, File> entry : updates.entrySet ()) {
+            UpdateElementImpl elementImpl = entry.getKey();
+            File c = entry.getValue();
             // pass this module to given cluster ?
             if (cluster.equals (c)) {
                 Element module = document.createElement(UpdateTracking.ELEMENT_MODULE);
@@ -471,35 +467,15 @@ public class Utilities {
         doc.getDocumentElement ().normalize ();
 
         dest.getParentFile ().mkdirs ();
-        InputStream is = null;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream ();
-        OutputStream fos = null;
         try {
-            try {
-                XMLUtil.write (doc, bos, "UTF-8"); // NOI18N
-                bos.close ();
-                fos = new FileOutputStream (dest);
-                is = new ByteArrayInputStream (bos.toByteArray ());
-                FileUtil.copy (is, fos);
-            } finally {
-                if (is != null) {
-                    is.close ();
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+                XMLUtil.write(doc, bos, "UTF-8"); // NOI18N
+                try (OutputStream fos = new FileOutputStream(dest)) {
+                    fos.write(bos.toByteArray());
                 }
-                if (fos != null) {
-                    fos.close ();
-                }
-                bos.close ();
             }
-        } catch (java.io.FileNotFoundException fnfe) {
-            Exceptions.printStackTrace (fnfe);
         } catch (java.io.IOException ioe) {
             Exceptions.printStackTrace (ioe);
-        } finally {
-            try {
-                bos.close ();
-            } catch (IOException x) {
-                Exceptions.printStackTrace (x);
-            }
         }
     }
 
@@ -514,9 +490,13 @@ public class Utilities {
     }
     
     public static void writeFileMarkedForDisable (Collection<File> files) {
-        writeMarkedFilesToFile (files, ModuleDeactivator.getControlFileForMarkedForDisable (InstallManager.getUserDir ()));
+        writeMarkedFilesToFile (files, ModuleDeactivator.getControlFileForMarkedForEnableDisable(InstallManager.getUserDir (), false));
     }
-    
+
+    public static void writeFileMarkedForEnable (Collection<File> files) {
+        writeMarkedFilesToFile (files, ModuleDeactivator.getControlFileForMarkedForEnableDisable(InstallManager.getUserDir (), true));
+    }
+
     private static void writeMarkedFilesToFile (Collection<File> files, File dest) {
         // don't forget for content written before
         StringBuilder content = new StringBuilder();
@@ -535,20 +515,9 @@ public class Utilities {
         
         dest.getParentFile ().mkdirs ();
         assert dest.getParentFile ().exists () && dest.getParentFile ().isDirectory () : "Parent of " + dest + " exists and is directory.";
-        InputStream is = null;
-        OutputStream fos = null;            
         
-        try {
-            try {
-                fos = new FileOutputStream (dest);
-                is = new ByteArrayInputStream (content.toString().getBytes());
-                FileUtil.copy (is, fos);
-            } finally {
-                if (is != null) is.close();
-                if (fos != null) fos.close();
-            }                
-        } catch (java.io.FileNotFoundException fnfe) {
-            Exceptions.printStackTrace(fnfe);
+        try (OutputStream fos = new FileOutputStream(dest)) {
+            fos.write(content.toString().getBytes());
         } catch (java.io.IOException ioe) {
             Exceptions.printStackTrace(ioe);
         }
@@ -611,7 +580,6 @@ public class Utilities {
     }
     
     static void writeUpdateOfUpdaterJar (JarEntry updaterJarEntry, File zipFileWithUpdater, File targetCluster) throws IOException {
-        JarFile jf = new JarFile(zipFileWithUpdater);
         String entryPath = updaterJarEntry.getName();
         String entryName = entryPath.contains("/") ? entryPath.substring(entryPath.lastIndexOf("/") + 1) : entryPath;
         File dest = new File (targetCluster, UpdaterDispatcher.UPDATE_DIR + // updater
@@ -621,19 +589,11 @@ public class Utilities {
         
         dest.getParentFile ().mkdirs ();
         assert dest.getParentFile ().exists () && dest.getParentFile ().isDirectory () : "Parent of " + dest + " exists and is directory.";
-        InputStream is = null;
-        OutputStream fos = null;            
-        
-        try {
-            try {
-                fos = new FileOutputStream (dest);
-                is = jf.getInputStream (updaterJarEntry);
-                FileUtil.copy (is, fos);
-            } finally {
-                if (is != null) is.close();
-                if (fos != null) fos.close();
-                jf.close();
-            }                
+
+        try (JarFile jf = new JarFile(zipFileWithUpdater);
+             InputStream is = jf.getInputStream(updaterJarEntry);
+             OutputStream os = new FileOutputStream(dest)) {
+            is.transferTo(os);
         } catch (java.io.FileNotFoundException fnfe) {
             getLogger ().log (Level.SEVERE, fnfe.getLocalizedMessage (), fnfe);
         } catch (java.io.IOException ioe) {
@@ -1284,8 +1244,9 @@ public class Utilities {
         Element root = document.getDocumentElement ();
         boolean isEmpty = true;
         
-        for (UpdateElementImpl impl : updates.keySet ()) {
-            File c = updates.get (impl);
+        for (Map.Entry<UpdateElementImpl, File> entry : updates.entrySet ()) {
+            UpdateElementImpl impl = entry.getKey ();
+            File c = entry.getValue();
             // pass this module to given cluster ?
             if (cluster.equals (c)) {
                 Element module = document.createElement (UpdateTracking.ELEMENT_ADDITIONAL_MODULE);

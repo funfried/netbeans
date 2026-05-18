@@ -65,7 +65,6 @@ import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.netbeans.spi.java.project.support.ui.templates.JavaFileWizardIteratorFactory;
-import org.openide.util.NbBundle;
 
 /**
  * Wizard to create a new Java file.
@@ -76,8 +75,6 @@ import org.openide.util.NbBundle;
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 300, content = "resources/Enum.java.template", scriptEngine = "freemarker", displayName = "#Enum.java", iconBase = JavaTemplates.ENUM_ICON, description = "resources/Enum.html", category = {"java-classes", NewJavaFileWizardIterator.JDK_5}),
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 400, content = "resources/AnnotationType.java.template", scriptEngine = "freemarker", displayName = "#AnnotationType.java", iconBase = JavaTemplates.ANNOTATION_TYPE_ICON, description = "resources/AnnotationType.html", category = {"java-classes", NewJavaFileWizardIterator.JDK_5}),
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 600, content = "resources/Exception.java.template", scriptEngine = "freemarker", displayName = "#Exception.java", iconBase = JavaTemplates.JAVA_ICON, description = "resources/Exception.html", category = {"java-classes", "java-classes-basic"}),
-    @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 700, content = "resources/JApplet.java.template", scriptEngine = "freemarker", displayName = "#JApplet.java", iconBase = JavaTemplates.JAVA_ICON, description = "resources/JApplet.html", category = "java-classes"),
-    @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 800, content = "resources/Applet.java.template", scriptEngine = "freemarker", displayName = "#Applet.java", iconBase = JavaTemplates.JAVA_ICON, description = "resources/Applet.html", category = "java-classes"),
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 900, content = "resources/Main.java.template", scriptEngine = "freemarker", displayName = "#Main.java", iconBase = "org/netbeans/modules/java/project/ui/resources/main-class.png", description = "resources/Main.html", category = "java-main-class"),
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 950, content = "resources/Singleton.java.template", scriptEngine = "freemarker", displayName = "#Singleton.java", iconBase = JavaTemplates.JAVA_ICON, description = "resources/Singleton.html", category = "java-classes"),
     @TemplateRegistration(folder = NewJavaFileWizardIterator.FOLDER, position = 1000, content = "resources/Empty.java.template", scriptEngine = "freemarker", displayName = "#Empty.java", iconBase = JavaTemplates.JAVA_ICON, description = "resources/Empty.html", category = {"java-classes", "java-classes-basic"}),
@@ -89,8 +86,6 @@ import org.openide.util.NbBundle;
     "Enum.java=Java Enum",
     "AnnotationType.java=Java Annotation Type",
     "Exception.java=Java Exception",
-    "JApplet.java=JApplet",
-    "Applet.java=Applet",
     "Main.java=Java Main Class",
     "Singleton.java=Java Singleton Class",
     "Empty.java=Empty Java File",
@@ -175,7 +170,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                     List<SourceGroup> all = new ArrayList<>();
                     all.addAll(Arrays.asList(groups));
                     all.addAll(Arrays.asList(groovySourceGroups));
-                    groups = all.toArray(new SourceGroup[all.size()]);
+                    groups = all.toArray(new SourceGroup[0]);
                 }
 
                 SourceGroup[] resources = sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_RESOURCES);
@@ -184,7 +179,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                     List<SourceGroup> all = new ArrayList<SourceGroup>();
                     all.addAll(Arrays.asList(groups));
                     all.addAll(Arrays.asList(resources));
-                    groups = all.toArray(new SourceGroup[all.size()]);
+                    groups = all.toArray(new SourceGroup[0]);
                 }
                 panels.add(new JavaTargetChooserPanel(project, groups, null, Type.PACKAGE, false));
             }
@@ -197,7 +192,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                     panels.add(it.current());
                 }
             }
-            return panels.toArray(new WizardDescriptor.Panel<?>[panels.size()]);
+            return panels.toArray(new WizardDescriptor.Panel<?>[0]);
         }
     }
 
@@ -208,7 +203,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                 Exceptions.printStackTrace (new NullPointerException (sources + " returns null SourceGroup!"));
             else
                 sourceGroups.add (sourceGroup);
-        return sourceGroups.toArray (new SourceGroup [sourceGroups.size ()]);
+        return sourceGroups.toArray (new SourceGroup [0]);
     }
     
     private String[] createSteps(String[] before, WizardDescriptor.Panel[] panels) {
@@ -231,7 +226,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
         return res;
     }
     
-    private void addRequires(FileObject createdFile, Set<String> requiredModuleNames) throws IOException {
+    private void addRequires(FileObject createdFile, String createdModuleName, Set<String> requiredModuleNames) throws IOException {
         if (requiredModuleNames == null) {
             requiredModuleNames = new LinkedHashSet<>();
             ClassPath modulePath = ClassPath.getClassPath(createdFile, JavaClassPathConstants.MODULE_COMPILE_PATH);
@@ -241,6 +236,9 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                     requiredModuleNames.add(name);
                 }
             }
+        }
+        if (createdModuleName != null) {
+            requiredModuleNames.remove(createdModuleName);
         }
         if (!requiredModuleNames.isEmpty()) {
             final JavaSource src = JavaSource.forFileObject(createdFile);
@@ -262,7 +260,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
         public void run(WorkingCopy copy) throws Exception {
             copy.toPhase(JavaSource.Phase.RESOLVED);
             TreeMaker tm = copy.getTreeMaker();
-            ModuleTree modle = (ModuleTree) copy.getCompilationUnit().getTypeDecls().get(0);
+            ModuleTree modle = copy.getCompilationUnit().getModule();
             ModuleTree newModle = modle;
             for (String mName : mNames) {
                 newModle = tm.addModuleDirective(newModle, tm.Requires(false, false, tm.QualIdent(mName)));
@@ -281,6 +279,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
         FileObject template = Templates.getTemplate( wiz );
         
         FileObject createdFile = null;
+        String createdModuleName = null;
         Set<String> requiredModuleNames = null;
         if (this.type == Type.PACKAGE) {
             targetName = targetName.replace( '.', '/' ); // NOI18N
@@ -324,6 +323,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                     targetName,
                     Collections.singletonMap("moduleName", moduleName)); //NOI18N
             createdFile = dobj.getPrimaryFile();
+            createdModuleName = moduleName;
         } else {
             DataObject dTemplate = DataObject.find(template);
             Object superclassProperty = wiz.getProperty(SUPERCLASS);
@@ -353,7 +353,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
                 })
                 .ifPresent(res::addAll);
         if (this.type == Type.MODULE_INFO) {
-            addRequires(createdFile, requiredModuleNames);
+            addRequires(createdFile, createdModuleName, requiredModuleNames);
         }
         return Collections.unmodifiableSet(res);
     }
@@ -435,7 +435,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
         // Make sure list of steps is accurate.
         String[] beforeSteps = null;
         Object prop = wiz.getProperty(WizardDescriptor.PROP_CONTENT_DATA);
-        if (prop != null && prop instanceof String[]) {
+        if (prop instanceof String[]) {
             beforeSteps = (String[])prop;
         }
         String[] steps = createSteps (beforeSteps, panels);
@@ -450,7 +450,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
             if (c instanceof JComponent) { // assume Swing components
                 JComponent jc = (JComponent)c;
                 // Step #.
-                jc.putClientProperty(WizardDescriptor.PROP_CONTENT_SELECTED_INDEX, new Integer(i));
+                jc.putClientProperty(WizardDescriptor.PROP_CONTENT_SELECTED_INDEX, i);
                 // Step name (actually the whole list for reference).
                 jc.putClientProperty(WizardDescriptor.PROP_CONTENT_DATA, steps);
             }
@@ -518,7 +518,7 @@ public class NewJavaFileWizardIterator implements WizardDescriptor.AsynchronousI
     protected final void fireChangeEvent() {
         ChangeListener[] ls;
         synchronized (listeners) {
-            ls = listeners.toArray(new ChangeListener[listeners.size()]);
+            ls = listeners.toArray(new ChangeListener[0]);
         }
         ChangeEvent ev = new ChangeEvent(this);
         for (ChangeListener l : ls) {

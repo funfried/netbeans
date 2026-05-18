@@ -165,7 +165,7 @@ implements java.io.Serializable {
     /** Add a listener for operations on data objects.
      * @param l the listener
      */
-    public synchronized final void addOperationListener (OperationListener l) {
+    public final synchronized void addOperationListener (OperationListener l) {
         if (listeners == null) listeners = new EventListenerList();
         listeners.add( OperationListener.class, l);
     }
@@ -173,7 +173,7 @@ implements java.io.Serializable {
     /** Remove a listener for operations on data objects.
      * @param l the listener
      */
-    public synchronized final void removeOperationListener (OperationListener l) {
+    public final synchronized void removeOperationListener (OperationListener l) {
         if (listeners != null) {
             listeners.remove( OperationListener.class, l);
         }
@@ -620,7 +620,7 @@ implements java.io.Serializable {
      *   &lt;attr name="iconBase" stringvalue="org/your/pkg/YourDataObject.png"/&gt;
      * &lt;/file&gt;
      * </pre>
-     * @param clazz the class of the data object to create. Must have appropriate
+     * @param dataObjectClass the class of the data object to create. Must have appropriate
      *    constructor.
      * @param mimeType the mime type associated with the object, used for 
      *    example to create the right actions for the object's node

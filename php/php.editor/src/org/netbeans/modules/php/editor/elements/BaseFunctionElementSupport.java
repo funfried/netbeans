@@ -19,10 +19,13 @@
 
 package org.netbeans.modules.php.editor.elements;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.modules.php.api.PhpVersion;
 import org.netbeans.modules.php.api.util.StringUtils;
@@ -31,6 +34,7 @@ import org.netbeans.modules.php.editor.api.QualifiedName;
 import org.netbeans.modules.php.editor.api.elements.BaseFunctionElement;
 import org.netbeans.modules.php.editor.api.elements.BaseFunctionElement.PrintAs;
 import org.netbeans.modules.php.editor.api.elements.ClassElement;
+import org.netbeans.modules.php.editor.api.elements.MethodElement;
 import org.netbeans.modules.php.editor.api.elements.ParameterElement;
 import org.netbeans.modules.php.editor.api.elements.ParameterElement.OutputType;
 import org.netbeans.modules.php.editor.api.elements.TypeElement;
@@ -38,6 +42,9 @@ import org.netbeans.modules.php.editor.api.elements.TypeMemberElement;
 import org.netbeans.modules.php.editor.api.elements.TypeNameResolver;
 import org.netbeans.modules.php.editor.api.elements.TypeResolver;
 import org.netbeans.modules.php.editor.model.impl.Type;
+import org.netbeans.modules.php.editor.parser.astnodes.Expression;
+import org.netbeans.modules.php.editor.parser.astnodes.IntersectionType;
+import org.netbeans.modules.php.editor.parser.astnodes.UnionType;
 
 /**
  * @author Radek Matous
@@ -61,8 +68,16 @@ public class BaseFunctionElementSupport  {
         return returnTypes.getReturnTypes();
     }
 
+    public final String getDeclaredReturnType() {
+        return returnTypes.getDeclaredReturnType();
+    }
+
     public final boolean isReturnUnionType() {
         return returnTypes.isUnionType();
+    }
+
+    public final boolean isReturnIntersectionType() {
+        return returnTypes.isIntersectionType();
     }
 
     public final String asString(PrintAs as, BaseFunctionElement element, TypeNameResolver typeNameResolver) {
@@ -74,12 +89,12 @@ public class BaseFunctionElementSupport  {
         switch (as) {
             case NameAndParamsDeclaration:
                 template.append(" ").append(element.getName()).append("("); //NOI18N
-                template.append(parameters2String(element, getParameters(), OutputType.COMPLETE_DECLARATION, typeNameResolver));
+                template.append(parameters2String(element, getParameters(), OutputType.COMPLETE_DECLARATION, typeNameResolver, phpVersion));
                 template.append(")"); //NOI18N
                 break;
             case NameAndParamsInvocation:
                 template.append(" ").append(element.getName()).append("("); //NOI18N
-                template.append(parameters2String(element, getParameters(), OutputType.SIMPLE_NAME, typeNameResolver));
+                template.append(parameters2String(element, getParameters(), OutputType.SIMPLE_NAME, typeNameResolver, phpVersion));
                 template.append(")"); //NOI18N
                 break;
             case DeclarationWithoutBody:
@@ -94,7 +109,7 @@ public class BaseFunctionElementSupport  {
                     Collection<TypeResolver> returns1 = getReturnTypes();
                     // we can also write the union type in phpdoc e.g. @return int|float
                     // check whether the union type is the actual declared return type to avoid adding the union type for phpdoc
-                    if (returns1.size() == 1 || isReturnUnionType()) {
+                    if (returns1.size() == 1 || isReturnUnionType() || isReturnIntersectionType()) {
                         String returnType = asString(PrintAs.ReturnTypes, element, typeNameResolver, phpVersion);
                         if (StringUtils.hasText(returnType)) {
                             boolean isNullableType = CodeUtils.isNullableType(returnType);
@@ -132,17 +147,13 @@ public class BaseFunctionElementSupport  {
                     if (typeResolver.isResolved()) {
                         QualifiedName typeName = typeResolver.getTypeName(false);
                         if (typeName != null) {
-                            if (template.length() > 0) {
-                                template.append(Type.SEPARATOR);
-                            }
+                            appendSeparator(template);
                             template.append(typeNameResolver.resolve(typeName).toString());
                         }
                     } else {
                         String typeName = typeResolver.getRawTypeName();
                         if (typeName != null) {
-                            if (template.length() > 0) {
-                                template.append(Type.SEPARATOR);
-                            }
+                            appendSeparator(template);
                             template.append(typeName);
                         }
                     }
@@ -150,34 +161,31 @@ public class BaseFunctionElementSupport  {
                 break;
             case ReturnTypes:
                 boolean hasArray = false;
+                String declaredReturnType = getDeclaredReturnType();
+                if (StringUtils.hasText(declaredReturnType)) {
+                    if (element instanceof MethodElement) {
+                        MethodElement method = (MethodElement) element;
+                        if (method.isMagic()) {
+                            assert phpVersion != null;
+                            template.append(MethodElementImpl.getValidType(declaredReturnType, phpVersion));
+                            break;
+                        }
+                    }
+                    String typeTemplate = Type.toTypeTemplate(declaredReturnType);
+                    List<String> types = Arrays.asList(Type.splitTypes(declaredReturnType));
+                    template.append(String.format(typeTemplate, (Object[]) resolveReturnTypes(types, typeNameResolver, element)));
+                    break;
+                }
                 for (TypeResolver typeResolver : getReturnTypes()) {
                     if (typeResolver.isResolved()) {
                         QualifiedName typeName = typeResolver.getTypeName(false);
                         if (typeName != null) {
-                            if (template.length() > 0) {
-                                template.append(Type.SEPARATOR);
-                            }
+                            appendSeparator(template);
                             if (typeResolver.isNullableType()) {
                                 template.append(CodeUtils.NULLABLE_TYPE_PREFIX);
                             }
                             String returnType = typeNameResolver.resolve(typeName).toString();
-                            if (("\\" + Type.SELF).equals(returnType) // NOI18N
-                                    && element instanceof TypeMemberElement) {
-                                // #267563
-                                returnType = typeNameResolver.resolve(((TypeMemberElement) element).getType().getFullyQualifiedName()).toString();
-                            }
-                            if (("\\" + Type.PARENT).equals(returnType) // NOI18N
-                                    && element instanceof TypeMemberElement) {
-                                TypeElement typeElement = ((TypeMemberElement) element).getType();
-                                if (typeElement instanceof ClassElement) {
-                                    QualifiedName superClassName = ((ClassElement) typeElement).getSuperClassName();
-                                    if (superClassName != null) {
-                                        returnType = typeNameResolver.resolve(superClassName).toString();
-                                    } else {
-                                        returnType = Type.PARENT;
-                                    }
-                                }
-                            }
+                            returnType = resolveSpecialType(returnType, element, typeNameResolver);
                             // NETBEANS-5370: related to NETBEANS-4509
                             if (returnType.endsWith("[]")) { // NOI18N
                                 returnType = Type.ARRAY;
@@ -199,7 +207,66 @@ public class BaseFunctionElementSupport  {
         return template.toString();
     }
 
-    private static String parameters2String(final BaseFunctionElement element, final List<ParameterElement> parameterList, OutputType stringOutputType, TypeNameResolver typeNameResolver) {
+    private String[] resolveReturnTypes(List<String> types, TypeNameResolver typeNameResolver, BaseFunctionElement element) {
+        List<String> replaced = new ArrayList<>(types.size());
+        if (types.size() == getReturnTypes().size()) {
+            for (TypeResolver typeResolver : getReturnTypes()) {
+                if (typeResolver.isResolved()) {
+                    QualifiedName typeName = typeResolver.getTypeName(false);
+                    if (typeName != null) {
+                        String returnType = typeNameResolver.resolve(typeName).toString();
+                        // NETBEANS-5370: related to NETBEANS-4509
+                        if (returnType.endsWith("[]")) { // NOI18N
+                            returnType = Type.ARRAY;
+                        }
+                        returnType = resolveSpecialType(returnType, element, typeNameResolver);
+                        replaced.add(returnType);
+                    }
+                }
+            }
+        } else {
+            replaced.addAll(types);
+        }
+        return replaced.toArray(new String[0]);
+    }
+
+    private String resolveSpecialType(String returnType, BaseFunctionElement element, TypeNameResolver typeNameResolver) {
+        String resolvedType = returnType;
+        if (resolvedType.equals("\\" + Type.SELF) // NOI18N
+                || resolvedType.equals("\\" + Type.PARENT)) { // NOI18N
+            resolvedType = resolvedType.substring(1);
+        }
+        if ((Type.SELF).equals(resolvedType)
+                && element instanceof TypeMemberElement) {
+            // #267563
+            resolvedType = typeNameResolver.resolve(((TypeMemberElement) element).getType().getFullyQualifiedName()).toString();
+        } else if ((Type.PARENT).equals(resolvedType)
+                && element instanceof TypeMemberElement) {
+            TypeElement typeElement = ((TypeMemberElement) element).getType();
+            if (typeElement instanceof ClassElement) {
+                QualifiedName superClassName = ((ClassElement) typeElement).getSuperClassName();
+                if (superClassName != null) {
+                    resolvedType = typeNameResolver.resolve(superClassName).toString();
+                } else {
+                    resolvedType = Type.PARENT;
+                }
+            }
+        }
+        return resolvedType;
+    }
+
+    private void appendSeparator(StringBuilder template) {
+        if (template.length() == 0) {
+            return;
+        }
+        if (isReturnIntersectionType()) {
+            template.append(Type.SEPARATOR_INTERSECTION);
+        } else {
+            template.append(Type.SEPARATOR);
+        }
+    }
+
+    private static String parameters2String(final BaseFunctionElement element, final List<ParameterElement> parameterList, OutputType stringOutputType, TypeNameResolver typeNameResolver, PhpVersion phpVersion) {
         StringBuilder template = new StringBuilder();
         if (parameterList.size() > 0) {
             for (int i = 0, n = parameterList.size(); i < n; i++) {
@@ -208,7 +275,7 @@ public class BaseFunctionElementSupport  {
                     paramSb.append(", "); //NOI18N
                 }
                 final ParameterElement param = parameterList.get(i);
-                String paramInfo = param.asString(stringOutputType, typeNameResolver);
+                String paramInfo = param.asString(stringOutputType, typeNameResolver, phpVersion);
                 boolean isNullableType = CodeUtils.isNullableType(paramInfo);
                 if (isNullableType) {
                     paramInfo = paramInfo.substring(1);
@@ -320,24 +387,57 @@ public class BaseFunctionElementSupport  {
             public boolean isUnionType() {
                 return false;
             }
+
+            @Override
+            public boolean isIntersectionType() {
+                return false;
+            }
+
+            @Override
+            public String getDeclaredReturnType() {
+                return null;
+            }
         };
 
         Set<TypeResolver> getReturnTypes();
         boolean isUnionType();
+        boolean isIntersectionType();
+        @CheckForNull
+        String getDeclaredReturnType();
     }
 
     public static final class ReturnTypesImpl implements ReturnTypes {
 
         private final Set<TypeResolver> returnTypes;
         private final boolean isUnionType;
+        private final boolean isIntersectionType;
+        @NullAllowed
+        private final String declaredReturnType;
 
-        public static ReturnTypes create(Set<TypeResolver> returnTypes, boolean isUnionType) {
-            return new ReturnTypesImpl(returnTypes, isUnionType);
+        public static ReturnTypes create(Set<TypeResolver> returnTypes, Expression node) {
+            return new ReturnTypesImpl(returnTypes, node);
         }
 
-        private ReturnTypesImpl(Set<TypeResolver> returnTypes, boolean isUnionType) {
+        public static ReturnTypes create(@NullAllowed String declaredType) {
+            if (StringUtils.isEmpty(declaredType)) {
+                return ReturnTypes.NONE;
+            }
+            Set<TypeResolver> returnTypes = TypeResolverImpl.parseTypes(declaredType);
+            return new ReturnTypesImpl(returnTypes, declaredType);
+        }
+
+        private ReturnTypesImpl(Set<TypeResolver> returnTypes, Expression node) {
             this.returnTypes = returnTypes;
-            this.isUnionType = isUnionType;
+            this.isUnionType = node instanceof UnionType;
+            this.isIntersectionType = node instanceof IntersectionType;
+            this.declaredReturnType = CodeUtils.extractQualifiedName(node);
+        }
+
+        private ReturnTypesImpl(Set<TypeResolver> returnTypes, String declaredType) {
+            this.returnTypes = returnTypes;
+            this.isUnionType = Type.isUnionType(declaredType);
+            this.isIntersectionType = Type.isIntersectionType(declaredType);
+            this.declaredReturnType = declaredType;
         }
 
         @Override
@@ -346,8 +446,18 @@ public class BaseFunctionElementSupport  {
         }
 
         @Override
+        public String getDeclaredReturnType() {
+            return declaredReturnType;
+        }
+
+        @Override
         public boolean isUnionType() {
             return isUnionType;
+        }
+
+        @Override
+        public boolean isIntersectionType() {
+            return isIntersectionType;
         }
 
     }

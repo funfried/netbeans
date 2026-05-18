@@ -85,7 +85,6 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
@@ -391,7 +390,11 @@ public class GoalsPanel extends javax.swing.JPanel implements ExplorerManager.Pr
             for (Artifact p : artifacts) {
                 try {
 
-                    EmbedderFactory.getOnlineEmbedder().resolve(p, mp.getPluginArtifactRepositories(), EmbedderFactory.getOnlineEmbedder().getLocalRepository());
+                    EmbedderFactory.getOnlineEmbedder().resolveArtifact(p, mp.getPluginArtifactRepositories(), EmbedderFactory.getOnlineEmbedder().getLocalRepository());
+                    if (p.getFile() == null) {
+                        LOG.log(Level.WARNING, "Plugin artifact {0} does not resolve to a local file", p);
+                        continue;
+                    }
                     Document d = loadPluginXml(p.getFile());
                     if (d != null) {
                         Element root = d.getDocumentElement();
@@ -484,10 +487,9 @@ public class GoalsPanel extends javax.swing.JPanel implements ExplorerManager.Pr
                         }
 
                     }
-                } catch (ArtifactResolutionException ex) {
-                    Exceptions.printStackTrace(ex);
-                } catch (ArtifactNotFoundException ex) {
-                    Exceptions.printStackTrace(ex);
+                } catch (ArtifactResolutionException | ArtifactNotFoundException ex) {
+                    LOG.log(Level.FINE, "Plugin artifact {0} cannot be resolved");
+                    LOG.log(Level.FINE, "Artifact resoltion error", ex);
                 }
             }
             return goals;

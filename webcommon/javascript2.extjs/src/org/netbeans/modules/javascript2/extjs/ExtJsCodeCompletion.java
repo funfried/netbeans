@@ -59,7 +59,7 @@ public class ExtJsCodeCompletion implements CompletionProvider {
     
     private static HashMap<String, Collection<ExtJsDataItem>> ccData = null;
        
-    private synchronized static Map<String, Collection<ExtJsDataItem>> getData() {
+    private static synchronized Map<String, Collection<ExtJsDataItem>> getData() {
         return DataLoader.getData(getDataFile());
     }
     
@@ -134,7 +134,7 @@ public class ExtJsCodeCompletion implements CompletionProvider {
 
     @Override
     public String getHelpDocumentation(ParserResult info, ElementHandle element) {
-        if (element != null && element instanceof ExtJsElement) {
+        if (element instanceof ExtJsElement) {
             return ((ExtJsElement)element).getDocumentation();
         }
         return null;

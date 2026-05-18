@@ -210,7 +210,7 @@ public final class EditorRegistry {
     
     /**
      * Find a component that uses the given document.
-     * <br/>
+     * <br>
      * Scan the component registry starting from the most recently focused text component
      * and test if {@link JTextComponent#getDocument()} returns the document passed
      * as parameter to this method and if so return the component.
@@ -344,7 +344,7 @@ public final class EditorRegistry {
         fireEvents(events);
     }
 
-    private synchronized static void _focusGained(JTextComponent c, Component origFocused, List<PropertyChangeEvent> events) {
+    private static synchronized void _focusGained(JTextComponent c, Component origFocused, List<PropertyChangeEvent> events) {
         Item item = item(c);
         assert (item != null) : "Not registered!"; // NOI18N
 

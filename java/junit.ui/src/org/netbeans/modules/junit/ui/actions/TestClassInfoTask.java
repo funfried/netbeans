@@ -25,7 +25,6 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.swing.text.BadLocationException;
@@ -56,8 +56,11 @@ import org.netbeans.modules.gsf.testrunner.ui.api.TestMethodController.TestMetho
 import org.netbeans.modules.java.testrunner.ui.spi.ComputeTestMethods;
 import org.netbeans.modules.java.testrunner.ui.spi.ComputeTestMethods.Factory;
 import org.netbeans.modules.parsing.spi.Parser;
+import org.netbeans.spi.java.hints.unused.UsedDetector;
+import org.netbeans.spi.project.NestedClass;
 import org.netbeans.spi.project.SingleMethod;
 import org.openide.filesystems.FileObject;
+import org.openide.util.Exceptions;
 import org.openide.util.lookup.ServiceProvider;
 
 public final class TestClassInfoTask implements Task<CompilationController> {
@@ -86,16 +89,23 @@ public final class TestClassInfoTask implements Task<CompilationController> {
         if (!isTestSource(fileObject)) {
             return Collections.emptyList();
         }
+        return doComputeTestMethods(info, cancel, caretPosIfAny);
+    }
+
+    private static List<TestMethod> doComputeTestMethods(CompilationInfo info, AtomicBoolean cancel, int caretPosIfAny) {
         List<TestMethod> result = new ArrayList<>();
         if (caretPosIfAny == (-1)) {
-            Optional<? extends Tree> anyClass = info.getCompilationUnit().getTypeDecls().stream().filter(t -> t.getKind() == Kind.CLASS).findAny();
-            if (!anyClass.isPresent()) {
-                return Collections.emptyList();
+            List<ClassTree> clazzes = info.getCompilationUnit()
+                    .getTypeDecls()
+                    .stream()
+                    .filter(t -> t.getKind() == Kind.CLASS)
+                    .map(t -> (ClassTree) t)
+                    .collect(Collectors.toList());
+            for (ClassTree clazz : clazzes) {
+                TreePath pathToClass = new TreePath(new TreePath(info.getCompilationUnit()), clazz);
+                List<TreePath> methods = clazz.getMembers().stream().filter(m -> m.getKind() == Kind.METHOD).map(m -> new TreePath(pathToClass, m)).collect(Collectors.toList());
+                collect(info, pathToClass, methods, true, cancel, result);
             }
-            ClassTree clazz = (ClassTree) anyClass.get();
-            TreePath pathToClass = new TreePath(new TreePath(info.getCompilationUnit()), clazz);
-            List<TreePath> methods = clazz.getMembers().stream().filter(m -> m.getKind() == Kind.METHOD).map(m -> new TreePath(pathToClass, m)).collect(Collectors.toList());
-            collect(info, pathToClass, methods, true, cancel, result);
             return result;
         }
         TreePath tp = info.getTreeUtilities().pathFor(caretPosIfAny);
@@ -117,9 +127,12 @@ public final class TestClassInfoTask implements Task<CompilationController> {
         Trees trees = info.getTrees();
         Elements elements = info.getElements();
         TreeUtilities treeUtilities = info.getTreeUtilities();
-        int clazzPreferred = treeUtilities.findNameSpan((ClassTree) clazz.getLeaf())[0];
+        int[] classNameSpan = treeUtilities.findNameSpan((ClassTree) clazz.getLeaf());
+        int clazzPreferred = classNameSpan != null ? classNameSpan[0]
+                                                   : (int) trees.getSourcePositions().getStartPosition(clazz.getCompilationUnit(), clazz.getLeaf());
         TypeElement typeElement = (TypeElement) trees.getElement(clazz);
         TypeElement testcase = elements.getTypeElement(TESTCASE);
+        NestedClass nc = getNestedClass(info, typeElement);
         boolean junit3 = (testcase != null && typeElement != null) ? info.getTypes().isSubtype(typeElement.asType(), testcase.asType()) : false;
         for (TreePath tp : methods) {
             if (cancel.get()) {
@@ -146,7 +159,7 @@ public final class TestClassInfoTask implements Task<CompilationController> {
                     try {
                         result.add(new TestMethod(elements.getBinaryName(typeElement).toString(),
                                 doc != null ? doc.createPosition(clazzPreferred) : new SimplePosition(clazzPreferred),
-                                new SingleMethod(info.getFileObject(), mn),
+                                nc == null ? new SingleMethod(info.getFileObject(), mn) : new SingleMethod(mn, nc),
                                 doc != null ? doc.createPosition(start) : new SimplePosition(start),
                                 doc != null ? doc.createPosition(preferred) : new SimplePosition(preferred),
                                 doc != null ? doc.createPosition(end) : new SimplePosition(end)));
@@ -169,6 +182,24 @@ public final class TestClassInfoTask implements Task<CompilationController> {
                     }
                 }
             });
+        }
+    }
+
+    private static NestedClass getNestedClass(CompilationInfo ci, TypeElement te) {
+        List<String> nesting = new ArrayList<>();
+        Element currentElement = te;
+        while (currentElement != null && currentElement.getKind() == ElementKind.CLASS) {
+            nesting.add(0, currentElement.getSimpleName().toString());
+            currentElement = currentElement.getEnclosingElement();
+        }
+        if(nesting.size() < 1 || (nesting.size() == 1 && nesting.get(0).equals(ci.getFileObject().getName()))) {
+            return null;
+        } else {
+            return new NestedClass(
+                    nesting.subList(1, nesting.size()).stream().collect(Collectors.joining(".")),
+                    nesting.get(0),
+                    ci.getFileObject()
+            );
         }
     }
 
@@ -249,16 +280,44 @@ public final class TestClassInfoTask implements Task<CompilationController> {
         }
     }
 
+    @ServiceProvider(service=UsedDetector.Factory.class)
+    public static final class UsedDetectorImpl implements UsedDetector.Factory {
+
+        @Override
+        public UsedDetector create(CompilationInfo info) {
+            if (isTestSource(info.getFileObject())) {
+                List<TestMethod> testMethods = TestClassInfoTask.doComputeTestMethods(info, new AtomicBoolean(), -1);
+                SourcePositions sp = info.getTrees().getSourcePositions();
+                return (el, path) -> {
+                    if (el.getKind() == ElementKind.METHOD) {
+                        for (TestMethod tm : testMethods) {
+                            if (tm.method().getMethodName().contentEquals(el.getSimpleName())
+                                    && tm.start().getOffset() == sp.getStartPosition(path.getCompilationUnit(), path.getLeaf())
+                                    && tm.end().getOffset() == sp.getEndPosition(path.getCompilationUnit(), path.getLeaf())) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                };
+            }
+            return null;
+        }
+    }
+
     @MimeRegistration(mimeType="text/x-java", service=org.netbeans.modules.gsf.testrunner.ui.spi.ComputeTestMethods.class)
-    public static final class GenericComputeTestMethodsImpl implements org.netbeans.modules.gsf.testrunner.ui.spi.ComputeTestMethods {
+    public static final class JUnitComputeTestMethodsImpl implements org.netbeans.modules.gsf.testrunner.ui.spi.ComputeTestMethods {
 
         @Override
         public List<TestMethod> computeTestMethods(Parser.Result parserResult, AtomicBoolean cancel) {
             try {
                 CompilationController cc = CompilationController.get(parserResult);
-                cc.toPhase(Phase.ELEMENTS_RESOLVED);
-                return TestClassInfoTask.computeTestMethods(cc, cancel, -1);
-            } catch (IOException ex) {}
+                if (isTestSource(cc.getFileObject()) && cc.toPhase(Phase.ELEMENTS_RESOLVED).compareTo(Phase.ELEMENTS_RESOLVED) >= 0) {
+                    return TestClassInfoTask.doComputeTestMethods(cc, cancel, -1);
+                }
+            } catch (Exception ex) {
+                Exceptions.printStackTrace(ex);
+            }
             return Collections.emptyList();
         }
     }

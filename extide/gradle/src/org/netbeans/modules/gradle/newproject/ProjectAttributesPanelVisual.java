@@ -252,7 +252,6 @@ public final class ProjectAttributesPanelVisual extends JPanel implements Docume
     private void btBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btBrowseActionPerformed
         if ("BROWSE".equals(evt.getActionCommand())) { //NOI18N
             JFileChooser chooser = new JFileChooser();
-            chooser.setCurrentDirectory(null);
             chooser.setDialogTitle(Bundle.TIT_Select_Project_Location());
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             String path = tfProjectLocation.getText();
@@ -325,7 +324,7 @@ public final class ProjectAttributesPanelVisual extends JPanel implements Docume
             String part1 = tfGroup.getText().trim();
             part1 = !part1.isEmpty() ? part1 + "." : part1;
 
-            String part2 = tfProjectName.getText().trim().replaceAll(" ", "").replace('-', '.');
+            String part2 = tfProjectName.getText().trim().replace(" ", "").replace('-', '.');
             tfPackageBase.getDocument().removeDocumentListener(this);
             tfPackageBase.setText(part1 + part2);
             tfPackageBase.getDocument().addDocumentListener(this);

@@ -30,7 +30,7 @@ import org.netbeans.api.annotations.common.CheckForNull;
  * e.g.
  * var $a, $b;
  * public $a = 3;
- * final private static $var;
+ * private static final $var;
  * protected ?int $int = 0; // PHP 7.4
  * </pre>
  */
@@ -89,7 +89,8 @@ public class FieldsDeclaration extends BodyDeclaration {
     public static FieldsDeclaration create(FormalParameter parameter) {
         // [NETBEANS-4443] PHP 8.0 Constructor Property Promotion
         // convert from FormalParameter of constructor to FieldsDeclaration
-        if (!BodyDeclaration.Modifier.isVisibilityModifier(parameter.getModifier())) {
+        if (!BodyDeclaration.Modifier.isVisibilityModifier(parameter.getModifier())
+                && !BodyDeclaration.Modifier.isSetVisibilityModifier(parameter.getModifier())) {
             return null;
         }
         Variable variable = null;
@@ -183,7 +184,7 @@ public class FieldsDeclaration extends BodyDeclaration {
             modifierString += " "; // NOI18N
         }
         return sbAttributes.toString()
-                + modifierString
+                + modifierString + " " // NOI18N
                 + sb.toString();
     }
 

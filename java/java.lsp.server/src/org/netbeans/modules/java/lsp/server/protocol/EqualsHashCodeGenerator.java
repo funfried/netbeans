@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.lang.model.element.ElementKind;
@@ -46,6 +47,8 @@ import org.eclipse.lsp4j.WorkspaceEdit;
 import org.netbeans.api.java.source.CompilationController;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.input.ShowQuickPickParams;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.openide.filesystems.FileObject;
 import org.openide.util.NbBundle;
@@ -58,6 +61,7 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service = CodeActionsProvider.class, position = 40)
 public final class EqualsHashCodeGenerator extends CodeActionsProvider {
 
+    private static final String GENERATE_EQUALS_HASHCODE = "nbls.java.generate.equals.hashCode";
     private static final String KIND =  "kind";
     private static final String URI =  "uri";
     private static final String OFFSET =  "offset";
@@ -73,12 +77,12 @@ public final class EqualsHashCodeGenerator extends CodeActionsProvider {
         "DN_GenerateHashCode=Generate hashCode()...",
         "DN_GenerateEqualsHashCode=Generate equals() and hashCode()...",
     })
-    public List<CodeAction> getCodeActions(ResultIterator resultIterator, CodeActionParams params) throws Exception {
+    public List<CodeAction> getCodeActions(NbCodeLanguageClient client, ResultIterator resultIterator, CodeActionParams params) throws Exception {
         List<String> only = params.getContext().getOnly();
         if (only == null || !only.contains(CodeActionKind.Source)) {
             return Collections.emptyList();
         }
-        CompilationController info = CompilationController.get(resultIterator.getParserResult());
+        CompilationController info = resultIterator.getParserResult() != null ? CompilationController.get(resultIterator.getParserResult()) : null;
         if (info == null) {
             return Collections.emptyList();
         }
@@ -111,11 +115,16 @@ public final class EqualsHashCodeGenerator extends CodeActionsProvider {
         String uri = Utils.toUri(info.getFileObject());
         if (equalsHashCode[0] == null) {
             if (equalsHashCode[1] == null) {
-                return Collections.singletonList(createCodeAction(Bundle.DN_GenerateEqualsHashCode(), CODE_GENERATOR_KIND, data(0, uri, offset, fields), null));
+                return Collections.singletonList(createCodeAction(client, Bundle.DN_GenerateEqualsHashCode(), CODE_GENERATOR_KIND, null, "nbls.generate.code", Utils.encodeCommand(GENERATE_EQUALS_HASHCODE, client.getNbCodeCapabilities()), data(0, uri, offset, fields)));
             }
-            return Collections.singletonList(createCodeAction(Bundle.DN_GenerateEquals(), CODE_GENERATOR_KIND, data(EQUALS_ONLY, uri, offset, fields), null));
+            return Collections.singletonList(createCodeAction(client, Bundle.DN_GenerateEquals(), CODE_GENERATOR_KIND, null, "nbls.generate.code", Utils.encodeCommand(GENERATE_EQUALS_HASHCODE, client.getNbCodeCapabilities()), data(EQUALS_ONLY, uri, offset, fields)));
         }
-        return Collections.singletonList(createCodeAction(Bundle.DN_GenerateHashCode(), CODE_GENERATOR_KIND, data(HASH_CODE_ONLY, uri, offset, fields), null));
+        return Collections.singletonList(createCodeAction(client, Bundle.DN_GenerateHashCode(), CODE_GENERATOR_KIND, null, "nbls.generate.code", Utils.encodeCommand(GENERATE_EQUALS_HASHCODE, client.getNbCodeCapabilities()), data(HASH_CODE_ONLY, uri, offset, fields)));
+    }
+
+    @Override
+    public Set<String> getCommands() {
+        return Collections.singleton(GENERATE_EQUALS_HASHCODE);
     }
 
     @Override
@@ -124,22 +133,27 @@ public final class EqualsHashCodeGenerator extends CodeActionsProvider {
         "DN_SelectHashCode=Select fields to be included in hashCode()",
         "DN_SelectEqualsHashCode=Select fields to be included in equals() and hashCode()",
     })
-    public CompletableFuture<CodeAction> resolve(NbCodeLanguageClient client, CodeAction codeAction, Object data) {
-        CompletableFuture<CodeAction> future = new CompletableFuture<>();
+    public CompletableFuture<Object> processCommand(NbCodeLanguageClient client, String command, List<Object> arguments) {
+        if (arguments.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        JsonObject data = (JsonObject) arguments.get(0);
+        CompletableFuture<Object> future = new CompletableFuture<>();
         try {
-            int kind = ((JsonObject) data).getAsJsonPrimitive(KIND).getAsInt();
-            String uri = ((JsonObject) data).getAsJsonPrimitive(URI).getAsString();
-            int offset = ((JsonObject) data).getAsJsonPrimitive(OFFSET).getAsInt();
-            List<QuickPickItem> fields = Arrays.asList(gson.fromJson(((JsonObject) data).get(FIELDS), QuickPickItem[].class));
+            int kind = data.getAsJsonPrimitive(KIND).getAsInt();
+            String uri = data.getAsJsonPrimitive(URI).getAsString();
+            int offset = data.getAsJsonPrimitive(OFFSET).getAsInt();
+            List<QuickPickItem> fields = Arrays.asList(gson.fromJson(data.get(FIELDS), QuickPickItem[].class));
+            String title;
             String text;
             boolean generateEquals = HASH_CODE_ONLY != kind;
             boolean generateHashCode = EQUALS_ONLY != kind;
             switch (kind) {
-                case EQUALS_ONLY: text = Bundle.DN_SelectEquals(); break;
-                case HASH_CODE_ONLY: text = Bundle.DN_SelectHashCode(); break;
-                default: text = Bundle.DN_SelectEqualsHashCode(); break;
+                case EQUALS_ONLY: title = Bundle.DN_GenerateEquals(); text = Bundle.DN_SelectEquals(); break;
+                case HASH_CODE_ONLY: title = Bundle.DN_GenerateHashCode(); text = Bundle.DN_SelectHashCode(); break;
+                default: title = Bundle.DN_GenerateEqualsHashCode(); text = Bundle.DN_SelectEqualsHashCode(); break;
             }
-            client.showQuickPick(new ShowQuickPickParams(text, true, fields)).thenAccept(selected -> {
+            client.showQuickPick(new ShowQuickPickParams(title, text, true, fields)).thenAccept(selected -> {
                 try {
                     if (selected != null) {
                         FileObject file = Utils.fromUri(uri);
@@ -159,11 +173,10 @@ public final class EqualsHashCodeGenerator extends CodeActionsProvider {
                                 org.netbeans.modules.java.editor.codegen.EqualsHashCodeGenerator.generateEqualsAndHashCode(wc, tp, generateEquals ? selectedFields : null, generateHashCode ? selectedFields : null, -1);
                             }
                         });
-                        if (!edits.isEmpty()) {
-                            codeAction.setEdit(new WorkspaceEdit(Collections.singletonMap(uri, edits)));
-                        }
+                        future.complete(edits.isEmpty() ? null : new WorkspaceEdit(Collections.singletonMap(uri, edits)));
+                    } else {
+                        future.complete(null);
                     }
-                    future.complete(codeAction);
                 } catch (IOException | IllegalArgumentException ex) {
                     future.completeExceptionally(ex);
                 }

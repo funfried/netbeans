@@ -381,7 +381,7 @@ public class ConnectPanel extends JPanel implements ActionListener, HelpCtx.Prov
             arguments.delete(arguments.length() - 2, arguments.length());
         }
         params.add(arguments);
-        record.setParameters(params.toArray(new Object[params.size()]));
+        record.setParameters(params.toArray(new Object[0]));
         USG_LOGGER.log(record);
     }
     
@@ -525,8 +525,9 @@ public class ConnectPanel extends JPanel implements ActionListener, HelpCtx.Prov
     ) {
         Map<String, Argument> defaultValues = connector.defaultArguments ();
         Map<String, String> argsToSave = new HashMap<String, String>();
-        for(String argName : args.keySet ()) {
-            Argument value = args.get (argName);
+        for(Map.Entry<String, Argument> entry : args.entrySet ()) {
+            String argName = entry.getKey ();
+            Argument value = entry.getValue();
             Argument defaultValue = defaultValues.get (argName);
             if ( value != null &&
                  value != defaultValue &&

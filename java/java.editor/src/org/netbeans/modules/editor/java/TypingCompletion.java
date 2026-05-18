@@ -26,11 +26,13 @@ import javax.lang.model.SourceVersion;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.settings.SimpleValueNames;
 import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.queries.SourceLevelQuery;
 import org.netbeans.api.lexer.PartType;
+import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
@@ -122,7 +124,27 @@ class TypingCompletion {
      */
     static int skipClosingBracket(TypedTextInterceptor.MutableContext context) throws BadLocationException {
         TokenSequence<JavaTokenId> javaTS = javaTokenSequence(context, false);
-        if (javaTS == null || (javaTS.token().id() != JavaTokenId.RPAREN && javaTS.token().id() != JavaTokenId.RBRACKET) || isStringOrComment(javaTS.token().id())) {
+
+        if (javaTS == null) {
+            return -1;
+        }
+
+        Token<JavaTokenId> currentToken = javaTS.token();
+        JavaTokenId currentId = currentToken.id();
+
+        if (isString(currentId)) {
+            switch (currentToken.partType()) {
+                case MIDDLE: case END:
+                    if (currentToken.text().charAt(0) == '}') {
+                        context.setText("", 0);  // NOI18N
+                        return context.getOffset() + 1;
+                    }
+                    break;
+            }
+            return -1;
+        }
+
+        if (currentId != JavaTokenId.RPAREN && currentId != JavaTokenId.RBRACKET) {
             return -1;
         }
 
@@ -141,13 +163,34 @@ class TypingCompletion {
      * @throws BadLocationException
      */
     static void completeOpeningBracket(TypedTextInterceptor.MutableContext context) throws BadLocationException {
-        if (isStringOrComment(javaTokenSequence(context, false).token().id())) {
+        JavaTokenId currentToken = javaTokenSequence(context, false).token().id();
+
+        if (isComment(currentToken)) {
             return;
         }
-        
+
+        char insChr = context.getText().charAt(0);
+
+        if (isString(currentToken)) {
+            if (context.getOffset() >= 1 && insChr == '{') {
+                char chr = context.getDocument().getText(context.getOffset() - 1, 1).charAt(0);
+
+                if (chr == '\\') {
+                    context.setText("{}", 1);  // NOI18N
+                }
+            }
+
+            return ;
+        }
+
+        if (insChr == '{') {
+            //curly brace should only be matched in string templates:
+            return ;
+        }
+
         char chr = context.getDocument().getText(context.getOffset(), 1).charAt(0);
+
         if (chr == ')' || chr == ',' || chr == '\"' || chr == '\'' || chr == ' ' || chr == ']' || chr == '}' || chr == '\n' || chr == '\t' || chr == ';') {
-            char insChr = context.getText().charAt(0);
             context.setText("" + insChr + matching(insChr), 1);  // NOI18N
         }
     }
@@ -224,7 +267,7 @@ class TypingCompletion {
                 || id == JavaTokenId.CHAR_LITERAL
                 || id == JavaTokenId.MULTILINE_STRING_LITERAL);
 
-        int lastNonWhite = org.netbeans.editor.Utilities.getRowLastNonWhite((BaseDocument) context.getDocument(), context.getOffset());
+        int lastNonWhite = LineDocumentUtils.getLineLastNonWhitespace((BaseDocument) context.getDocument(), context.getOffset());
         // eol - true if the caret is at the end of line (ignoring whitespaces)
         boolean eol = lastNonWhite < context.getOffset();
         if (insideString) {
@@ -343,7 +386,7 @@ class TypingCompletion {
         if (tokenBalance(doc, JavaTokenId.LBRACE) <= 0) {
             return false;
         }
-        int caretRowStartOffset = org.netbeans.editor.Utilities.getRowStart(doc, caretOffset);
+        int caretRowStartOffset = LineDocumentUtils.getLineStartOffset(doc, caretOffset);
         TokenSequence<JavaTokenId> ts = javaTokenSequence(doc, caretOffset, true);
         if (ts == null) {
             return false;
@@ -378,7 +421,7 @@ class TypingCompletion {
      * character on the caret row is returned.
      */
     static int getRowOrBlockEnd(BaseDocument doc, int caretOffset, boolean[] insert) throws BadLocationException {
-        int rowEnd = org.netbeans.editor.Utilities.getRowLastNonWhite(doc, caretOffset);
+        int rowEnd = LineDocumentUtils.getLineLastNonWhitespace(doc, caretOffset);
         if (rowEnd == -1 || caretOffset >= rowEnd) {
             return caretOffset;
         }
@@ -517,6 +560,21 @@ class TypingCompletion {
                 quotation = ++quotation % 2;
             }
         }
+
+        return false;
+    }
+
+    static boolean javadocLineRunCompletion(TypedBreakInterceptor.MutableContext context) {
+        TokenSequence<JavaTokenId> ts = javaTokenSequence(context, false);
+        if (ts == null) {
+            return false;
+        }
+        int dotPosition = context.getCaretOffset();
+        ts.move(dotPosition);
+        if (!((ts.moveNext() || ts.movePrevious()) && ts.token().id() == JavaTokenId.JAVADOC_COMMENT_LINE_RUN)) {
+            return false;
+        }
+        context.setText("\n///", -1, 4, 0, 4);
 
         return false;
     }
@@ -868,5 +926,17 @@ class TypingCompletion {
 
     private static boolean isStringOrComment(JavaTokenId javaTokenId) {
         return STRING_AND_COMMENT_TOKENS.contains(javaTokenId);
+    }
+
+    private static Set<JavaTokenId> STRING_TOKENS = EnumSet.of(JavaTokenId.STRING_LITERAL, JavaTokenId.CHAR_LITERAL, JavaTokenId.MULTILINE_STRING_LITERAL);
+
+    private static boolean isString(JavaTokenId javaTokenId) {
+        return STRING_TOKENS.contains(javaTokenId);
+    }
+
+    private static Set<JavaTokenId> COMMENT_TOKENS = EnumSet.of(JavaTokenId.LINE_COMMENT, JavaTokenId.JAVADOC_COMMENT, JavaTokenId.BLOCK_COMMENT);
+
+    private static boolean isComment(JavaTokenId javaTokenId) {
+        return COMMENT_TOKENS.contains(javaTokenId);
     }
 }

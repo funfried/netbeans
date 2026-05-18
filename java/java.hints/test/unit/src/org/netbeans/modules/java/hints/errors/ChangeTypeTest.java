@@ -185,7 +185,7 @@ public class ChangeTypeTest extends ErrorHintsTestBase {
             "import java.util.List;\n" +
             "class Test {\n" +
             "    static void f() {\n" +
-            "       List<Class<?>> asList = Arrays.asList(Integer.class,String.class);\n" +
+            "       String asList = Arrays.asList(Integer.class,String.class);\n" +
             "    }\n" +
             "}", -1,
             "Change type of asList to List",
@@ -199,7 +199,32 @@ public class ChangeTypeTest extends ErrorHintsTestBase {
              "}").replaceAll("\\s+", " "));
     }
 
-    
+    public void testLocalClass() throws Exception {
+        sourceLevel = "17";
+        performFixTest("test/Test.java",
+            """
+            package test;
+            public class Test {
+                private void test() {
+                    record R(int i) {}
+                    String str = new R(0);
+                }
+            }
+            """,
+            -1,
+            "Change type of str to R",
+            """
+            package test;
+            public class Test {
+                private void test() {
+                    record R(int i) {}
+                    R str = new R(0);
+                }
+            }
+            """.replaceAll("\\s+", " "));
+    }
+
+
     protected List<Fix> computeFixes(CompilationInfo info, int pos, TreePath path) {
         return new ChangeType().run(info, null, pos, path, null);
     }

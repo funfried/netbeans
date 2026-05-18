@@ -24,6 +24,7 @@ import com.thaiopensource.validate.*;
 import com.thaiopensource.validate.prop.rng.RngProperty;
 import com.thaiopensource.xml.sax.XMLReaderCreator;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -50,7 +51,6 @@ import nu.validator.xml.*;
 import nu.validator.xml.dataattributes.DataAttributeDroppingSchemaWrapper;
 import nu.validator.xml.langattributes.XmlLangAttributeDroppingSchemaWrapper;
 import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.html.editor.lib.api.HtmlVersion;
 import org.netbeans.modules.html.editor.lib.api.ProblemDescription;
 import org.openide.util.NbBundle;
@@ -148,7 +148,7 @@ public class NbValidationTransaction extends ValidationTransaction {
             return;
         }
 
-        ProgressHandle progress = ProgressHandleFactory.createHandle(NbBundle.getMessage(NbValidationTransaction.class, "MSG_InitHTMLValidation")); //NOI18N
+        ProgressHandle progress = ProgressHandle.createHandle(NbBundle.getMessage(NbValidationTransaction.class, "MSG_InitHTMLValidation")); //NOI18N
 
         progress.start();
         progress.switchToIndeterminate();
@@ -158,7 +158,7 @@ public class NbValidationTransaction extends ValidationTransaction {
         try {
             LOGGER.fine("Starting initialization.");
 
-            BufferedReader r = new BufferedReader(new InputStreamReader(LocalCacheEntityResolver.getPresetsAsStream(), "UTF-8"));
+            BufferedReader r = new BufferedReader(new InputStreamReader(LocalCacheEntityResolver.getPresetsAsStream(), StandardCharsets.UTF_8));
             String line;
             List<String> doctypes = new LinkedList<String>();
             List<String> namespaces = new LinkedList<String>();

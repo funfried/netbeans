@@ -253,11 +253,11 @@ public class PushDownTransformer extends RefactoringVisitor {
                 }
                 TreePath path = workingCopy.getTrees().getPath(member);
                 Tree memberTree = path.getLeaf();
+                memberTree = genUtils.importComments(memberTree, path.getCompilationUnit());
                 List<Comment> comments = workingCopy.getTreeUtilities().getComments(memberTree, true);
                 if(comments.isEmpty()) {
                     comments = workingCopy.getTreeUtilities().getComments(memberTree, false);
                 }
-                memberTree = genUtils.importComments(memberTree, path.getCompilationUnit());
                 memberTree = genUtils.importFQNs(memberTree);
                 if (members[i].isMakeAbstract() && memberTree.getKind() == Tree.Kind.METHOD && member.getModifiers().contains((Modifier.PRIVATE))) {
                     MethodTree oldOne = (MethodTree) memberTree;
@@ -315,7 +315,8 @@ public class PushDownTransformer extends RefactoringVisitor {
             njuClass = make.Class(RefactoringUtils.makeAbstract(make,
                     njuClass.getModifiers()), njuClass.getSimpleName(),
                     njuClass.getTypeParameters(), njuClass.getExtendsClause(),
-                    njuClass.getImplementsClause(), njuClass.getMembers());
+                    njuClass.getImplementsClause(), njuClass.getPermitsClause(),
+                    njuClass.getMembers());
         }
 
         return njuClass;
@@ -347,15 +348,16 @@ public class PushDownTransformer extends RefactoringVisitor {
                             
                             if (!classIsAbstract) {
                                 classIsAbstract = true;
-                                Set<Modifier> mod = new HashSet<>(njuClass.getModifiers().getFlags());
-                                mod.add(Modifier.ABSTRACT);
+                                Set<Modifier> mod = EnumSet.of(Modifier.ABSTRACT);
+                                mod.addAll(njuClass.getModifiers().getFlags());
                                 ModifiersTree modifiers = make.Modifiers(mod);
                                 translateQueue.getLast().put(njuClass.getModifiers(), modifiers);
                             }
                             
                             MethodTree method = (MethodTree) t;
-                            Set<Modifier> mod = new HashSet<>(method.getModifiers().getFlags());
-                            mod.add(Modifier.ABSTRACT);
+                            Set<Modifier> mod = EnumSet.of(Modifier.ABSTRACT);
+                            mod.addAll(method.getModifiers().getFlags());
+
                             if(mod.contains(Modifier.PRIVATE)) {
                                 mod.remove(Modifier.PRIVATE);
                                 mod.add(Modifier.PROTECTED);

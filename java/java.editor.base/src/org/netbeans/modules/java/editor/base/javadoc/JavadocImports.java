@@ -641,7 +641,7 @@ public final class JavadocImports {
                         }
                     case OTHER_TEXT:
                         isBeforeWS |= JavadocCompletionUtils.isWhiteSpace(jdt);
-                        isBeforeWS |= JavadocCompletionUtils.isLineBreak(jdt);
+                        isBeforeWS |= JavadocCompletionUtils.isLineBreak(jdts);
                         if (isBeforeWS) {
                             continue;
                         } else {
@@ -690,7 +690,9 @@ public final class JavadocImports {
         TokenSequence<JavadocTokenId> javadoc = null;
         TokenSequence<JavaTokenId> ts = SourceUtils.getJavaTokenSequence(javac.getTokenHierarchy(), start);
 
-        if (ts.moveNext() && ts.token().id() == JavaTokenId.JAVADOC_COMMENT) {
+        if (ts.moveNext() &&
+            (ts.token().id() == JavaTokenId.JAVADOC_COMMENT ||
+             ts.token().id() == JavaTokenId.JAVADOC_COMMENT_LINE_RUN)) {
             javadoc = ts.embedded(JavadocTokenId.language());
         }
         
@@ -821,7 +823,7 @@ public final class JavadocImports {
                 jdctx.doc = javac.getDocument();
                 jdctx.javac = javac;
                 long startPosition = trees.getSourcePositions().getStartPosition(javac.getCompilationUnit(), dcComment, node);
-                int errorBodyLength = body.trim().substring(0, body.length()).trim().length();
+                int errorBodyLength = body.trim().length();
                 int caretOffset = (int) startPosition + errorBodyLength;
                 TreePath javadocFor = result[0].getTreePath();
                 if (javadocFor == null) {
@@ -853,7 +855,7 @@ public final class JavadocImports {
                     // if position in token == 0 resolve CC according to previous token
                     jdctx.jdts.movePrevious();
                 }
-                jdctx.positions = (DocSourcePositions) trees.getSourcePositions();
+                jdctx.positions = trees.getSourcePositions();
                 if (jdctx.positions != null) {
                     //insideTag(result[0], jdctx, caretOffset, prevTagError ? Kind.SEE : JavadocCompletionUtils.normalizedKind(result[0].getLeaf()));
                     insideTag(result[0], jdctx, caretOffset);
@@ -893,14 +895,14 @@ public final class JavadocImports {
             cs = pos < cs.length() ? cs.subSequence(0, pos) : cs;
 
             if (JavadocCompletionUtils.isWhiteSpace(cs)
-                    || JavadocCompletionUtils.isLineBreak(jdts.token(), pos)) {
+                    || JavadocCompletionUtils.isLineBreak(jdts, pos)) {
                 noPrefix = true;
             } else {
                 // broken syntax
                 return;
             }
         } else if (!(JavadocCompletionUtils.isWhiteSpace(jdts.token())
-                || JavadocCompletionUtils.isLineBreak(jdts.token()))) {
+                || JavadocCompletionUtils.isLineBreak(jdts))) {
             // not java reference
             return;
         } else if (jdts.moveNext()) {

@@ -52,6 +52,7 @@ import org.codehaus.groovy.ast.AnnotatedNode;
 import org.codehaus.groovy.ast.ConstructorNode;
 import org.codehaus.groovy.ast.PropertyNode;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.modules.csl.api.ElementHandle;
 import org.netbeans.modules.csl.api.ElementKind;
 import org.netbeans.modules.csl.api.HtmlFormatter;
@@ -121,8 +122,9 @@ public class StructureAnalyzer implements StructureScanner {
         // Process fields
         Map<String, FieldNode> names = new HashMap<>();
 
-        for (ASTClass clz : fields.keySet()) {
-            Set<FieldNode> assignments = fields.get(clz);
+        for (Map.Entry<ASTClass, Set<FieldNode>> entry : fields.entrySet()) {
+            ASTClass clz = entry.getKey();
+            Set<FieldNode> assignments = entry.getValue();
 
             // Find unique variables
             if (assignments != null) {
@@ -283,7 +285,7 @@ public class StructureAnalyzer implements StructureScanner {
                     }
                 }
                 try {
-                    importEnd = Utilities.getRowEnd(doc, importEnd);
+                    importEnd = LineDocumentUtils.getLineEndOffset(doc, importEnd);
                     importsRange[0]  = new OffsetRange(importStart, importEnd);
                 } catch (BadLocationException ble) {
                     Exceptions.printStackTrace(ble);
@@ -326,11 +328,11 @@ public class StructureAnalyzer implements StructureScanner {
                         || (kind == ElementKind.FIELD
                             && ((FieldNode) node).getInitialExpression() instanceof ClosureExpression)
                         // Only make nested classes/modules foldable, similar to what the java editor is doing
-                        || (range.getStart() > Utilities.getRowStart(doc, range.getStart())) && kind != ElementKind.FIELD) {
+                        || (range.getStart() > LineDocumentUtils.getLineStartOffset(doc, range.getStart())) && kind != ElementKind.FIELD) {
 
                     int start = range.getStart();
                     // Start the fold at the END of the line behind last non-whitespace, remove curly brace, if any
-                    start = Utilities.getRowLastNonWhite(doc, start);
+                    start = LineDocumentUtils.getLineLastNonWhitespace(doc, start);
                     if (start >= 0 && doc.getChars(start, 1)[0] != '{') {
                         start++;
                     }

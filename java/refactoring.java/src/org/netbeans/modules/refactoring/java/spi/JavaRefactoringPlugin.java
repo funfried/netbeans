@@ -89,7 +89,7 @@ public abstract class JavaRefactoringPlugin extends ProgressProviderAdapter impl
     }
 
     private static Collection<org.netbeans.modules.refactoring.spi.ModificationResult> createJavaModifications(Collection<ModificationResult> modifications) {
-        LinkedList<org.netbeans.modules.refactoring.spi.ModificationResult> result = new LinkedList();
+        LinkedList<org.netbeans.modules.refactoring.spi.ModificationResult> result = new LinkedList<>();
         for (ModificationResult r:modifications) {
             result.add(new JavaModificationResult(r));
         }
@@ -161,7 +161,7 @@ public abstract class JavaRefactoringPlugin extends ProgressProviderAdapter impl
         if (cpInfo==null) {
             Collection<? extends TreePathHandle> handles = refactoring.getRefactoringSource().lookupAll(TreePathHandle.class);
             if (!handles.isEmpty()) {
-                cpInfo = RefactoringUtils.getClasspathInfoFor(handles.toArray(new TreePathHandle[handles.size()]));
+                cpInfo = RefactoringUtils.getClasspathInfoFor(handles.toArray(new TreePathHandle[0]));
             } else {
                 cpInfo = JavaRefactoringUtils.getClasspathInfoFor((FileObject)null);
             }
@@ -268,13 +268,15 @@ public abstract class JavaRefactoringPlugin extends ProgressProviderAdapter impl
         return results;
     }
 
-    private void processFiles(Map<FileObject, List<FileObject>> work, ClasspathInfo info, boolean modification, Collection<ModificationResult> results, CancellableTask<? extends CompilationController> task) throws IOException, IllegalArgumentException {
+    //the meaning of overrideInfo (used to be info) is very unclear, and is suspicious. Possibly, it should be eliminated:
+    private void processFiles(Map<FileObject, List<FileObject>> work, ClasspathInfo overrideInfo, boolean modification, Collection<ModificationResult> results, CancellableTask<? extends CompilationController> task) throws IOException, IllegalArgumentException {
         for (Map.Entry<FileObject, List<FileObject>> entry : work.entrySet()) {
             if (cancelRequested.get()) {
                 results.clear();
                 return;
             }
             final FileObject root = entry.getKey();
+            ClasspathInfo info = overrideInfo;
             if (info == null) {
                 ClassPath bootPath = ClassPath.getClassPath(root, ClassPath.BOOT);
                 if (bootPath == null) {

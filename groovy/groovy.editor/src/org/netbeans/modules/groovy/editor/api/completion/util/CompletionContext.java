@@ -36,6 +36,8 @@ import org.codehaus.groovy.ast.expr.ListExpression;
 import org.codehaus.groovy.ast.expr.NamedArgumentListExpression;
 import org.codehaus.groovy.ast.expr.RangeExpression;
 import org.codehaus.groovy.ast.expr.VariableExpression;
+import org.codehaus.groovy.ast.stmt.BlockStatement;
+import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
@@ -46,8 +48,10 @@ import org.netbeans.modules.groovy.editor.api.AstPath;
 import org.netbeans.modules.groovy.editor.api.completion.CaretLocation;
 import org.netbeans.modules.groovy.editor.completion.inference.GroovyTypeAnalyzer;
 import org.netbeans.modules.groovy.editor.api.lexer.GroovyTokenId;
+
 import static org.netbeans.modules.groovy.editor.api.lexer.GroovyTokenId.LITERAL_new;
 import static org.netbeans.modules.groovy.editor.api.lexer.GroovyTokenId.LPAREN;
+
 import org.netbeans.modules.groovy.editor.api.lexer.LexUtilities;
 import org.netbeans.modules.groovy.editor.completion.AccessLevel;
 import org.openide.filesystems.FileObject;
@@ -284,7 +288,8 @@ public final class CompletionContext {
 
             if (t.id() == GroovyTokenId.LITERAL_package) {
                 return CaretLocation.ABOVE_PACKAGE;
-            } else if (t.id() == GroovyTokenId.LITERAL_class || t.id() == GroovyTokenId.LITERAL_def) {
+            } else if (t.id() == GroovyTokenId.LITERAL_class || t.id() == GroovyTokenId.LITERAL_def
+                    || t.id() == GroovyTokenId.LPAREN || t.id() == GroovyTokenId.LBRACE) {
                 break;
             }
         }
@@ -296,19 +301,28 @@ public final class CompletionContext {
         boolean openBraceBeforePosition = false;
         // is there package statement?
         boolean afterPackagePosition = false;
-
+        boolean canBeImport = true;
+        
         ts.move(position);
 
         while (ts.isValid() && ts.movePrevious() && ts.offset() >= 0) {
             Token<GroovyTokenId> t = ts.token();
             if (t.id() == GroovyTokenId.LBRACE) {
                 openBraceBeforePosition = true;
+                canBeImport = false;
             } else if (t.id() == GroovyTokenId.LITERAL_class || t.id() == GroovyTokenId.LITERAL_interface || t.id() == GroovyTokenId.LITERAL_trait) {
                 classDefBeforePosition = true;
                 break;
             } else if (t.id() == GroovyTokenId.LITERAL_package) {
                 afterPackagePosition = true;
                 break;
+            } else if (canBeImport && t.id() == GroovyTokenId.LITERAL_import) {
+                return CaretLocation.INSIDE_IMPORT;
+            }
+            
+            if (canBeImport && !(t.id() == GroovyTokenId.DOT || t.id() == GroovyTokenId.IDENTIFIER
+                    || t.id() == GroovyTokenId.WHITESPACE || t.id() == GroovyTokenId.LITERAL_static)) {
+                canBeImport = false;
             }
         }
 
@@ -431,6 +445,8 @@ public final class CompletionContext {
 
          */
 
+        boolean insideBlock = false;  // we need to distinquish, whether are we inside 
+                                      // a method or in method declaration part
         for (Iterator<ASTNode> it = path.iterator(); it.hasNext();) {
             ASTNode current = it.next();
             if (current instanceof ClosureExpression) {
@@ -441,7 +457,11 @@ public final class CompletionContext {
                     return CaretLocation.INSIDE_CLOSURE;
                 }
             } else if (current instanceof MethodNode) {
-                return CaretLocation.INSIDE_METHOD;
+                if (insideBlock) {
+                    return CaretLocation.INSIDE_METHOD;
+                }
+            } else if (current instanceof BlockStatement) {
+                insideBlock = true;
             } else if (current instanceof ClassNode) {
                 return CaretLocation.INSIDE_CLASS;
             } else if (current instanceof ModuleNode) {
@@ -750,7 +770,7 @@ public final class CompletionContext {
      * @return a valid ASTNode or null
      */
     private ClassNode getBeforeDotDeclaringClass() {
-        if (declaringClass != null && declaringClass instanceof ClassNode) {
+        if (declaringClass instanceof ClassNode) {
             return declaringClass;
         }
         
@@ -774,7 +794,7 @@ public final class CompletionContext {
         DotCompletionContext dotCompletionContext = getDotCompletionContext();
 
         // FIXME static/script context...
-        if (!isBehindDot() && context.before1 == null
+        if (!isBehindDot() && (context.before1 == null || location == CaretLocation.INSIDE_METHOD)
                 && (location == CaretLocation.INSIDE_CLOSURE || location == CaretLocation.INSIDE_METHOD)) {
             ASTNode an = ContextHelper.getSurroundingClassMember(this);
             boolean st = 
@@ -888,8 +908,8 @@ public final class CompletionContext {
         int nonWhite = 0;
 
         try {
-            rowStart = Utilities.getRowStart(doc, lexOffset);
-            nonWhite = Utilities.getFirstNonWhiteFwd(doc, rowStart);
+            rowStart = LineDocumentUtils.getLineStartOffset(doc, lexOffset);
+            nonWhite = LineDocumentUtils.getNextNonWhitespace(doc, rowStart);
 
         } catch (BadLocationException ex) {
         }

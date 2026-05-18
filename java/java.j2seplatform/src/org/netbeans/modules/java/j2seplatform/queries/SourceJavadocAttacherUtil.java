@@ -138,7 +138,7 @@ public final class SourceJavadocAttacherUtil {
                     return;
                 }
                 List<? extends URL> s = source ? d.getSources(root, this) : d.getJavadoc(root, this);
-                if (s != null || s.isEmpty()) {
+                if (!s.isEmpty()) {
                     List<URI> r = new ArrayList<>();
                     for (URL u : s) {
                         try {
@@ -304,7 +304,7 @@ public final class SourceJavadocAttacherUtil {
                 if (currentFolder[0] != null) {
                     chooser.setCurrentDirectory(currentFolder[0]);
                 }
-                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                if (chooser.showOpenDialog(Utilities.findDialogParent()) == JFileChooser.APPROVE_OPTION) {
                     currentFolder[0] = chooser.getCurrentDirectory();
                     final File[] files = filter(chooser.getSelectedFiles(), filter);
                     final List<String> result = new ArrayList<String>(files.length);
@@ -358,6 +358,6 @@ public final class SourceJavadocAttacherUtil {
                 result.add(file);
             }
         }
-        return result.toArray(new File[result.size()]);
+        return result.toArray(new File[0]);
     }
 }

@@ -198,6 +198,10 @@ public class AddDomainLocationPanel implements WizardDescriptor.Panel, ChangeLis
         wizardIterator.setPassword(panel.getPasswordValue());
         wizardIterator.setAdminPort(Integer.parseInt(panel.getAdminPortValue()));
         wizardIterator.setHttpPort(Integer.parseInt(panel.getHttpPortValue()));
+        wizardIterator.setWSL(panel.getWSL());
+        wizardIterator.setDocker(panel.getDockerValue());
+        wizardIterator.setHostPath(panel.getHostPathValue());
+        wizardIterator.setContainerPath(panel.getContainerPathValue());
     }
 
     private String validateLocalHost(final Object rawHost) {

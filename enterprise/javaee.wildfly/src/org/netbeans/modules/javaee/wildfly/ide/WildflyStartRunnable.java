@@ -27,6 +27,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,24 +68,24 @@ class WildflyStartRunnable implements Runnable {
 
     private static final int START_TIMEOUT = 300000;
 
-    private final static String CONF_FILE_NAME = "standalone.conf.bat"; // NOI18N
+    private static final String CONF_FILE_NAME = "standalone.conf.bat"; // NOI18N
 
-    private final static String RUN_FILE_NAME = "run.bat";  // NOI18N
+    private static final String RUN_FILE_NAME = "run.bat";  // NOI18N
 
-    private final static String JBOSS_HOME = "JBOSS_HOME";// NOI18N
-    private final static String STANDALONE_SH = separatorChar + "bin" + separatorChar + "standalone.sh";// NOI18N
-    private final static String STANDALONE_BAT = separatorChar + "bin" + separatorChar + "standalone.bat";// NOI18N
+    private static final String JBOSS_HOME = "JBOSS_HOME";// NOI18N
+    private static final String STANDALONE_SH = separatorChar + "bin" + separatorChar + "standalone.sh";// NOI18N
+    private static final String STANDALONE_BAT = separatorChar + "bin" + separatorChar + "standalone.bat";// NOI18N
 
-    private final static String CONF_BAT = separatorChar + "bin" + separatorChar + CONF_FILE_NAME;// NOI18N
+    private static final String CONF_BAT = separatorChar + "bin" + separatorChar + CONF_FILE_NAME;// NOI18N
 
-    private final static String JAVA_OPTS = "JAVA_OPTS";// NOI18N
+    private static final String JAVA_OPTS = "JAVA_OPTS";// NOI18N
 
-    private final static Pattern IF_JAVA_OPTS_PATTERN
+    private static final Pattern IF_JAVA_OPTS_PATTERN
             = Pattern.compile(".*if(\\s+not)?\\s+(\"x%" + JAVA_OPTS
                     + "%\"\\s+==\\s+\"x\")\\s+.*", // NOI18N
                     Pattern.DOTALL);
 
-    private final static String NEW_IF_CONDITION_STRING
+    private static final String NEW_IF_CONDITION_STRING
             = "\"xx\" == \"x\"";                      // NOI18N
 
     private static final SpecificationVersion JDK_18 = new SpecificationVersion("1.8");
@@ -170,7 +171,7 @@ class WildflyStartRunnable implements Runnable {
                                 while ((line = br.readLine()) != null) {
                                     noNL.append(line);
                                 }
-                                value = noNL.toString().replaceAll("<", "").replace(">", "").replace(" ", "").replace("\"", "").replace('|', ',').trim();
+                                value = noNL.toString().replace("<", "").replace(">", "").replace(" ", "").replace("\"", "").replace('|', ',').trim();
                             } catch (IOException ioe) {
                                 Exceptions.attachLocalizedMessage(ioe, NbBundle.getMessage(WildflyStartRunnable.class, "ERR_NonProxyHostParsingError"));
                                 Logger.getLogger("global").log(Level.WARNING, null, ioe);
@@ -201,6 +202,12 @@ class WildflyStartRunnable implements Runnable {
             javaOptsBuilder.append(" -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true");
         }
 
+        if(ip.getProperty(WildflyPluginProperties.PROPERTY_PORT_OFFSET) != null ) {
+            int portOffSet = Integer.parseInt(ip.getProperty(WildflyPluginProperties.PROPERTY_PORT_OFFSET));
+            if(portOffSet > 0 ) {
+                javaOptsBuilder.append(" -Djboss.socket.binding.port-offset=").append(portOffSet);
+            }
+        }
         if (ip.getProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE) != null) {
             File configFile = new File(ip.getProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE));
             if (configFile.exists() && configFile.getParentFile().exists() && configFile.getParentFile().getParentFile().exists()) {
@@ -446,11 +453,11 @@ class WildflyStartRunnable implements Runnable {
                 boolean needChangeConf = matcherConf != null && matcherConf.matches();
                 try {
                     if (needChangeRun || needChangeConf) {
-                        File startBat = File.createTempFile(RUN_FILE_NAME, ".bat"); // NOI18N
+                        File startBat = Files.createTempFile(RUN_FILE_NAME, ".bat").toFile(); // NOI18N
                         File confBat = null;
                         if (contentConf != null) {
-                            confBat = File.createTempFile(CONF_FILE_NAME, ".bat", // NOI18N
-                                    startBat.getParentFile()); // NOI18N
+                            confBat = Files.createTempFile(// NOI18N
+                                    startBat.getParentFile().toPath(), CONF_FILE_NAME, ".bat").toFile(); // NOI18N
                         }
                         startBat.deleteOnExit();
                         contentRun = replaceJavaOpts(contentRun, matcherRun);

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-/**
+/*
  *	This generated bean class Headers matches the DTD element Headers
  *
  *	Generated on Thu Jan 11 18:34:12 PST 2001
@@ -41,7 +41,7 @@ public class Headers extends BaseBean {
 
     static Vector<BeanComparator> comparators = new Vector<>();
 
-    static public final String PARAM = "Param";  // NOI18N
+    public static final String PARAM = "Param";  // NOI18N
 
     public Headers() {
 	this(Common.USE_DEFAULT_VALUES);
@@ -181,12 +181,12 @@ public class Headers extends BaseBean {
     }
 
     //
-    static public void addComparator(BeanComparator c) {
+    public static void addComparator(BeanComparator c) {
 	Headers.comparators.add(c);
     }
 
     //
-    static public void removeComparator(BeanComparator c) {
+    public static void removeComparator(BeanComparator c) {
 	Headers.comparators.remove(c);
     }
     //

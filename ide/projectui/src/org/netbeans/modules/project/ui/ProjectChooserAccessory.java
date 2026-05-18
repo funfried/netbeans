@@ -475,7 +475,7 @@ public class ProjectChooserAccessory extends javax.swing.JPanel
             }
         }
 
-        FileUtil.preventFileChooserSymlinkTraversal(chooser, currDir);
+        chooser.setCurrentDirectory(currDir);
         new ProjectFileView(chooser);
 
         return chooser;
@@ -705,7 +705,7 @@ public class ProjectChooserAccessory extends javax.swing.JPanel
                     }
 
                     // Sort the list
-                    Collections.sort( subprojectNames, Collator.getInstance() );
+                    subprojectNames.sort(Collator.getInstance());
                 }
                 if (currentProjects != projects || cancel) {
                     return;

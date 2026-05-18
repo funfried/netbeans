@@ -22,7 +22,6 @@ package org.openide.execution;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
-import org.openide.*;
 import org.openide.filesystems.EnvironmentNotSupportedException;
 import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileSystem$Environment;
@@ -66,13 +65,13 @@ public class NbClassPathCompat {
     @Deprecated
     public static NbClassPath createRepositoryPath (FileSystemCapability cap) {
         Thread.dumpStack();
-        final List res = new LinkedList();
+        final List<Object> res = new LinkedList<>();
 
 
         final class Env extends FileSystem$Environment {
             /* method of interface Environment */
             public void addClassPath(String element) {
-                res.add (element);
+                res.add(element);
             }
         }
 

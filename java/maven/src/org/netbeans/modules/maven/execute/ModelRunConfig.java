@@ -43,7 +43,7 @@ import org.openide.util.Lookup;
  */
 public final class ModelRunConfig extends BeanRunConfig {
     
-    private final static Logger LOG = Logger.getLogger(ModelRunConfig.class.getName());
+    private static final Logger LOG = Logger.getLogger(ModelRunConfig.class.getName());
     
     private final NetbeansActionMapping model;
     private final boolean fallback;
@@ -78,6 +78,11 @@ public final class ModelRunConfig extends BeanRunConfig {
                 }        
             }
             setProperty(key, value);
+        }
+        for (Map.Entry<String,String> entry : model.getOptions().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            setOption(key, value);
         }
         setGoals(model.getGoals());
         setExecutionDirectory(ActionToGoalUtils.resolveProjectExecutionBasedir(mod, proj));

@@ -108,10 +108,7 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
     /** Jersey Library support. */
     private final Hk2LibraryProvider libraryProvider;
 
-    ////////////////////////////////////////////////////////////////////////////
     // Static methods                                                         //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Constructor helper to initialize local Lookup instance.
      * <p/>
@@ -196,6 +193,22 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
                 case v8_0_0_web: profiles[index++] = Profile.JAKARTA_EE_8_WEB;
                                break;
                 case v8_0_0:     profiles[index++] = Profile.JAKARTA_EE_8_FULL;
+                               break;
+                case v9_0_0_web: profiles[index++] = Profile.JAKARTA_EE_9_WEB;
+                               break;
+                case v9_0_0:     profiles[index++] = Profile.JAKARTA_EE_9_FULL;
+                               break;
+                case v9_1_0_web: profiles[index++] = Profile.JAKARTA_EE_9_1_WEB;
+                               break;
+                case v9_1_0:     profiles[index++] = Profile.JAKARTA_EE_9_1_FULL;
+                               break;
+                case v10_0_0_web: profiles[index++] = Profile.JAKARTA_EE_10_WEB;
+                               break;
+                case v10_0_0:     profiles[index++] = Profile.JAKARTA_EE_10_FULL;
+                               break;
+                case v11_0_0_web: profiles[index++] = Profile.JAKARTA_EE_11_WEB;
+                               break;
+                case v11_0_0:     profiles[index++] = Profile.JAKARTA_EE_11_FULL;
                                break;
             }
         } else {
@@ -283,10 +296,7 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
         return moduleTypeSet;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Constructors                                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Creates an instance of Payara JavaEE platform.
      * <p/>
@@ -493,7 +503,7 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
                         cPath.add(f);
                     }
                 }
-                return cPath.toArray(new File[cPath.size()]);
+                return cPath.toArray(new File[0]);
             }
 
             if (TOOL_WSCOMPILE.equals(toolName)) {
@@ -506,7 +516,7 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
                         cPath.add(f);
                     }
                 }
-                return cPath.toArray(new File[cPath.size()]);
+                return cPath.toArray(new File[0]);
             }
 
             File domainDir;
@@ -992,8 +1002,7 @@ public class Hk2JavaEEPlatformImpl extends J2eePlatformImpl2 {
                 else {
                     classPathType = ClassPath.COMPILE;
                 }
-                ProjectClassPathModifier.addRoots(urls.toArray( new URL[ urls.size()]),
-                        sourceRoot, classPathType );
+                ProjectClassPathModifier.addRoots(urls.toArray(new URL[0]), sourceRoot, classPathType);
             }
             catch (UnsupportedOperationException | IOException ex) {
                 return false;

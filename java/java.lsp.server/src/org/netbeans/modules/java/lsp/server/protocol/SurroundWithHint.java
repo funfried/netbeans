@@ -39,7 +39,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,6 +67,7 @@ import org.netbeans.lib.editor.codetemplates.spi.CodeTemplateFilter;
 import org.netbeans.lib.editor.codetemplates.spi.CodeTemplateParameter;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.java.lsp.server.Utils;
+import org.netbeans.modules.java.lsp.server.input.QuickPickItem;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
@@ -80,7 +80,7 @@ import org.openide.util.lookup.ServiceProvider;
 public final class SurroundWithHint extends CodeActionsProvider {
 
     private static final String COMMAND_INSERT_SNIPPET = "editor.action.insertSnippet";
-    private static final String COMMAND_SURROUND_WITH = "java.surround.with";
+    private static final String COMMAND_SURROUND_WITH = "nbls.surround.with";
     private static final String DOTS = "...";
     private static final String SNIPPET = "snippet";
     private static final String SELECTION_VAR = "${selection}";
@@ -96,8 +96,8 @@ public final class SurroundWithHint extends CodeActionsProvider {
         "DN_SurroundWith=Surround with {0}",
         "DN_SurroundWithAll=Surround with ...",
     })
-    public List<CodeAction> getCodeActions(ResultIterator resultIterator, CodeActionParams params) throws Exception {
-        CompilationController info = CompilationController.get(resultIterator.getParserResult());
+    public List<CodeAction> getCodeActions(NbCodeLanguageClient client, ResultIterator resultIterator, CodeActionParams params) throws Exception {
+        CompilationController info = resultIterator.getParserResult() != null ? CompilationController.get(resultIterator.getParserResult()) : null;
         if (info == null) {
             return Collections.emptyList();
         }
@@ -134,7 +134,7 @@ public final class SurroundWithHint extends CodeActionsProvider {
                         snippet = sb.append(snippet).toString();
                     }
                     int idx = label.indexOf(' ');
-                    CodeAction codeAction = createCodeAction(Bundle.DN_SurroundWith(idx < 0 ? label : label.substring(0, idx)), CodeActionKind.RefactorRewrite, null, COMMAND_INSERT_SNIPPET, Collections.singletonMap(SNIPPET, snippet));
+                    CodeAction codeAction = createCodeAction(client, Bundle.DN_SurroundWith(idx < 0 ? label : label.substring(0, idx)), CodeActionKind.RefactorRewrite, null, COMMAND_INSERT_SNIPPET, Collections.singletonMap(SNIPPET, snippet));
                     if (!edits.isEmpty()) {
                         codeAction.setEdit(new WorkspaceEdit(Collections.singletonMap(params.getTextDocument().getUri(), edits)));
                     }
@@ -146,7 +146,7 @@ public final class SurroundWithHint extends CodeActionsProvider {
             }
         }
         if (items.size() > codeActions.size()) {
-            codeActions.add(createCodeAction(Bundle.DN_SurroundWithAll(), CodeActionKind.RefactorRewrite, null, COMMAND_SURROUND_WITH, items));
+            codeActions.add(createCodeAction(client, Bundle.DN_SurroundWithAll(), CodeActionKind.RefactorRewrite, null, COMMAND_SURROUND_WITH, items));
         }
         return codeActions;
     }

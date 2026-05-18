@@ -37,6 +37,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
@@ -147,7 +148,7 @@ public final class AntBridge {
             }
             if (modules == null) {
                 Collection<? extends ModuleInfo> c = modulesResult.allInstances();
-                modules = c.toArray(new ModuleInfo[c.size()]);
+                modules = c.toArray(new ModuleInfo[0]);
                 for (ModuleInfo module : modules) {
                     module.addPropertyChangeListener(this);
                 }
@@ -158,7 +159,7 @@ public final class AntBridge {
                     enabledModules.add(module);
                 }
             }
-            return enabledModules.toArray(new ModuleInfo[enabledModules.size()]);
+            return enabledModules.toArray(new ModuleInfo[0]);
         }
     }
     private static MiscListener miscListener = new MiscListener();
@@ -251,7 +252,7 @@ public final class AntBridge {
         return getAntInstance().bridge;
     }
     
-    private synchronized static AntInstance getAntInstance() {
+    private static synchronized AntInstance getAntInstance() {
         AntInstance ai;
         if (antInstance != null) {
             ai = antInstance.get();
@@ -306,7 +307,7 @@ public final class AntBridge {
                 }
             } // in classpath mode, these checks do not apply
             Map<String,ClassLoader> cDCLs = createCustomDefClassLoaders(main);
-            return new AntInstance(classPathToString(mainClassPath), main, bridgeLoader, impl.newInstance(), createCustomDefs(cDCLs), cDCLs);
+            return new AntInstance(classPathToString(mainClassPath), main, bridgeLoader, impl.getDeclaredConstructor().newInstance(), createCustomDefs(cDCLs), cDCLs);
         } catch (Exception e) {
             return fallback(e);
         } catch (LinkageError e) {
@@ -790,7 +791,7 @@ public final class AntBridge {
                 META_INF_PLATFORM_PROVIDER_FS = FileUtil.createMemoryFileSystem();
                 FileObject file = FileUtil.createData(META_INF_PLATFORM_PROVIDER_FS.getRoot(), META_INF_PLATFORM_PROVIDER_REGISTRATION_NAME);
                 try (OutputStream out = file.getOutputStream()) {
-                    out.write("com.sun.tools.javac.platform.JDKPlatformProvider\n".getBytes("UTF-8"));
+                    out.write("com.sun.tools.javac.platform.JDKPlatformProvider\n".getBytes(StandardCharsets.UTF_8));
                 }
                 META_INF_PLATFORM_PROVIDER_REGISTRATION = file.toURL();
             } catch (Throwable t) {

@@ -23,6 +23,7 @@ import org.netbeans.modules.gradle.NbGradleProjectImpl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
@@ -46,25 +47,39 @@ import org.openide.filesystems.FileUtil;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
 
-import static org.netbeans.modules.gradle.spi.newproject.Bundle.*;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.gradle.tooling.BuildLauncher;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.modules.gradle.GradleProjectLoader;
 import org.netbeans.modules.gradle.ProjectTrust;
 import org.netbeans.modules.gradle.api.GradleProjects;
+import org.netbeans.modules.gradle.api.NbGradleProject;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
+import org.netbeans.modules.gradle.execute.EscapeProcessingOutputStream;
+import org.netbeans.modules.gradle.execute.GradlePlainEscapeProcessor;
+import org.netbeans.modules.gradle.options.GradleExperimentalSettings;
+import org.netbeans.modules.gradle.spi.GradleSettings;
+import org.netbeans.modules.gradle.spi.execute.JavaRuntimeManager;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObject;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
+import org.openide.windows.IOProvider;
+import org.openide.windows.InputOutput;
 
 /**
- *
+ * Steps, that a New Gradle Project Wizard can perform.
+ * 
  * @author Laszlo Kishalmi
  */
 public final class TemplateOperation implements Runnable {
+    private static final Logger LOG = Logger.getLogger(TemplateOperation.class.getName());
+    
     public interface ProjectConfigurator {
         void configure(Project project);
     }
@@ -108,6 +123,7 @@ public final class TemplateOperation implements Runnable {
                 if (handle != null) {
                     handle.progress(step.getMessage(), work++);
                 }
+                LOG.log(Level.FINE, "Executing Gradle Project Template Operation {0}", step);
                 Set<FileObject> filesToOpen = step.execute();
                 if (filesToOpen != null) {
                     importantFiles.addAll(filesToOpen);
@@ -129,7 +145,7 @@ public final class TemplateOperation implements Runnable {
         "MSG_CREATE_FOLDER=Creating foder: {0}"
     })
     public void createFolder(File target) {
-        steps.add(new CreateDirStep(target, MSG_CREATE_FOLDER(target.getName())));
+        steps.add(new CreateDirStep(target, Bundle.MSG_CREATE_FOLDER(target.getName())));
     }
 
     @Messages({
@@ -138,15 +154,36 @@ public final class TemplateOperation implements Runnable {
     })
     public void createPackage(File base, String pkg) {
         String relativePath = pkg.replace('.', '/');
-        steps.add(new CreateDirStep(new File(base, relativePath),MSG_CREATE_PACKAGE(pkg)));
+        steps.add(new CreateDirStep(new File(base, relativePath),Bundle.MSG_CREATE_PACKAGE(pkg)));
     }
 
     public void addConfigureProject(File projectDir, ProjectConfigurator configurator) {
         steps.add(new ConfigureProjectStep(projectDir, configurator));
     }
 
+    /**
+     * Initialize the Gradle wrapper in the target project. Equivalent to
+     * executing <code>gradle wrapper</code>.
+     *
+     * @param target project directory
+     */
     public void addWrapperInit(File target) {
-        steps.add(new InitGradleWrapper(target));
+        steps.add(new InitGradleWrapper(target, null));
+    }
+
+    /**
+     * Initialize the Gradle wrapper in the target project with the requested
+     * version of Gradle. Equivalent to executing
+     * <code>gradle wrapper --gradle-version $version</code>. The version may be
+     * the specific Gradle version required, or one of the labels supported by
+     * the wrapper task, eg. <code>latest</code>.
+     *
+     * @param target project directory
+     * @param version Gradle version or version label
+     * @since 2.34
+     */
+    public void addWrapperInit(File target, String version) {
+        steps.add(new InitGradleWrapper(target, version));
     }
 
     /** *  Begin creation of new project using Gradle's 
@@ -167,7 +204,7 @@ public final class TemplateOperation implements Runnable {
 
     /** Builder to specify additional parameters for the {@link #createGradleInit(java.io.File, java.lang.String)}
      * operation. At the end call {@link #add()} to finish the operation and 
-     * add it to the list of {@link OperationStep}s to perform.
+     * add it to the list of {@link TemplateOperation.OperationStep}s to perform.
      * 
      * @since 2.20
      */
@@ -175,7 +212,7 @@ public final class TemplateOperation implements Runnable {
         InitOperation() {
         }
 
-        /** Add the operation to the list of {@link OperationStep}s to perform.
+        /** Add the operation to the list of {@link TemplateOperation.OperationStep}s to perform.
          * @since 2.20
          */
         public final void add() {
@@ -209,6 +246,30 @@ public final class TemplateOperation implements Runnable {
          * @since 2.20
          */
         public abstract InitOperation projectName(String name);
+
+        /**
+         * Specify the Gradle version to use to initialize the project.
+         *
+         * @param version gradle version
+         * @return this builder to chain the calls
+         * @since 2.47
+         */
+        public abstract InitOperation gradleVersion(String version);
+
+        /** Specify the Java version the project would be compiled, tested,
+         * and executed with.
+         * @param version the Java version to be used
+         * @return this builder to chain the calls.
+         * @since 2.40
+         */
+        public abstract InitOperation javaVersion(String version);
+
+        /** Specify whether create comments in the generated files.
+         * @param comments set {@code false} to generate more compact project files.
+         * @return this builder to chain the calls.
+         * @since 2.40
+         */
+        public abstract InitOperation comments(Boolean comments);
     }
 
     private final class InitStep extends InitOperation implements OperationStep {
@@ -218,6 +279,9 @@ public final class TemplateOperation implements Runnable {
         private String testFramework;
         private String basePackage;
         private String projectName;
+        private String gradleVersion;
+        private String javaVersion;
+        private Boolean comments;
 
         InitStep(File target, String type) {
             this.target = target;
@@ -259,9 +323,14 @@ public final class TemplateOperation implements Runnable {
         @Override
         public Set<FileObject> execute() {
             GradleConnector gconn = GradleConnector.newConnector();
+            if (gradleVersion != null) {
+                gconn.useGradleVersion(gradleVersion);
+            }
+            JavaRuntimeManager.JavaRuntime defaultRuntime = GradleExperimentalSettings.getDefault().getDefaultJavaRuntime();
+
             target.mkdirs();
-            ProjectConnection pconn = gconn.forProjectDirectory(target).connect();
-            try {
+            InputOutput io = IOProvider.getDefault().getIO(projectName + " (init)", true);
+            try (ProjectConnection pconn = gconn.forProjectDirectory(target).connect()) {
                 List<String> args = new ArrayList<>();
                 args.add("init");
                 // gradle init --type java-application --test-framework junit-jupiter --dsl groovy --package com.example --project-name example
@@ -289,14 +358,60 @@ public final class TemplateOperation implements Runnable {
                     args.add(projectName);
                 }
 
-                pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                // --java-version 21
+                if (javaVersion != null) {
+                    args.add("--java-version");
+                    args.add(javaVersion);
+                }
+
+                if (comments != null) {
+                    args.add(comments ? "--comments" : "--no-comments");
+                }
+
+                // gradle init is non-interactive inside the IDE
+                args.add("--use-defaults");
+
+                try (
+                        OutputStream out = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false));
+                        OutputStream err = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false))
+                ) {
+                    BuildLauncher gradleInit = pconn.newBuild().forTasks(args.toArray(String[]::new));
+                    gradleInit.setJavaHome(defaultRuntime.getJavaHome());
+                    if (GradleSettings.getDefault().isOffline()) {
+                        gradleInit = gradleInit.withArguments("--offline");
+                    }
+                    gradleInit.setStandardOutput(out);
+                    gradleInit.setStandardError(err);
+                    gradleInit.run();
+
+                } catch (IOException iox) {
+                }
             } catch (GradleConnectionException | IllegalStateException ex) {
-                // Well for some reason we were  not able to load Gradle.
-                // Ignoring that for now
+                ex.printStackTrace(io.getErr());
             } finally {
-                pconn.close();
+                if (io.getOut() != null) io.getOut().close();
+                if (io.getErr() != null) io.getErr().close();
             }
+            gconn.disconnect();
             return Collections.singleton(FileUtil.toFileObject(target));
+        }
+
+        @Override
+        public InitOperation gradleVersion(String version) {
+            this.gradleVersion = version;
+            return this;
+        }
+
+        @Override
+        public InitOperation javaVersion(String version) {
+            this.javaVersion = version;
+            return this;
+        }
+
+        @Override
+        public InitOperation comments(Boolean comments) {
+            this.comments = comments;
+            return this;
         }
     }
 
@@ -320,7 +435,18 @@ public final class TemplateOperation implements Runnable {
         steps.add(new PreloadProject(projectDir));
     }
 
-    private static class CreateDirStep implements OperationStep {
+    public void addProjectPreload(File projectDir, List<String> important) {
+        steps.add(new PreloadProject(projectDir, important));
+    }
+
+    private abstract static class BaseOperationStep implements OperationStep {
+        @Override
+        public final String toString() {
+            return "Step: " + getMessage();
+        }
+    }
+    
+    private static final class CreateDirStep extends BaseOperationStep {
 
         final String message;
         final File dir;
@@ -341,12 +467,14 @@ public final class TemplateOperation implements Runnable {
                 FileUtil.createFolder(dir);
                 Thread.sleep(200);
             } catch (InterruptedException | IOException ex) {
+                Exceptions.printStackTrace(ex);
             }
             return null;
         }
+        
     }
 
-    private static class ConfigureProjectStep implements OperationStep {
+    private static final class ConfigureProjectStep extends BaseOperationStep {
         final File dir;
         final ProjectConfigurator configurator;
 
@@ -358,7 +486,7 @@ public final class TemplateOperation implements Runnable {
         @Override
         @Messages("MSG_CONFIGURING_PROJECT=Configuring Project...")
         public String getMessage() {
-            return MSG_CONFIGURING_PROJECT();
+            return Bundle.MSG_CONFIGURING_PROJECT();
         }
 
         @Override
@@ -367,25 +495,33 @@ public final class TemplateOperation implements Runnable {
                 try {
                     FileObject projectDir = FileUtil.toFileObject(dir);
                     Project project = ProjectManager.getDefault().findProject(projectDir);
+                    ProjectTrust.getDefault().trustProject(project);
                     NbGradleProjectImpl impl = project != null ? project.getLookup().lookup(NbGradleProjectImpl.class): null;
                     if (impl != null) {
-                        impl.fireProjectReload(true);
+                        impl.projectWithQuality(null, Quality.FULL, false, false);
                         configurator.configure(project);
                     }
 
                 } catch (IOException ex) {
+                    Exceptions.printStackTrace(ex);
                 }
             }
-            return Collections.<FileObject>emptySet();
+            return Set.of();
         }
 
     }
-    private static class PreloadProject implements OperationStep {
+    private static final class PreloadProject extends BaseOperationStep {
 
         final File dir;
+        final List<String> importantFiles;
 
         public PreloadProject(File dir) {
+            this(dir, List.of());
+        }
+
+        public PreloadProject(File dir, List<String> importantFiles) {
             this.dir = dir;
+            this.importantFiles = importantFiles;
         }
 
         @Override
@@ -396,7 +532,7 @@ public final class TemplateOperation implements Runnable {
             "MSG_PRELOAD_PROJECT=Load: {0}"
         })
         public String getMessage() {
-            return GradleProjects.testForProject(dir) ? MSG_PRELOAD_PROJECT(dir.getName()) : MSM_CHECKING_FOLDER(dir.getName());
+            return GradleProjects.testForProject(dir) ? Bundle.MSG_PRELOAD_PROJECT(dir.getName()) : Bundle.MSM_CHECKING_FOLDER(dir.getName());
         }
 
         @Override
@@ -410,19 +546,28 @@ public final class TemplateOperation implements Runnable {
                     }
                     project = ProjectManager.getDefault().findProject(projectDir);
                     if (project != null) {
-                        //Let's trust the generate project
+                        //Let's trust the generated project
                         ProjectTrust.getDefault().trustProject(project);
                         NbGradleProjectImpl nbProject = project.getLookup().lookup(NbGradleProjectImpl.class);
                         if (nbProject != null) {
                             //Just load the project into the cache.
                             GradleProjectLoader loader = nbProject.getLookup().lookup(GradleProjectLoader.class);
                             if (loader != null) {
-                                loader.loadProject(Quality.FULL_ONLINE, null, true, false);
+                                loader.loadProject(NbGradleProject.loadOptions(Quality.FULL_ONLINE).setIgnoreCache(true));
                             }
                         }
-                        return Collections.singleton(projectDir);
+                        Set<FileObject> ret = new LinkedHashSet<>();
+                        ret.add(projectDir);
+                        for (String f : importantFiles) {
+                            FileObject fo = projectDir.getFileObject(f);
+                            if (fo != null) {
+                                ret.add(fo);
+                            }
+                        }
+                        return ret;
                     }
                 } catch (IOException | IllegalArgumentException ex) {
+                    Exceptions.printStackTrace(ex);
                 }
             }
             return null;
@@ -430,38 +575,51 @@ public final class TemplateOperation implements Runnable {
 
     }
 
-    private static class InitGradleWrapper implements OperationStep {
+    private static final class InitGradleWrapper extends BaseOperationStep {
 
         final File projectDir;
+        final String version;
 
-        public InitGradleWrapper(File projectDir) {
+        public InitGradleWrapper(File projectDir, String version) {
             this.projectDir = projectDir;
+            this.version = version;
         }
 
         @Override
         @Messages("MSG_INIT_WRAPPER=Initializing Gradle Wrapper")
         public String getMessage() {
-            return MSG_INIT_WRAPPER();
+            return Bundle.MSG_INIT_WRAPPER();
         }
 
         @Override
         public Set<FileObject> execute() {
             GradleConnector gconn = GradleConnector.newConnector();
-            ProjectConnection pconn = gconn.forProjectDirectory(projectDir).connect();
-            try {
-                pconn.newBuild().withArguments("--offline").forTasks("wrapper").run(); //NOI18N
+            JavaRuntimeManager.JavaRuntime defaultRuntime = GradleExperimentalSettings.getDefault().getDefaultJavaRuntime();
+            try (ProjectConnection pconn = gconn.forProjectDirectory(projectDir).connect()) {
+                List<String> args = new ArrayList<>();
+                args.add("wrapper"); //NOI18N
+                if (version != null) {
+                    args.add("--gradle-version"); //NOI18N
+                    args.add(version);
+                }
+                BuildLauncher init = pconn.newBuild()
+                        .setJavaHome(defaultRuntime.getJavaHome());
+                if (GradleSettings.getDefault().isOffline()) {
+                    init = init.withArguments("--offline");
+                }
+                init.forTasks(args.toArray(String[]::new)).run();
             } catch (GradleConnectionException | IllegalStateException ex) {
                 // Well for some reason we were  not able to load Gradle.
                 // Ignoring that for now
-            } finally {
-                pconn.close();
+                Exceptions.printStackTrace(ex);
             }
+            gconn.disconnect();
             return null;
         }
 
     }
 
-    private static class CopyFromFileTemplate implements OperationStep {
+    private static final class CopyFromFileTemplate extends BaseOperationStep {
         final File target;
         final Map<String, ? extends Object> tokens;
         final boolean important;
@@ -480,7 +638,7 @@ public final class TemplateOperation implements Runnable {
             "MSG_COPY_TEMPLATE=Generating {0}..."
         })
         public String getMessage() {
-            return MSG_COPY_TEMPLATE(target.getName());
+            return Bundle.MSG_COPY_TEMPLATE(target.getName());
         }
 
         @Override
@@ -516,7 +674,7 @@ public final class TemplateOperation implements Runnable {
                     } catch (IOException | ScriptException ex) {
                         throw new IOException(ex.getMessage(), ex);
                     }
-                    return important ? Collections.singleton(fo) : null;
+                    return important ? Set.of(fo) : null;
                 } catch (IOException ex) {}
             } catch (IOException ex) {}
             return null;
@@ -524,7 +682,7 @@ public final class TemplateOperation implements Runnable {
 
     }
 
-    private static class CopyFromTemplate implements OperationStep {
+    private static final class CopyFromTemplate extends BaseOperationStep {
         final File target;
         final Map<String, ? extends Object> tokens;
         final boolean important;
@@ -540,7 +698,7 @@ public final class TemplateOperation implements Runnable {
 
         @Override
         public String getMessage() {
-            return MSG_COPY_TEMPLATE(target.getName());
+            return Bundle.MSG_COPY_TEMPLATE(target.getName());
         }
 
         @Override
@@ -553,9 +711,9 @@ public final class TemplateOperation implements Runnable {
                     DataFolder targetFolder = DataFolder.findFolder(targetParent);
                     DataObject o = DataObject.find(template);
                     DataObject newData = o.createFromTemplate(targetFolder, targetName, tokens);
-                    return important ? Collections.singleton(newData.getPrimaryFile()) : null;
+                    return important ? Set.of(newData.getPrimaryFile()) : null;
                 } catch (IOException ex) {
-
+                    Exceptions.printStackTrace(ex);
                 }
             }
             return null;

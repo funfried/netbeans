@@ -57,7 +57,7 @@ final class CallHierarchyTopComponent extends TopComponent implements ExplorerMa
     private static final String PREFERRED_ID = "CallHierarchyTopComponent"; // NOI18N
     
     private final ExplorerManager manager;
-    private final ExplorerManager managerCtx = new ExplorerManager();;
+    private final ExplorerManager managerCtx = new ExplorerManager();
     private CallHierarchyModel model;
 
     private CallHierarchyTopComponent() {
@@ -393,7 +393,7 @@ private void jMenuItemScopeActionPerformed(java.awt.event.ActionEvent evt) {//GE
         return beanTreeView.requestFocusInWindow();
     }
     
-    final static class ResolvableHelper implements Serializable {
+    static final class ResolvableHelper implements Serializable {
 
         private static final long serialVersionUID = 1L;
 

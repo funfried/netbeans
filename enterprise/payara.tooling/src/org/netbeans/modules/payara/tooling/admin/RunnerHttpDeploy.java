@@ -20,6 +20,8 @@ package org.netbeans.modules.payara.tooling.admin;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -39,10 +41,7 @@ import org.netbeans.modules.payara.tooling.data.PayaraServer;
 public class RunnerHttpDeploy extends RunnerHttp {
 
 
-    ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Logger instance for this class. */
     private static final Logger LOGGER = new Logger(RunnerHttpDeploy.class);
 
@@ -73,10 +72,7 @@ public class RunnerHttpDeploy extends RunnerHttp {
     /** Deploy command <code>force</code> parameter value. */
     private static final boolean FORCE_VALUE = true;
 
-    ////////////////////////////////////////////////////////////////////////////
     // Static methods                                                         //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Builds deploy query string for given command.
      * <p/>
@@ -93,7 +89,7 @@ public class RunnerHttpDeploy extends RunnerHttp {
      * @param command Payara server administration deploy command entity.
      * @return Deploy query string for given command.
      */
-    private static String query(final Command command) {
+    private static String query(final PayaraServer server, final Command command) {
         // Prepare values
         String name; 
         String path;
@@ -109,7 +105,29 @@ public class RunnerHttpDeploy extends RunnerHttp {
             }
             name = Utils.sanitizeName(deploy.name);
             path = deploy.path.getAbsolutePath();
-            target =deploy.target;
+            if (server.isDocker()
+                    && server.getHostPath() != null
+                    && !server.getHostPath().isEmpty()
+                    && server.getContainerPath() != null
+                    && !server.getContainerPath().isEmpty()) {
+                try {
+                    Path relativePath = Paths.get(server.getHostPath()).relativize(deploy.path.toPath());
+                    path = Paths.get(server.getContainerPath(), relativePath.toString()).toString();
+                    if (server.getContainerPath().startsWith("/")) {
+                        path = path.replace("\\", "/");
+                    }
+                } catch (IllegalArgumentException ex) {
+                    throw new CommandException(
+                            CommandException.DOCKER_HOST_APPLICATION_PATH);
+                }
+            }
+            if (server.isWSL()) {
+                // Replace backslashes with forward slashes
+                path = path.replace("\\", "/");
+                // Add "mnt" prefix and drive letter
+                path = "/mnt/" + path.substring(0, 1).toLowerCase() + path.substring(2);
+            }
+            target = deploy.target;
             ctxRoot = deploy.contextRoot;
             hotDeploy = Boolean.toString(deploy.hotDeploy);
         }
@@ -165,18 +183,12 @@ public class RunnerHttpDeploy extends RunnerHttp {
         return sb.toString();
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Instance attributes                                                    //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Holding data for command execution. */
     @SuppressWarnings("FieldNameHidesFieldInSuperclass")
     final CommandDeploy command;
 
-    ////////////////////////////////////////////////////////////////////////////
     // Constructors                                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Constructs an instance of administration command executor using
      * HTTP interface.
@@ -186,14 +198,11 @@ public class RunnerHttpDeploy extends RunnerHttp {
      */
     public RunnerHttpDeploy(final PayaraServer server,
             final Command command) {
-        super(server, command, query(command));
+        super(server, command, query(server, command));
         this.command = (CommandDeploy)command;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Implemented Abstract Methods                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Send deployed file to the server via HTTP POST when it's not
      * a directory deployment.
@@ -266,10 +275,7 @@ public class RunnerHttpDeploy extends RunnerHttp {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Fake Getters                                                           //
-    ////////////////////////////////////////////////////////////////////////////
-
     /**
      * Set the content-type of information sent to the server.
      * Returns <code>application/zip</code> for file deployment

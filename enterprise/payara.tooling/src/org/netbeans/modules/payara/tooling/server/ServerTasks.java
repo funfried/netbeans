@@ -48,10 +48,7 @@ import org.netbeans.modules.payara.tooling.server.parser.JvmConfigReader.JvmOpti
  */
 public class ServerTasks {
 
-    ////////////////////////////////////////////////////////////////////////////
     // Inner classes                                                          //
-    ////////////////////////////////////////////////////////////////////////////
-
     public enum StartMode {
         /** Regular server start. */
         START,
@@ -61,10 +58,7 @@ public class ServerTasks {
         PROFILE;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
-    ////////////////////////////////////////////////////////////////////////////
-
     /** Logger instance for this class. */
     private static final Logger LOGGER = new Logger(ServerTasks.class);
 
@@ -163,11 +157,18 @@ public class ServerTasks {
             }
         }
 
-        JDKVersion javaVersion = args.getJavaVersion() == null ? JDKVersion.getDefaultPlatformVersion() : args.getJavaVersion() ;
+        JDKVersion javaVersion = args.getJavaVersion() == null ? JDKVersion.getDefaultPlatformVersion() : args.getJavaVersion();
+        String selectedJavaHome
+                = args.getJavaHome() != null
+                ? args.getJavaHome()
+                : System.getProperty("java.home");
         List<String> optList
                 = jvmConfigReader.getJvmOptions()
                         .stream()
-                        .filter(fullOption -> JDKVersion.isCorrectJDK(javaVersion, fullOption.vendorOrVM, fullOption.minVersion, fullOption.maxVersion))
+                        .filter(fullOption
+                                -> javaVersion.isOptionSupported(
+                                fullOption,
+                                selectedJavaHome))
                         .map(fullOption -> fullOption.option)
                         .collect(toList());
 
@@ -192,13 +193,13 @@ public class ServerTasks {
         // Add debug parameters read from domain.xml.
         // It's important to add them before java options specified by user
         // in case user specified it by himslef.
-        if (mode.equals(StartMode.DEBUG)) {
+        if (mode == StartMode.DEBUG) {
             String debugOpts = propMap.get("debug-options");
             String[] debugOptsSplited = debugOpts.split("\\s+(?=-)");
             optList.addAll(Arrays.asList(debugOptsSplited));
         }
         // add profile parameters
-        if (mode.equals(StartMode.PROFILE)) {
+        if (mode == StartMode.PROFILE) {
         }
         // appending IDE specified options after the ones got from domain.xml
         // IDE specified are takind precedence this way

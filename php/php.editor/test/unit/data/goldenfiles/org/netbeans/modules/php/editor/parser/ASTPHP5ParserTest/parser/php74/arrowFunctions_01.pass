@@ -327,7 +327,7 @@
         <token id='T_FN' start='1199' end='1201'>
             <text>fn</text>
         </token>
-        <token id='T_REFERENCE' start='1201' end='1202'>
+        <token id='T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG' start='1201' end='1202'>
             <text>&amp;</text>
         </token>
         <token id='T_OPEN_PARENTHESE' start='1202' end='1203'>
@@ -351,7 +351,7 @@
         <token id='T_FN' start='1228' end='1230'>
             <text>fn</text>
         </token>
-        <token id='T_REFERENCE' start='1230' end='1231'>
+        <token id='T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG' start='1230' end='1231'>
             <text>&amp;</text>
         </token>
         <token id='T_OPEN_PARENTHESE' start='1231' end='1232'>
@@ -1365,7 +1365,9 @@
                 <ArrowFunctionDeclaration start='1002' end='1021' isReference='false' isStatic='false'>
                     <FormalParameter start='1006' end='1014' isMandatory='true' isVariadic='false'>
                         <ParametrType>
-                            <Identifier start='1006' end='1011' name='array'/>
+                            <NamespaceName start='1006' end='1011' isCurrent='false' isGlobal='false'>
+                                <Identifier start='1006' end='1011' name='array'/>
+                            </NamespaceName>
                         </ParametrType>
                         <ParametrName>
                             <Variable start='1012' end='1014' isDollared='true'>
@@ -1395,7 +1397,9 @@
                     <FormalParameter start='1078' end='1087' isMandatory='true' isVariadic='false'>
                         <ParametrType>
                             <NullableType start='1078' end='1084'>
-                                <Identifier start='1079' end='1084' name='array'/>
+                                <NamespaceName start='1079' end='1084' isCurrent='false' isGlobal='false'>
+                                    <Identifier start='1079' end='1084' name='array'/>
+                                </NamespaceName>
                             </NullableType>
                         </ParametrType>
                         <ParametrName>
@@ -2028,7 +2032,7 @@
                                             <Identifier start='2044' end='2046' name='af'/>
                                         </Variable>
                                         <ArrowFunctionDeclaration start='2049' end='2068' isReference='false' isStatic='false'>
-                                            <StaticConstantAccess start='2057' end='2068'>
+                                            <StaticConstantAccess start='2057' end='2068' isDynamicName='false'>
                                                 <NamespaceName start='2057' end='2061' isCurrent='false' isGlobal='false'>
                                                     <Identifier start='2057' end='2061' name='self'/>
                                                 </NamespaceName>

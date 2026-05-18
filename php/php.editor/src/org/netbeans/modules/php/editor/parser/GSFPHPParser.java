@@ -293,7 +293,7 @@ public class GSFPHPParser extends Parser implements PropertyChangeListener {
     private boolean sanitizeSource(Context context, Sanitize sanitizing, PHP5ErrorHandler errorHandler) {
         if (sanitizing == Sanitize.SYNTAX_ERROR_CURRENT) {
             List<PHP5ErrorHandler.SyntaxError> syntaxErrors = errorHandler.getSyntaxErrors();
-            if (syntaxErrors.size() > 0) {
+            if (!syntaxErrors.isEmpty()) {
                 PHP5ErrorHandler.SyntaxError error = syntaxErrors.get(0);
                 String source = context.getBaseSource();
                 int end = error.getCurrentToken().right;
@@ -308,7 +308,7 @@ public class GSFPHPParser extends Parser implements PropertyChangeListener {
         }
         if (sanitizing == Sanitize.SYNTAX_ERROR_PREVIOUS) {
             List<PHP5ErrorHandler.SyntaxError> syntaxErrors = errorHandler.getSyntaxErrors();
-            if (syntaxErrors.size() > 0) {
+            if (!syntaxErrors.isEmpty()) {
                 PHP5ErrorHandler.SyntaxError error = syntaxErrors.get(0);
                 String source = context.getBaseSource();
                 int end = error.getPreviousToken().right;
@@ -335,6 +335,10 @@ public class GSFPHPParser extends Parser implements PropertyChangeListener {
                 // check (union) type
                 if (currentReplace.equals(")")) { // NOI18N
                     if (sanitizeUnionType(source, context, start, replace, currentStart)) {
+                        return true;
+                    }
+                } else if (currentReplace.equals("\\")) { // NOI18N
+                    if (sanitizeUnionType(source, context, start, replace, currentEnd)) {
                         return true;
                     }
                 }
@@ -461,19 +465,19 @@ public class GSFPHPParser extends Parser implements PropertyChangeListener {
      *
      * @param start the start offset
      * @param source the source
-     * @return the start positon for sanitizing if it is found, otherwise -1
+     * @return the start position for sanitizing if it is found, otherwise -1
      */
     private int sanitizingStartPositionForUnionType(int start, String source) {
         int sanitizingStart = start;
         char c = source.charAt(start);
-        while (c != '(' && c != ',') {
+        while (c != '(' && c != ',' && c != ';' && c != '{') {
             sanitizingStart--;
             if (sanitizingStart < 0) {
                 break;
             }
             c = source.charAt(sanitizingStart);
         }
-        if (c == '(' || c == ',') {
+        if (c == '(' || c == ',' || c == ';' || c == '{') {
             return sanitizingStart + 1;
         }
         return -1;

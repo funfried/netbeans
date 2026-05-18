@@ -32,13 +32,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -155,7 +155,7 @@ public class BinaryAnalyser {
 
     }
 
-    public static abstract class Config {
+    public abstract static class Config {
 
         public enum UsagesLevel {
             BASIC("basic"), //NOI18N
@@ -477,7 +477,7 @@ public class BinaryAnalyser {
         List<Pair<ElementHandle<TypeElement>,Long>> result = new LinkedList<Pair<ElementHandle<TypeElement>, Long>>();
         final File file = new File (indexFolder,CRC);
         if (file.canRead()) {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF-8"));   //NOI18N
+            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 
             try {
                 String line;
@@ -505,7 +505,7 @@ public class BinaryAnalyser {
         if (state.isEmpty()) {
             file.delete();
         } else {
-            final PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF-8"));   //NOI18N
+            final PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
             try {
                 for (Pair<ElementHandle<TypeElement>,Long> pair : state) {
                     StringBuilder sb = new StringBuilder(pair.first().getBinaryName());
@@ -525,7 +525,7 @@ public class BinaryAnalyser {
             final LongHashMap<String> map = new LongHashMap<String>();
             final File f = new File (cacheRoot, TIME_STAMPS); //NOI18N
             if (f.exists()) {
-                final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8")); //NOI18N
+                final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8));
                 try {
                     String line;
                     while (null != (line = in.readLine())) {
@@ -554,7 +554,7 @@ public class BinaryAnalyser {
             f.delete();
         } else {
             timeStamps.first().keySet().removeAll(timeStamps.second());
-            final BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), "UTF-8")); //NOI18N
+            final BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8));
             try {
                 // write data
                 for(LongHashMap.Entry<String> entry : timeStamps.first().entrySet()) {
@@ -737,6 +737,9 @@ public class BinaryAnalyser {
                         final String encSimpleName = getInternalSimpleName(enclosingMethod.getClassName());
                         if (simpleName.startsWith(encSimpleName)) {
                             len -= encSimpleName.length() + 1;
+                            if (len < 0) {
+                                len = simpleName.length();
+                            }
                             found = true;
                         }
                     }
@@ -1147,7 +1150,7 @@ public class BinaryAnalyser {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="RootProcessor implementations">
-    private static abstract class RootProcessor {
+    private abstract static class RootProcessor {
         private static final Comparator<Pair<ElementHandle<TypeElement>,Long>> COMPARATOR = new Comparator<Pair<ElementHandle<TypeElement>,Long>>() {
                 @Override
                 public int compare(
@@ -1185,7 +1188,7 @@ public class BinaryAnalyser {
         protected final boolean execute(Predicate<ClassFile> accept) throws IOException {
             final boolean res = executeImpl(accept);
             if (res) {
-                Collections.sort(result, COMPARATOR);
+                result.sort(COMPARATOR);
             }
             return res;
         }

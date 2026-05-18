@@ -25,12 +25,15 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.swing.JEditorPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.EditorKit;
 import javax.swing.text.Position;
 import javax.swing.text.StyledDocument;
+
 import org.openide.awt.UndoRedo;
+import org.openide.cookies.EditorCookie;
 import org.openide.util.Mutex;
 import org.openide.util.RequestProcessor;
 import org.openide.util.Task;
@@ -692,6 +695,10 @@ final class DocumentOpenClose {
                                     ", loadSuccess=" + loadSuccess + "\n"); // NOI18N
                         }
                     }
+                    if(reload) {
+                        Mutex.EVENT.postReadRequest(() -> 
+                                ces.firePropertyChange(EditorCookie.Observable.PROP_RELOADING, true, false));
+                    }
                 }
             }
         }
@@ -722,6 +729,9 @@ final class DocumentOpenClose {
                                 loadDoc.remove(0, loadDoc.getLength());
                             }
                         } catch (BadLocationException ex) {
+                            if (ex.getCause() instanceof IOException) {
+                                throw (IOException)ex.getCause();
+                            }
                             LOG.log(Level.INFO, null, ex);
                         }
                     }
@@ -816,6 +826,7 @@ final class DocumentOpenClose {
                     }
                 });
 
+                ces.firePropertyChange(EditorCookie.Observable.PROP_RELOADING, false, true);
                 // Next portion will run as Task in RP
                 activeReloadTask = RP.create(this);
                 activeReloadTask.schedule(0);
@@ -1018,7 +1029,7 @@ final class DocumentOpenClose {
         
     }
     
-    private final class DocumentRef extends WeakReference<StyledDocument> implements Runnable {
+    final class DocumentRef extends WeakReference<StyledDocument> implements Runnable {
 
         public DocumentRef(StyledDocument doc) {
             super(doc, org.openide.util.Utilities.activeReferenceQueue());

@@ -63,7 +63,6 @@ import com.sun.tools.javac.comp.Todo;
 import com.sun.tools.javac.main.JavaCompiler;
 import com.sun.tools.javac.parser.JavacParser;
 import com.sun.tools.javac.parser.Lexer;
-import com.sun.tools.javac.parser.Parser;
 import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.parser.Scanner;
 import com.sun.tools.javac.parser.ScannerFactory;
@@ -74,6 +73,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCCatch;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
+import com.sun.tools.javac.tree.JCTree.JCConstantCaseLabel;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
@@ -90,16 +90,15 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,6 +109,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.AnnotationValueVisitor;
@@ -127,12 +128,6 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.dynamic.DynamicType.Loaded;
-import net.bytebuddy.dynamic.DynamicType.Unloaded;
-import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
-import net.bytebuddy.implementation.MethodCall;
-import net.bytebuddy.matcher.ElementMatchers;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.classpath.ClassPath;
@@ -164,10 +159,22 @@ import org.netbeans.spi.editor.hints.Severity;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
+import org.openide.modules.SpecificationVersion;
 import org.openide.util.Lookup;
 import org.openide.util.NbCollections;
 import org.openide.util.WeakListeners;
 import org.openide.util.lookup.ServiceProvider;
+import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.modules.java.hints.providers.spi.HintMetadata;
+import org.netbeans.modules.refactoring.spi.ui.RefactoringUI;
+import org.netbeans.modules.refactoring.spi.ui.UI;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
+import org.openide.util.NbBundle;
+import org.openide.util.Parameters;
+import org.openide.windows.TopComponent;
+
+import static com.sun.source.tree.CaseTree.CaseKind.STATEMENT;
 
 /**
  *
@@ -250,22 +257,17 @@ public class Utilities {
     }
 
     public static boolean isPureMemberSelect(Tree mst, boolean allowVariables) {
-        switch (mst.getKind()) {
-            case IDENTIFIER: return allowVariables || ((IdentifierTree) mst).getName().charAt(0) != '$';
-            case MEMBER_SELECT: return isPureMemberSelect(((MemberSelectTree) mst).getExpression(), allowVariables);
-            default: return false;
-        }
+        return switch (mst.getKind()) {
+            case IDENTIFIER -> allowVariables || ((IdentifierTree) mst).getName().charAt(0) != '$';
+            case MEMBER_SELECT -> isPureMemberSelect(((MemberSelectTree) mst).getExpression(), allowVariables);
+            default -> false;
+        };
     }
 
     public static Map<String, Collection<HintDescription>> sortOutHints(Iterable<? extends HintDescription> hints, Map<String, Collection<HintDescription>> output) {
         for (HintDescription d : hints) {
-            Collection<HintDescription> h = output.get(d.getMetadata().displayName);
-
-            if (h == null) {
-                output.put(d.getMetadata().displayName, h = new LinkedList<>());
-            }
-
-            h.add(d);
+            output.computeIfAbsent(d.getMetadata().displayName, k -> new LinkedList<>())
+                  .add(d);
         }
 
         return output;
@@ -281,38 +283,42 @@ public class Utilities {
             }
         }
 
-        result.addAll(listClassPathHints(Collections.<ClassPath>emptySet(), cps));
+        result.addAll(listClassPathHints(Set.of(), cps));
 
         return result;
     }
 
     public static List<HintDescription> listClassPathHints(Set<ClassPath> sourceCPs, Set<ClassPath> binaryCPs) {
-        List<HintDescription> result = new LinkedList<>();
+
+        // deduplicate before running queries
+        Set<FileObject> unique = new HashSet<>(128);
+        for (ClassPath cp : binaryCPs) {
+            unique.addAll(Arrays.asList(cp.getRoots()));
+        }
+
         Set<FileObject> roots = new HashSet<>();
 
-        for (ClassPath cp : binaryCPs) {
-            for (FileObject r : cp.getRoots()) {
-                Result2 src = SourceForBinaryQuery.findSourceRoots2(r.toURL());
-
-                if (src != null && src.preferSources()) {
-                    roots.addAll(Arrays.asList(src.getRoots()));
-                } else {
-                    roots.add(r);
-                }
+        for (FileObject fo : unique) {
+            Result2 src = SourceForBinaryQuery.findSourceRoots2(fo.toURL());
+            if (src != null && src.preferSources()) {
+                roots.addAll(Arrays.asList(src.getRoots()));
+            } else {
+                roots.add(fo);
             }
         }
 
         Set<ClassPath> cps = new HashSet<>(sourceCPs);
+        cps.add(ClassPathSupport.createClassPath(roots.toArray(FileObject[]::new)));
 
-        cps.add(ClassPathSupport.createClassPath(roots.toArray(new FileObject[0])));
+        ClassPath cp = ClassPathSupport.createProxyClassPath(cps.toArray(ClassPath[]::new));
 
-        ClassPath cp = ClassPathSupport.createProxyClassPath(cps.toArray(new ClassPath[0]));
+        List<HintDescription> descriptions = new ArrayList<>();
 
-        for (ClassPathBasedHintProvider p : Lookup.getDefault().lookupAll(ClassPathBasedHintProvider.class)) {
-            result.addAll(p.computeHints(cp, new AtomicBoolean()));
+        for (ClassPathBasedHintProvider prov : Lookup.getDefault().lookupAll(ClassPathBasedHintProvider.class)) {
+            descriptions.addAll(prov.computeHints(cp, new AtomicBoolean()));
         }
 
-        return result;
+        return descriptions;
     }
     
     public static Tree parseAndAttribute(CompilationInfo info, String pattern, Scope scope) {
@@ -343,6 +349,7 @@ public class Utilities {
         return parseAndAttribute(info, jti, pattern, scope, new SourcePositions[1], errors);
     }
 
+    @SuppressWarnings("NestedAssignment")
     private static Tree parseAndAttribute(CompilationInfo info, JavacTaskImpl jti, String pattern, Scope scope, SourcePositions[] sourcePositions, Collection<Diagnostic<? extends JavaFileObject>> errors) {
         Context c = jti.getContext();
         JavaCompiler.instance(c); //force reasonable initialization order
@@ -449,7 +456,7 @@ public class Utilities {
                             Element currentElement = trees.getElement(getCurrentPath());
 
                             if (!isError(currentElement)) {
-                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getPackageElement(node.toString()) == null) {
+                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getAllPackageElements(node.toString()).isEmpty()) {
                                     ((JCFieldAccess) node).sym = symtab.errSymbol;
                                     ((JCFieldAccess) node).type = symtab.errType;
                                 } else {
@@ -464,7 +471,7 @@ public class Utilities {
                             Element currentElement = trees.getElement(getCurrentPath());
 
                             if (!isError(currentElement)) {
-                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getPackageElement(node.toString()) == null) {
+                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getAllPackageElements(node.toString()).isEmpty()) {
                                     ((JCIdent) node).sym = symtab.errSymbol;
                                     ((JCIdent) node).type = symtab.errType;
                                 } else {
@@ -499,7 +506,7 @@ public class Utilities {
                 newMembers.add(make.ExpressionStatement(make.Identifier("$$1$")));
                 newMembers.addAll(members.subList(syntheticOffset, members.size()));
 
-                patternTree = make.Class(mt, "$", Collections.<TypeParameterTree>emptyList(), null, Collections.<Tree>emptyList(), newMembers);
+                patternTree = make.Class(mt, "$", List.of(), null, List.of(), List.of(), newMembers);
             } else {
                 patternTree = members.get(0 + syntheticOffset);
             }
@@ -541,13 +548,14 @@ public class Utilities {
     }
 
     private static boolean isStatement(String pattern) {
-        return pattern.trim().endsWith(";");
+        return pattern.stripTrailing().endsWith(";");
     }
 
     private static boolean isErrorTree(Tree t) {
         return t.getKind() == Kind.ERRONEOUS || (t.getKind() == Kind.IDENTIFIER && ((IdentifierTree) t).getName().contentEquals("<error>")); //TODO: <error>...
     }
     
+    @SuppressWarnings({"BoxedValueEquality"})
     private static boolean containsError(Tree t) {
         return new ErrorAwareTreeScanner<Boolean, Void>() {
             @Override
@@ -555,7 +563,7 @@ public class Utilities {
                 if (node != null && isErrorTree(node)) {
                     return true;
                 }
-                return super.scan(node, p) ==Boolean.TRUE;
+                return super.scan(node, p) == Boolean.TRUE;
             }
             @Override
             public Boolean reduce(Boolean r1, Boolean r2) {
@@ -569,24 +577,22 @@ public class Utilities {
             throw new IllegalArgumentException();
         JavaCompiler compiler = JavaCompiler.instance(context);
         JavaFileObject prev = compiler.log.useSource(new DummyJFO());
-        Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(compiler.log) {
+        Log.DiagnosticHandler discardHandler = compiler.log.new DiscardDiagnosticHandler() {
             @Override
-            public void report(JCDiagnostic diag) {
+            public void reportReady(JCDiagnostic diag) {
                 errors.add(diag);
             }            
         };
         try {
             CharBuffer buf = CharBuffer.wrap((stmt+"\u0000").toCharArray(), 0, stmt.length());
-            ParserFactory factory = ParserFactory.instance(context);
+            NBParserFactory factory = (NBParserFactory) ParserFactory.instance(context);
             ScannerFactory scannerFactory = ScannerFactory.instance(context);
             Names names = Names.instance(context);
-            Parser parser = newParser(context, (NBParserFactory) factory, scannerFactory.newScanner(buf, false), false, false, CancelService.instance(context), names);
-            if (parser instanceof JavacParser) {
-                if (pos != null)
-                    pos[0] = new ParserSourcePositions((JavacParser)parser);
-                return parser.parseStatement();
+            JavacParser parser = new JackpotJavacParser(context, factory, scannerFactory.newScanner(buf, false), false, false, CancelService.instance(context), names);
+            if (pos != null) {
+                pos[0] = new ParserSourcePositions(parser);
             }
-            return null;
+            return parser.parseStatement();
         } finally {
             compiler.log.useSource(prev);
             compiler.log.popDiagnosticHandler(discardHandler);
@@ -598,27 +604,26 @@ public class Utilities {
             throw new IllegalArgumentException();
         JavaCompiler compiler = JavaCompiler.instance(context);
         JavaFileObject prev = compiler.log.useSource(new DummyJFO());
-        Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(compiler.log) {
+        Log.DiagnosticHandler discardHandler = compiler.log.new DiscardDiagnosticHandler() {
             @Override
-            public void report(JCDiagnostic diag) {
+            public void reportReady(JCDiagnostic diag) {
                 errors.add(diag);
             }            
         };
         try {
             CharBuffer buf = CharBuffer.wrap((expr+"\u0000").toCharArray(), 0, expr.length());
-            ParserFactory factory = ParserFactory.instance(context);
+            NBParserFactory factory = (NBParserFactory) ParserFactory.instance(context);
             ScannerFactory scannerFactory = ScannerFactory.instance(context);
             Names names = Names.instance(context);
             Scanner scanner = scannerFactory.newScanner(buf, false);
-            Parser parser = newParser(context, (NBParserFactory) factory, scanner, false, false, CancelService.instance(context), names);
-            if (parser instanceof JavacParser) {
-                if (pos != null)
-                    pos[0] = new ParserSourcePositions((JavacParser)parser);
-                JCExpression result = parser.parseExpression();
+            JavacParser parser = new JackpotJavacParser(context, factory, scanner, false, false, CancelService.instance(context), names);
+            if (pos != null) {
+                pos[0] = new ParserSourcePositions(parser);
+            }
+            JCExpression result = parser.parseExpression();
 
-                if (!onlyFullInput || scanner.token().kind == TokenKind.EOF) {
-                    return result;
-                }
+            if (!onlyFullInput || scanner.token().kind == TokenKind.EOF) {
+                return result;
             }
             return null;
         } finally {
@@ -630,9 +635,9 @@ public class Utilities {
     private static TypeMirror attributeTree(JavacTaskImpl jti, Tree tree, Scope scope, final List<Diagnostic<? extends JavaFileObject>> errors) {
         Log log = Log.instance(jti.getContext());
         JavaFileObject prev = log.useSource(new DummyJFO());
-        Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(log) {
+        Log.DiagnosticHandler discardHandler = log.new DiscardDiagnosticHandler() {
             @Override
-            public void report(JCDiagnostic diag) {
+            public void reportReady(JCDiagnostic diag) {
                 errors.add(diag);
             }            
         };
@@ -697,7 +702,7 @@ public class Utilities {
     private static long inc;
 
     public static Scope constructScope(CompilationInfo info, Map<String, TypeMirror> constraints) {
-        return constructScope(info, constraints, Collections.<String>emptyList());
+        return constructScope(info, constraints, List.of());
     }
 
     public static Scope constructScope(CompilationInfo info, Map<String, TypeMirror> constraints, Iterable<? extends String> auxiliaryImports) {
@@ -743,7 +748,7 @@ public class Utilities {
         Annotate annotate = Annotate.instance(context);
         Names names = Names.instance(context);
         Symtab syms = Symtab.instance(context);
-        Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(compiler.log);
+        Log.DiagnosticHandler discardHandler = log.new DiscardDiagnosticHandler();
 
         JavaFileObject jfo = FileObjects.memoryFileObject("$", "$", new File("/tmp/$$scopeclass$constraints$" + count + ".java").toURI(), System.currentTimeMillis(), clazz.toString());
 
@@ -814,42 +819,7 @@ public class Utilities {
 
     }
 
-    private static final class ScopeDescription {
-        private final Map<String, TypeMirror> constraints;
-        private final Iterable<? extends String> auxiliaryImports;
-
-        public ScopeDescription(Map<String, TypeMirror> constraints, Iterable<? extends String> auxiliaryImports) {
-            this.constraints = constraints;
-            this.auxiliaryImports = auxiliaryImports;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final ScopeDescription other = (ScopeDescription) obj;
-            if (this.constraints != other.constraints && (this.constraints == null || !this.constraints.equals(other.constraints))) {
-                return false;
-            }
-            if (this.auxiliaryImports != other.auxiliaryImports && (this.auxiliaryImports == null || !this.auxiliaryImports.equals(other.auxiliaryImports))) {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 47 * hash + (this.constraints != null ? this.constraints.hashCode() : 0);
-            hash = 47 * hash + (this.auxiliaryImports != null ? this.auxiliaryImports.hashCode() : 0);
-            return hash;
-        }
-
-    }
+    private record ScopeDescription(Map<String, TypeMirror> constraints, Iterable<? extends String> auxiliaryImports) {}
 
 //    private static Scope constructScope2(CompilationInfo info, Map<String, TypeMirror> constraints) {
 //        JavacScope s = (JavacScope) info.getTrees().getScope(new TreePath(info.getCompilationUnit()));
@@ -901,15 +871,9 @@ public class Utilities {
             Tree leaf = path.getLeaf();
 
             switch (leaf.getKind()) {
-                case METHOD:
-                    handleSuppressWarnings(info, path, ((MethodTree) leaf).getModifiers(), keys);
-                    break;
-                case CLASS:
-                    handleSuppressWarnings(info, path, ((ClassTree) leaf).getModifiers(), keys);
-                    break;
-                case VARIABLE:
-                    handleSuppressWarnings(info, path, ((VariableTree) leaf).getModifiers(), keys);
-                    break;
+                case METHOD -> handleSuppressWarnings(info, path, ((MethodTree) leaf).getModifiers(), keys);
+                case CLASS -> handleSuppressWarnings(info, path, ((ClassTree) leaf).getModifiers(), keys);
+                case VARIABLE -> handleSuppressWarnings(info, path, ((VariableTree) leaf).getModifiers(), keys);
             }
 
             path = path.getParentPath();
@@ -1029,7 +993,8 @@ public class Utilities {
 
         itt.attach(c, new NoImports(c), null);
 
-        return itt.translate(original.getLeaf());
+        return itt.translate(original.getLeaf(),
+                             original.getParentPath() != null ? original.getParentPath().getLeaf() : null);
     }
 
     public static Tree generalizePattern(CompilationInfo info, TreePath original, int firstStatement, int lastStatement) {
@@ -1080,21 +1045,22 @@ public class Utilities {
                     return c;
                 }
             }
-            JavaPlatform select = JavaPlatform.getDefault();
+
             final JavaPlatformManager man = JavaPlatformManager.getDefault();
-            if (select.getSpecification().getVersion() != null) {
-                for (JavaPlatform p : JavaPlatformManager.getDefault().getInstalledPlatforms()) {
-                    if (!"j2se".equals(p.getSpecification().getName()) || p.getSpecification().getVersion() == null) continue;
-                    if (p.getSpecification().getVersion().compareTo(select.getSpecification().getVersion()) > 0) {
-                        select = p;
-                    }
-                }
-            }
+            final SpecificationVersion maxVersion = new SpecificationVersion(SourceVersion.latest().ordinal()+".99"); // cap at feature version of nb-javac
+            JavaPlatform select = Stream.of(man.getInstalledPlatforms())
+                    .filter(JavaPlatform::isValid)
+                    .filter((p) -> "j2se".equals(p.getSpecification().getName()))
+                    .filter((p) -> p.getSpecification().getVersion() != null)
+                    .filter((p) -> p.getSpecification().getVersion().compareTo(maxVersion) < 0)
+                    .max(Comparator.comparing((p) -> p.getSpecification().getVersion()))
+                    .orElse(JavaPlatform.getDefault());
+
             final ClasspathInfo result = new ClasspathInfo.Builder(select.getBootstrapLibraries())
                                                           .setModuleBootPath(select.getBootstrapLibraries())
                                                           .build();
             if (cached != null) {
-                    this.cached = new WeakReference<>(result);
+                cached = new WeakReference<>(result);
             }
             if (weakL == null) {
                 man.addPropertyChangeListener(weakL = WeakListeners.propertyChange(this, man));
@@ -1136,15 +1102,10 @@ public class Utilities {
             if (el.getModifiers().contains(Modifier.PRIVATE)) {
                 return true;
             }
-
-            switch (el.getKind()) {
-                case LOCAL_VARIABLE:
-                case EXCEPTION_PARAMETER:
-                case PARAMETER:
-                    return true;
-            }
-
-            return false;
+            return switch (el.getKind()) {
+                case LOCAL_VARIABLE, EXCEPTION_PARAMETER, PARAMETER -> true;
+                default -> false;
+            };
         }
 
         @Override
@@ -1179,7 +1140,7 @@ public class Utilities {
                 return null;
             }
 
-            NewClassTree nue = make.NewClass(node.getEnclosingExpression(), Collections.<ExpressionTree>singletonList(make.Identifier("$" + currentVariableIndex++ + "$")), make.Identifier("$" + currentVariableIndex++), Collections.<ExpressionTree>singletonList(make.Identifier("$" + currentVariableIndex++ + "$")), null);
+            NewClassTree nue = make.NewClass(node.getEnclosingExpression(), List.of(make.Identifier("$" + currentVariableIndex++ + "$")), make.Identifier("$" + currentVariableIndex++), List.of(make.Identifier("$" + currentVariableIndex++ + "$")), null);
 
             tree2Variable.put(node, nue);
 
@@ -1198,14 +1159,14 @@ public class Utilities {
         }
 
         @Override
-        public Tree translate(Tree tree) {
+        public Tree translate(Tree tree, Object p) {
             Tree var = tree2Variable.remove(tree);
 
             if (var != null) {
-                return super.translate(var);
+                return super.translate(var, p);
             }
 
-            return super.translate(tree);
+            return super.translate(tree, p);
         }
 
     }
@@ -1217,7 +1178,7 @@ public class Utilities {
         }
 
         @Override
-        public void classEntered(ClassTree clazz) {}
+        public void classEntered(ClassTree clazz, boolean isAnonymous) {}
 
         @Override
         public void enterVisibleThroughClasses(ClassTree clazz) {}
@@ -1238,7 +1199,7 @@ public class Utilities {
 
         @Override
         public Set<? extends Element> getImports() {
-            return Collections.emptySet();
+            return Set.of();
         }
 
         @Override
@@ -1285,45 +1246,6 @@ public class Utilities {
 
     public static boolean isJavadocSupported(CompilationInfo info) { //TODO: unnecessary?
         return true;
-    }
-
-    private static Class<?> parserClass;
-    private static synchronized Parser newParser(Context ctx, NBParserFactory fac,
-                                                 Lexer S, boolean keepDocComments,
-                                                 boolean keepLineMap, CancelService cancelService,
-                                                 Names names) {
-        try {
-            if (parserClass == null) {
-                Method switchBlockStatementGroup = JavacParser.class.getDeclaredMethod("switchBlockStatementGroup");
-                Method delegate;
-                if (switchBlockStatementGroup.getReturnType().equals(com.sun.tools.javac.util.List.class)) {
-                    delegate = JackpotJavacParser.class.getDeclaredMethod("switchBlockStatementGroupListImpl");
-                } else {
-                    delegate = JackpotJavacParser.class.getDeclaredMethod("switchBlockStatementGroupImpl");
-                }
-                parserClass = load(new ByteBuddy()
-                                    .subclass(JackpotJavacParser.class)
-                                    .method(ElementMatchers.named("switchBlockStatementGroup")).intercept(MethodCall.invoke(delegate))
-                                    .make())
-                            .getLoaded();
-            }
-            return (Parser) parserClass.getConstructor(Context.class, NBParserFactory.class, Lexer.class, boolean.class, boolean.class, CancelService.class, Names.class)
-                    .newInstance(ctx, fac, S, keepDocComments, keepLineMap, cancelService, names);
-        } catch (ReflectiveOperationException ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
-
-    static <T> Loaded<T> load(Unloaded<T> unloaded) {
-        ClassLoadingStrategy<ClassLoader> strategy;
-
-        try {
-            strategy = ClassLoadingStrategy.UsingLookup.of(MethodHandles.lookup());
-        } catch (IllegalStateException ex) {
-            strategy = new ClassLoadingStrategy.ForUnsafeInjection();
-        }
-
-        return unloaded.load(JackpotTrees.class.getClassLoader(), strategy);
     }
 
     private static class JackpotJavacParser extends NBJavacParser {
@@ -1422,7 +1344,7 @@ public class Utilities {
         }
         
         @Override
-        public com.sun.tools.javac.util.List<JCTree> classOrInterfaceOrRecordBodyDeclaration(com.sun.tools.javac.util.Name className, boolean isInterface, boolean isRecord) {
+        public com.sun.tools.javac.util.List<JCTree> classOrInterfaceOrRecordBodyDeclaration(JCModifiers mods, com.sun.tools.javac.util.Name className, boolean isInterface, boolean isRecord) {
 
             if (token.kind == TokenKind.IDENTIFIER) {
                 if (token.name().startsWith(dollar)) {
@@ -1439,7 +1361,7 @@ public class Utilities {
                 }
             }
 
-            return super.classOrInterfaceOrRecordBodyDeclaration(className, isInterface, isRecord);
+            return super.classOrInterfaceOrRecordBodyDeclaration(mods, className, isInterface, isRecord);
         }
         
         @Override
@@ -1452,37 +1374,8 @@ public class Utilities {
             return super.checkExprStat(t);
         }
 
-        protected JCCase switchBlockStatementGroupImpl() throws Throwable {
-            if (token.kind == TokenKind.CASE) {
-                Token peeked = S.token(1);
-
-                if (peeked.kind == TokenKind.IDENTIFIER) {
-                    String ident = peeked.name().toString();
-
-                    if (ident.startsWith("$") && ident.endsWith("$")) {
-                        nextToken();
-                        
-                        int pos = token.pos;
-                        com.sun.tools.javac.util.Name name = token.name();
-
-                        nextToken();
-
-                        if (token.kind == TokenKind.SEMI) {
-                            nextToken();
-                        }
-
-                        JCIdent identTree = F.at(pos).Ident(name);
-                        return JackpotTrees.createJCCase(name, identTree, com.sun.tools.javac.util.List.nil());
-                    }
-                }
-            }
-
-            return (JCCase) MethodHandles.lookup()
-                                         .findSpecial(NBJavacParser.class, "switchBlockStatementGroup", MethodType.methodType(JCCase.class), JackpotJavacParser.class)
-                                         .invoke(this);
-        }
-
-        protected com.sun.tools.javac.util.List<JCCase> switchBlockStatementGroupListImpl() throws Throwable {
+        @Override
+        protected com.sun.tools.javac.util.List<JCCase> switchBlockStatementGroup() {
             if (token.kind == TokenKind.CASE) {
                 Token peeked = S.token(1);
 
@@ -1502,16 +1395,14 @@ public class Utilities {
                         }
 
                         JCIdent identTree = F.at(pos).Ident(name);
+                        JCConstantCaseLabel labelTree = F.at(pos).ConstantCaseLabel(identTree);
                         return com.sun.tools.javac.util.List.of(
-                                    JackpotTrees.createJCCase(name, identTree, "STATEMENT", com.sun.tools.javac.util.List.of(identTree), com.sun.tools.javac.util.List.nil(), null)
-                                );
+                                new JackpotTrees.CaseWildcard(name, identTree, STATEMENT, com.sun.tools.javac.util.List.of(labelTree), null, com.sun.tools.javac.util.List.nil(), null)
+                        );
                     }
                 }
             }
-
-            return (com.sun.tools.javac.util.List<JCCase>) MethodHandles.lookup()
-                        .findSpecial(NBJavacParser.class, "switchBlockStatementGroup", MethodType.methodType(com.sun.tools.javac.util.List.class), JackpotJavacParser.class)
-                        .invoke(this);
+            return super.switchBlockStatementGroup();
         }
 
         @Override
@@ -1588,6 +1479,32 @@ public class Utilities {
 
         return false;
     }
+    
+    @NbBundle.Messages({
+        "WARNING_NoRefactoringUI=Cannot start refactoring: no UI implementation is available."
+    })
+    public static void openRefactoringUIOrWarn(@NonNull Map<HintMetadata, Collection<? extends HintDescription>> hintsCollection, @NullAllowed TopComponent parent) {
+        if (openRefactoringUI(hintsCollection, parent)) {
+            return;
+        }
+        NotifyDescriptor d = new NotifyDescriptor.Message(Bundle.WARNING_NoRefactoringUI(), NotifyDescriptor.WARNING_MESSAGE);
+        DialogDisplayer.getDefault().notifyLater(d);
+    }
+    
+    public static boolean openRefactoringUI(@NonNull Map<HintMetadata, Collection<? extends HintDescription>> hintsCollection, @NullAllowed TopComponent parent) {
+        Parameters.notNull("hintsCollection", hintsCollection);
+        if (hintsCollection.isEmpty()) {
+            return true;
+        }
+        for (HintsRefactoringFactory f : Lookup.getDefault().lookupAll(HintsRefactoringFactory.class)) {
+            RefactoringUI ui = f.createRefactoringUI(hintsCollection);
+            if (ui != null) {
+                UI.openRefactoringUI(ui, parent);
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static boolean isFakeBlock(Tree t) {
         return t instanceof FakeBlock;
@@ -1613,15 +1530,7 @@ public class Utilities {
         return wildcardTreeName.toString().startsWith("$$");
     }
 
-    private static final class OffsetSourcePositions implements SourcePositions {
-
-        private final SourcePositions delegate;
-        private final long offset;
-
-        public OffsetSourcePositions(SourcePositions delegate, long offset) {
-            this.delegate = delegate;
-            this.offset = offset;
-        }
+    private record OffsetSourcePositions(SourcePositions delegate, long offset) implements SourcePositions {
 
         @Override
         public long getStartPosition(CompilationUnitTree cut, Tree tree) {
@@ -1635,16 +1544,8 @@ public class Utilities {
 
     }
 
-    private static final class OffsetDiagnostic<S> implements Diagnostic<S> {
-        private final Diagnostic<? extends S> delegate;
-        private final SourcePositions sp;
-        private final long offset;
-
-        public OffsetDiagnostic(Diagnostic<? extends S> delegate, SourcePositions sp, long offset) {
-            this.delegate = delegate;
-            this.sp = sp;
-            this.offset = offset;
-        }
+    private record OffsetDiagnostic<S>(
+            Diagnostic<? extends S> delegate, SourcePositions sp, long offset) implements Diagnostic<S> {
 
         @Override
         public Diagnostic.Kind getKind() {
@@ -1668,14 +1569,17 @@ public class Utilities {
 
         @Override
         public long getEndPosition() {
-            if (delegate instanceof JCDiagnostic) {
-                JCDiagnostic dImpl = (JCDiagnostic) delegate;
-                
-                return dImpl.getDiagnosticPosition().getEndPosition(new EndPosTable() {
+            if (delegate instanceof JCDiagnostic jcDiag) {
+                return jcDiag.getDiagnosticPosition().getEndPosition(new EndPosTable() {
                     @Override public int getEndPos(JCTree tree) {
                         return (int) sp.getEndPosition(null, tree);
                     }
-                    @Override public void storeEnd(JCTree tree, int endpos) {
+                    @Override
+                    public <T extends JCTree> T storeEnd(T tree, int endpos) {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                    @Override
+                    public void setErrorEndPos(int errpos) {
                         throw new UnsupportedOperationException("Not supported yet.");
                     }
                     @Override public int replaceTree(JCTree oldtree, JCTree newtree) {
@@ -1708,13 +1612,7 @@ public class Utilities {
 
     }
 
-    private static class ParserSourcePositions implements SourcePositions {
-
-        private JavacParser parser;
-
-        private ParserSourcePositions(JavacParser parser) {
-            this.parser = parser;
-        }
+    private record ParserSourcePositions(JavacParser parser) implements SourcePositions {
 
         @Override
         public long getStartPosition(CompilationUnitTree file, Tree tree) {
